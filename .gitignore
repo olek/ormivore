@@ -1,0 +1,7 @@
+.rbenv-version
+.ruby-version
+
+.bundle
+vendor/bundle
+
+tmp
