@@ -1,0 +1,27 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    activerecord (2.3.14)
+      activesupport (= 2.3.14)
+    activesupport (2.3.14)
+    database_cleaner (0.8.0)
+    factory_girl (2.6.4)
+      activesupport (>= 2.3.9)
+    hashie (1.2.0)
+    nested_exceptions (1.0.1)
+    rake (0.9.2.2)
+    rspec (1.3.2)
+    sqlite3 (1.3.6)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activerecord (= 2.3.14)
+  database_cleaner
+  factory_girl (~> 2.6.4)
+  hashie
+  nested_exceptions
+  rake
+  rspec (= 1.3.2)
+  sqlite3
