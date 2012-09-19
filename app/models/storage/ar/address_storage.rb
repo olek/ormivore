@@ -1,6 +1,4 @@
-require 'models/address'
-
-module ORMivore
+module ORMivoreApp
   module Storage
     module AR
       class AddressStorage
@@ -20,7 +18,7 @@ module ORMivore
         end
 
         def self.model_class
-          ORMivore::Address
+          ORMivoreApp::Address
         end
 
         def self.create(model)
@@ -30,16 +28,16 @@ module ORMivore
             begin
               AddressARModel.create!(attrs)
             rescue => e
-              raise StorageError, e.message
+              raise ORMivore::StorageError, e.message
             end
           else
-            raise RecordAlreadyExists
+            raise ORMivore::RecordAlreadyExists
           end
         end
 
         def self.update(model)
           if model.new?
-            raise RecordNotFound
+            raise ORMivore::RecordNotFound
           else
             attrs = extract_attributes_from(model)
 
@@ -47,7 +45,7 @@ module ORMivore
             begin
               count = AddressARModel.update_all(attrs, { :id => model.id })
             rescue => e
-              raise StorageError, e.message
+              raise ORMivore::StorageError, e.message
             end
 
             raise StorageError, 'No records updated' if count.zero?
@@ -79,7 +77,7 @@ module ORMivore
           attributes.except(*%w(type addressable_id addressable_type created_at updated_at)).tap { |attrs|
             attrs[:type] = AddressTypeConverter.storage_to_model(type)
             # TODO sometimes lazy loading is needed
-            attrs[:addressable] = ORMivore.const_get(addressable_type, false).
+            attrs[:addressable] = ORMivoreApp.const_get(addressable_type, false).
               find_by_id(addressable_id)
           }
         end
@@ -103,4 +101,4 @@ module ORMivore
   end
 end
 
-ORMivore::Address.storage = ORMivore::Storage::AR::AddressStorage
+ORMivoreApp::Address.storage = ORMivoreApp::Storage::AR::AddressStorage

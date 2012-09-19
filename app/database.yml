@@ -1,0 +1,7 @@
+test:
+  adapter: sqlite3
+  database: tmp/db.test.sqlite3
+
+dev:
+  adapter: sqlite3
+  database: tmp/db.dev.sqlite3

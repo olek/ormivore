@@ -1,7 +1,4 @@
-require_relative '../../../spec_helper'
-
-require 'models/address'
-require 'models/storage/ar/address_storage'
+require 'spec_helper'
 
 module Helpers
   def execute_simple_int_query(query)
@@ -13,11 +10,11 @@ module Helpers
   end
 
   def new_address(attrs, id=nil)
-    ORMivore::Address.new(attrs.merge(id: id))
+    ORMivoreApp::Address.new(attrs.merge(id: id))
   end
 end
 
-describe ORMivore::Storage::AR::AddressStorage do
+describe ORMivoreApp::Storage::AR::AddressStorage do
   include Helpers
 
   Addressable = Struct.new(:id)

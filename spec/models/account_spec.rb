@@ -1,9 +1,6 @@
-require_relative '../spec_helper'
+require 'spec_helper'
 
-require 'models/account'
-require 'models/storage/ar/account_storage'
-
-describe ORMivore::Account do
+describe ORMivoreApp::Account do
   let(:attributes) do
     v = 'Foo'
     { firstname: v, lastname: v, email: v, status: 1 }
@@ -83,7 +80,7 @@ describe ORMivore::Account do
 
   describe '.storage' do
     it 'should point to AR storage by default' do
-      described_class.storage.should == ORMivore::Storage::AR::AccountStorage
+      described_class.storage.should == ORMivoreApp::Storage::AR::AccountStorage
     end
   end
 

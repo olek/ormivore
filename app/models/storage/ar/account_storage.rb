@@ -1,13 +1,11 @@
-require 'models/account'
-
-module ORMivore
+module ORMivoreApp
   module Storage
     module AR
       class AccountStorage
         def self.find_by_id(account_id)
           to_model(
             AccountARModel.find_by_id(account_id).tap { |o|
-              raise RecordNotFound, "#{model_class} with id #{account_id} was not found" if o.nil?
+              raise ORMivore::RecordNotFound, "#{model_class} with id #{account_id} was not found" if o.nil?
             }
           )
         end
@@ -21,12 +19,12 @@ module ORMivore
         end
 
         def self.model_class
-          ORMivore::Account
+          ORMivoreApp::Account
         end
 
         def self.update(model)
           if model.new?
-            raise RecordNotFound
+            raise ORMivore::RecordNotFound
           else
             attrs = model.to_hash
 
@@ -37,8 +35,8 @@ module ORMivore
               raise StorageError, e.message
             end
 
-            raise StorageError, 'No records updated' if count.zero?
-            raise StorageError, 'WTF' if count > 1
+            raise ORMivore::StorageError, 'No records updated' if count.zero?
+            raise ORMivore::StorageError, 'WTF' if count > 1
           end
         end
       end
@@ -60,4 +58,4 @@ module ORMivore
   end
 end
 
-ORMivore::Account.storage = ORMivore::Storage::AR::AccountStorage
+ORMivoreApp::Account.storage = ORMivoreApp::Storage::AR::AccountStorage

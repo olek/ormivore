@@ -1,6 +1,4 @@
-require_relative '../../../spec_helper'
-
-require 'models/storage/ar/account_storage'
+require 'spec_helper'
 
 module Helpers
   def execute_simple_int_query(query)
@@ -12,11 +10,11 @@ module Helpers
   end
 
   def new_account(attrs, id=nil)
-    ORMivore::Account.new(attrs.merge(id: id))
+    ORMivoreApp::Account.new(attrs.merge(id: id))
   end
 end
 
-describe ORMivore::Storage::AR::AccountStorage do
+describe ORMivoreApp::Storage::AR::AccountStorage do
   include Helpers
 
   let(:attrs) do

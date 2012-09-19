@@ -1,11 +1,6 @@
-require_relative '../spec_helper'
+require 'spec_helper'
 
-require 'models/address'
-require 'models/storage/ar/address_storage'
-
-#require_relative 'address_spec'
-
-describe ORMivore::Address do
+describe ORMivoreApp::Address do
   let(:attributes) do
     v = 'Foo'
     {
@@ -78,7 +73,7 @@ describe ORMivore::Address do
 
   describe '.storage' do
     it 'should point to AR storage by default' do
-      described_class.storage.should == ORMivore::Storage::AR::AddressStorage
+      described_class.storage.should == ORMivoreApp::Storage::AR::AddressStorage
     end
   end
 

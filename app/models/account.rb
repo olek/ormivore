@@ -1,8 +1,8 @@
 # coding: utf-8
 
-module ORMivore
+module ORMivoreApp
   class Account
-    include Base
+    include ORMivore::Base
 
     module STATUS
       ACTIVE = 1
@@ -29,7 +29,7 @@ module ORMivore
     end
 
     def create
-      raise NotImplementedYet, 'Account can not be created yet, to be implemented later if needed'
+      raise ORMivore::NotImplementedYet, 'Account can not be created yet, to be implemented later if needed'
     end
   end
 end

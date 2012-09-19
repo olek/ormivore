@@ -1,8 +1,8 @@
 # coding: utf-8
 
-module ORMivore
+module ORMivoreApp
   class Address
-    include Base
+    include ORMivore::Base
 
     finders :find_by_account_id
 
