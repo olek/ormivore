@@ -43,7 +43,7 @@ module ORMivoreApp
 
             count = 0
             begin
-              count = AddressARModel.update_all(attrs, { :id => model.id })
+              count = AddressARModel.update_all(attrs, { :id => to_id(model.id) })
             rescue => e
               raise ORMivore::StorageError, e.message
             end
@@ -55,13 +55,20 @@ module ORMivoreApp
 
         def self.extract_attributes_from(model)
           model.to_hash.merge(
-              addressable_id: model.addressable.id,
+              addressable_id: to_id(model.addressable.id),
               addressable_type: model.addressable.class.name.demodulize
           ).tap { |attrs|
             attrs.delete(:addressable)
 
             attrs[:type] = AddressTypeConverter.model_to_storage(attrs.delete(:type))
           }
+        end
+
+        def self.to_id(value)
+          int_value = value.to_i
+          raise ORMivore::StorageError, "Not a valid id: #{value.inspect}" unless int_value > 0
+
+          int_value
         end
       end
 

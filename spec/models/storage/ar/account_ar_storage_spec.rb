@@ -49,38 +49,6 @@ describe ORMivoreApp::Storage::AR::AccountStorage do
     end
   end
 
-=begin
-  describe '.create' do
-    context 'when record is not new' do
-      it 'should raise an error' do
-        expect {
-          described_class.create(new_account(attrs).tap { |a| a.id = 11 })
-        }.to raise_error ORMivore::RecordAlreadyExists
-      end
-    end
-
-    it 'should insert record to database' do
-      described_class.create(new_account(attrs.merge(firstname: 'Foo')))
-      account_id = execute_simple_int_query("select id from accounts where firstname = 'Foo'")
-      account_id.should be > 0
-    end
-
-    context 'when record is not quite right' do
-      it 'should raise an error' do
-        # TODO verify if this test in meaningfull
-        account = new_account(attrs)
-        account.instance_variable_set(:@attributes, { firstname: 'Bob' })
-
-        expect {
-          described_class.create(account)
-          account_id = execute_simple_int_query("select id from accounts where firstname = 'Foo'")
-          account_id.should == 0
-        }.to raise_error ORMivore::StorageError
-      end
-    end
-  end
-=end
-
   describe '.update' do
     context 'when record is new' do
       it 'should raise an error' do
@@ -106,12 +74,7 @@ describe ORMivoreApp::Storage::AR::AccountStorage do
     context 'when record is not quite right' do
       it 'should raise an error' do
         pending
-        # this test would work if MySql was working in STRICT sql_mode, but it is not...
-        account_id = execute_simple_int_query( "select id from accounts where firstname = 'something' limit 1")
-        account_id.should_not be_zero
-        account = new_account(attrs, account_id)
-
-        account.instance_variable_set(:@attributes, { status: 1, firstname: nil })
+        test_account.instance_variable_set(:@attributes, { id: 'Abracadabra' })
 
         expect {
           described_class.update(account)

@@ -21,5 +21,6 @@ FactoryGirl.define do
     country_code :US
     region_code :PA
     type 'ShippingAddress'
+    addressable_type 'Account'
   end
 end

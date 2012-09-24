@@ -30,7 +30,7 @@ module ORMivoreApp
 
             count = 0
             begin
-              count = AccountARModel.update_all(attrs, { :id => model.id })
+              count = AccountARModel.update_all(attrs, { :id => to_id(model.id) })
             rescue => e
               raise StorageError, e.message
             end
@@ -38,6 +38,13 @@ module ORMivoreApp
             raise ORMivore::StorageError, 'No records updated' if count.zero?
             raise ORMivore::StorageError, 'WTF' if count > 1
           end
+        end
+
+        def self.to_id(value)
+          int_value = value.to_i
+          raise ORMivore::StorageError, "Not a valid id: #{value.inspect}" unless int_value > 0
+
+          int_value
         end
       end
 

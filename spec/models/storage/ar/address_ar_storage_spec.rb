@@ -2,7 +2,7 @@ require 'spec_helper'
 
 module Helpers
   def execute_simple_int_query(query)
-    execute_simple_string_query(query)
+    Integer(execute_simple_string_query(query))
   end
 
   def execute_simple_string_query(query)
@@ -17,13 +17,15 @@ end
 describe ORMivoreApp::Storage::AR::AddressStorage do
   include Helpers
 
+  subject { described_class }
+
   Addressable = Struct.new(:id)
 
   let(:attrs) do
     v = 'Foo'
     {
       street_1: v, city: v, postal_code: v, country_code: v, region_code: v,
-      type: :shipping, addressable: Addressable.new(0)
+      type: :shipping, addressable: Addressable.new(999)
     }
   end
 
@@ -33,29 +35,27 @@ describe ORMivoreApp::Storage::AR::AddressStorage do
 
 
   it 'should respond to find_by_account_id' do
-    described_class.should respond_to(:find_by_account_id)
+    subject.should respond_to(:find_by_account_id)
   end
 
   describe '.find_by_account_id' do
     context 'when id points to non-existing account' do
       it 'should return nil' do
-        addr = described_class.find_by_account_id(123456789)
-        addr.should be_nil
+        subject.find_by_account_id(123456789).should be_nil
       end
     end
 
     context 'when id points to existing account' do
       context 'when account does not have a shipping address' do
         it 'should return nil' do
-          addr = described_class.find_by_account_id(account.id)
-          addr.should be_nil
+          subject.find_by_account_id(account.id).should be_nil
         end
       end
 
       context 'when account actually has shipping address' do
         it 'should return proper shipping address' do
-          db_addr = FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account', postal_code: '11')
-          addr = described_class.find_by_account_id(account.id)
+          db_addr = FactoryGirl.create(:shipping_address, addressable_id: account.id, postal_code: '11')
+          addr = subject.find_by_account_id(account.id)
           addr.should_not be_nil
           addr.postal_code.should == '11'
           addr.id.should == db_addr.id
@@ -65,29 +65,26 @@ describe ORMivoreApp::Storage::AR::AddressStorage do
   end
 
   describe '.create' do
-    context 'when record is not new' do
+    context 'when record already has primary key assigned' do
       it 'should raise an error' do
         expect {
-          described_class.create(new_address(attrs, 11))
+          subject.create(new_address(attrs, 11))
         }.to raise_error ORMivore::RecordAlreadyExists
       end
     end
 
     it 'should insert record to database' do
-      described_class.create(new_address(attrs.merge(city: 'Foo')))
-      address_id = execute_simple_int_query("select id from addresses where city = 'Foo'")
+      subject.create(new_address(attrs.merge(city: 'Pittsburgh')))
+      address_id = execute_simple_int_query("select id from addresses where city = 'Pittsburgh'")
       address_id.should be > 0
     end
 
     context 'when record is not quite right' do
       it 'should raise an error' do
-        address = new_address(attrs)
-        address.should_receive(:to_hash).and_return({ type: :shipping })
+        address = new_address(attrs.merge(addressable: Addressable.new('Abracadabra')))
 
         expect {
-          described_class.create(address)
-          address_id = execute_simple_int_query("select id from addresses where city = 'Foo'")
-          address_id.should == 0
+          subject.create(address)
         }.to raise_error ORMivore::StorageError
       end
     end
@@ -99,17 +96,17 @@ describe ORMivoreApp::Storage::AR::AddressStorage do
         address = new_address(attrs)
 
         expect {
-          described_class.update(address)
+          subject.update(address)
         }.to raise_error ORMivore::RecordNotFound
       end
     end
 
     context 'when record is not new' do
       it 'should update record attributes' do
-        address = FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account', postal_code: '11')
+        address = FactoryGirl.create(:shipping_address, addressable_id: 999, postal_code: '11')
         address = new_address(attrs, address.id)
 
-        described_class.update(address)
+        subject.update(address)
         new_city = execute_simple_string_query( "select city from addresses where id = #{address.id}")
 
         new_city.should == 'Foo'
@@ -118,16 +115,13 @@ describe ORMivoreApp::Storage::AR::AddressStorage do
 
     context 'when record is not quite right' do
       it 'should raise an error' do
-        pending
-        # this test would work if MySql was working in STRICT sql_mode, but it is not...
-        address_id = execute_simple_int_query( "select id from addresses where city = 'Pittsburgh' limit 1")
-        address_id.should_not be_zero
-        address = new_address(attrs, address_id)
+        address = FactoryGirl.create(:shipping_address, addressable_id: 999, postal_code: '11')
+        address = new_address(attrs, address.id)
 
-        address.instance_variable_set(:@attributes, { type: :shipping, city: nil })
+        address.instance_variable_set(:@attributes, { addressable_id: 'Abracadabra' })
 
         expect {
-          described_class.update(address)
+          subject.update(address)
         }.to raise_error ORMivore::StorageError
       end
     end
