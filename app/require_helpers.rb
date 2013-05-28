@@ -24,8 +24,11 @@ module RequireHelpers
 
       require 'app/connection_manager'
 
+      require_independent_files_in_dir 'app/converters'
+      require_independent_files_in_dir 'app/adapters'
+      require_independent_files_in_dir 'app/ports'
       require_independent_files_in_dir 'app/models'
-      require_independent_files_in_dir 'app/models/storage/ar'
+      require_independent_files_in_dir 'app/repos'
     end
   end
 end

@@ -4,6 +4,7 @@ module ORMivoreApp
   class Account
     include ORMivore::Base
 
+=begin
     module STATUS
       ACTIVE = 1
       INACTIVE = 2
@@ -13,23 +14,24 @@ module ORMivoreApp
     end
 
     finders :find_by_id
+=end
+
+    STATUSES = %w(active inactive deleted).map(&:to_sym).freeze
 
     attributes :id, :firstname, :lastname, :email, :status
     optional :id
 
     private
 
-    def coerce(attrs)
-      attrs.status = Integer(attrs.status)
-    end
-
     def validate
       status = attributes.status
-      raise "Invalid status #{status}" unless STATUS::ALL.include?(status)
+      raise "Invalid status #{status}" unless STATUSES.include?(status)
     end
 
+=begin
     def create
       raise ORMivore::NotImplementedYet, 'Account can not be created yet, to be implemented later if needed'
     end
+=end
   end
 end

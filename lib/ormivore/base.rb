@@ -2,7 +2,7 @@ module ORMivore
   module Base
     module ClassMethods
 
-      attr_accessor :storage
+#      attr_accessor :storage
 
       def primary_key
         :id
@@ -13,6 +13,7 @@ module ORMivore
 
       private
 
+=begin
       def finders(*methods)
         methods.each do |method|
           instance_eval <<-EOS
@@ -22,6 +23,7 @@ module ORMivore
           EOS
         end
       end
+=end
 
       def attributes(*methods)
         @attributes_list = methods.map(&:to_sym)
@@ -58,9 +60,11 @@ module ORMivore
       base.extend(ClassMethods)
     end
 
+=begin
     def save
       new? ? create : update
     end
+=end
 
     def new?
       !attributes[primary_key]
@@ -70,9 +74,11 @@ module ORMivore
       attributes.to_hash.symbolize_keys
     end
 
+=begin
     def storage
       self.class.storage
     end
+=end
 
     def primary_key
       self.class.primary_key
@@ -82,6 +88,7 @@ module ORMivore
 
     attr_reader :attributes
 
+=begin
     def create
       storage.create(self)
     end
@@ -89,6 +96,7 @@ module ORMivore
     def update
       storage.update(self)
     end
+=end
 
     def validate_presence_of_proper_attributes(attrs)
       self.class.attributes_list.each do |attr|
