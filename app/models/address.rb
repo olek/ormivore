@@ -5,9 +5,9 @@ module ORMivoreApp
     include ORMivore::Base
 
     attributes :id, :street_1, :street_2, :city, :postal_code, :country_code, :region_code,
-        :type, :addressable
+        :type, :account_id
 
-    optional :id, :street_2, :region_code
+    optional :id, :street_2, :region_code, :account_id
 
     private
 

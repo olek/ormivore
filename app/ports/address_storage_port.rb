@@ -22,15 +22,9 @@ module ORMivoreApp
     end
 
     def update(attrs, conditions)
-      count = 0
-      begin
-        count = adapter.update_all(attrs, conditions)
-      rescue => e
-        raise StorageError, e.message
-      end
-
-      raise ORMivore::StorageError, 'No records updated' if count.zero?
-      raise ORMivore::StorageError, 'WTF' if count > 1
+      adapter.update(attrs, conditions)
+    rescue => e
+      raise StorageError, e.message
     end
 
     private

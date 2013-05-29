@@ -2,7 +2,6 @@
 
 module ORMivoreApp
   class AccountRepo
-
     def initialize(port, entity_class = nil)
       @port = port
       @entity_class = entity_class || ORMivoreApp::Account

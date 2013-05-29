@@ -8,26 +8,30 @@ module ORMivoreApp
     def find(conditions, options = {})
       # TODO how about other finder options, like order, limit, offset?
       quiet = options.fetch(:quiet, false)
-      record = AccountRecord.first(:conditions => conditions)
+      record = record_class.first(:conditions => conditions)
       if quiet
         record ? entity_attributes(record) : nil
       else
-        raise ORMivore::RecordNotFound, "#{AccountRecord} with conditions #{conditions} was not found" if record.nil?
+        raise ORMivore::RecordNotFound, "#{record_class} with conditions #{conditions} was not found" if record.nil?
         entity_attributes(record)
       end
     end
 
     def create(attrs)
-      entity_attributes(AccountRecord.create!(attrs))
+      entity_attributes(record_class.create!(attrs))
     end
 
     def update(attrs, conditions)
-      AccountRecord.update_all(attrs, conditions)
+      record_class.update_all(attrs, conditions)
     end
 
     private
 
     attr_reader :converter
+
+    def record_class
+      AccountRecord
+    end
 
     def entity_attributes(record)
       # TODO we should not be reading all those columns from database in first place - performance hit

@@ -10,14 +10,18 @@ module Helpers
   end
 end
 
-describe ORMivoreApp::AccountStorageArAdapter do
+describe ORMivoreApp::AddressStorageArAdapter do
   include Helpers
 
   subject { described_class.new(ORMivoreApp::NoopConverter.new) }
 
   let(:attrs) do
     v = 'Foo'
-    { firstname: v, lastname: v, email: v, status: 1 }
+    {
+      street_1: v, city: v, postal_code: v,
+      country_code: v, region_code: v,
+      type: :shipping
+    }
   end
 
   it 'responds to find' do
@@ -25,7 +29,7 @@ describe ORMivoreApp::AccountStorageArAdapter do
   end
 
   describe '#find' do
-    context 'when conditions points to non-existing account' do
+    context 'when conditions points to non-existing address' do
       it 'should raise error' do
         expect {
           subject.find(id: 123456789)
@@ -33,21 +37,30 @@ describe ORMivoreApp::AccountStorageArAdapter do
       end
     end
 
-    context 'when id points to existing account' do
-      it 'should return proper account attrs' do
+    context 'when id points to existing address' do
+      it 'should return proper address attrs' do
         account = FactoryGirl.create(:account)
-        data = subject.find(id: account.id)
+        address = FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account')
+        data = subject.find(id: address.id)
         data.should_not be_nil
-        data[:firstname].should == account.firstname
+        data[:street_1].should == address.street_1
       end
     end
   end
 
   describe '#create' do
-    let(:attrs) do
+    let(:account) {
+      FactoryGirl.create(:account)
+    }
+
+    let(:attrs) {
       v = 'Foo'
-      { firstname: v, lastname: v, email: v, status: 1, login: v, crypted_password: v }
-    end
+      {
+        street_1: v, city: v, postal_code: v,
+        country_code: v, region_code: v,
+        type: :shipping, addressable_id: account.id, addressable_type: 'Account'
+      }
+    }
 
     context 'when attempting to create record with id that is already present in database' do
       it 'raises error' do
@@ -67,8 +80,8 @@ describe ORMivoreApp::AccountStorageArAdapter do
       it 'inserts record in database' do
         data = subject.create(attrs)
 
-        new_firstname = execute_simple_string_query( "select firstname from accounts where id = #{data[:id]}")
-        new_firstname.should == 'Foo'
+        new_street_1 = execute_simple_string_query( "select street_1 from addresses where id = #{data[:id]}")
+        new_street_1.should == 'Foo'
       end
     end
   end
@@ -76,36 +89,39 @@ describe ORMivoreApp::AccountStorageArAdapter do
   describe '#update' do
     context 'when record did not exist' do
       it 'returns 0 update count' do
-        FactoryGirl.create(:account)
+        FactoryGirl.create(:account_with_shipping_address)
         subject.update(attrs, id: 123).should == 0
       end
     end
 
     context 'when record existed' do
       it 'returns update count 1' do
-        FactoryGirl.create(:account)
         account = FactoryGirl.create(:account)
+        FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account')
+        address = FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account')
 
-        subject.update(attrs, id: account.id).should == 1
+        subject.update(attrs, id: address.id).should == 1
       end
 
       it 'updates record attributes' do
         account = FactoryGirl.create(:account)
+        address = FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account')
 
-        subject.update(attrs, id: account.id)
+        subject.update(attrs, id: address.id)
 
-        new_firstname = execute_simple_string_query( "select firstname from accounts where id = #{account.id}")
-        new_firstname.should == 'Foo'
+        new_street_1 = execute_simple_string_query( "select street_1 from addresses where id = #{address.id}")
+        new_street_1.should == 'Foo'
       end
     end
 
     context 'when 2 matching records existed' do
       it 'returns update count 2' do
-        account_ids = []
-        account_ids << FactoryGirl.create(:account).id
-        account_ids << FactoryGirl.create(:account).id
+        account = FactoryGirl.create(:account)
+        address_ids = []
+        address_ids << FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account').id
+        address_ids << FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account').id
 
-        subject.update(attrs, id: account_ids).should == 2
+        subject.update(attrs, id: address_ids).should == 2
       end
     end
 

@@ -6,17 +6,11 @@ describe ORMivoreApp::Address do
     {
       street_1: v, city: v, postal_code: v,
       country_code: v, region_code: v,
-      type: :shipping, addressable: v
+      type: :shipping, account_id: 1
     }
   end
 
   subject { described_class.new(attributes) }
-
-  let(:storage) do
-    double(:storage).tap do |storage|
-      described_class.stub(:storage).and_return(storage)
-    end
-  end
 
   describe '#initialize' do
     it 'should fail if no attributes are provided' do
@@ -71,6 +65,7 @@ describe ORMivoreApp::Address do
     end
   end
 
+=begin
   describe '.storage' do
     it 'should point to AR storage by default' do
       described_class.storage.should == ORMivoreApp::Storage::AR::AddressStorage
@@ -103,6 +98,7 @@ describe ORMivoreApp::Address do
       end
     end
   end
+=end
 end
 
 =begin
