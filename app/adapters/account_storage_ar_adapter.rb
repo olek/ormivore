@@ -18,16 +18,26 @@ module ORMivoreApp
     end
 
     def create(attrs)
-      entity_attributes(record_class.create!(attrs))
+      entity_attributes(
+        record_class.create!(
+          extend_with_defaults(
+            converter.to_storage(attrs))))
     end
 
     def update(attrs, conditions)
-      record_class.update_all(attrs, conditions)
+      record_class.update_all(converter.to_storage(attrs), conditions)
     end
 
     private
 
     attr_reader :converter
+
+    def extend_with_defaults(attrs)
+      attrs.merge(
+        login: attrs[:email],
+        crypted_password: 'Unknown'
+      )
+    end
 
     def record_class
       AccountRecord
@@ -37,8 +47,8 @@ module ORMivoreApp
       # TODO we should not be reading all those columns from database in first place - performance hit
 
       # TODO find out how to handle those 'optional' model attributes, do we need to load them or do we not?
-      # attrs_to_ignore = %w(login crypted_password salt created_at updated_at)
-      attrs_to_ignore = %w(salt created_at updated_at)
+      attrs_to_ignore = %w(login crypted_password salt created_at updated_at)
+      # attrs_to_ignore = %w(salt created_at updated_at)
 
       converter.from_storage(record.attributes.except(*attrs_to_ignore).symbolize_keys)
     end

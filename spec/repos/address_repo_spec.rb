@@ -18,12 +18,12 @@ describe ORMivoreApp::AddressRepo do
 
   describe '#find_by_id' do
     it 'delegates to port' do
-      port.should_receive(:find).with(id: :foo)
+      port.should_receive(:find).with({ id: :foo }, {})
       subject.find_by_id(:foo)
     end
 
     it 'creates and returns new entity' do
-      port.stub(:find).with(id: :foo).and_return(foo: 'bar')
+      port.stub(:find).with({ id: :foo }, {}).and_return(foo: 'bar')
       entity_class.should_receive(:new).with(foo: 'bar').and_return(:baz)
       subject.find_by_id(:foo).should == :baz
     end

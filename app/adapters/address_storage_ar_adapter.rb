@@ -18,11 +18,14 @@ module ORMivoreApp
     end
 
     def create(attrs)
-      entity_attributes(record_class.create!(attrs))
+      entity_attributes(
+        record_class.create!(
+          converter.to_storage(
+            attrs)))
     end
 
     def update(attrs, conditions)
-      record_class.update_all(attrs, conditions)
+      record_class.update_all(converter.to_storage(attrs), conditions)
     end
 
     private

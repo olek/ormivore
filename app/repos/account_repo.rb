@@ -7,8 +7,8 @@ module ORMivoreApp
       @entity_class = entity_class || ORMivoreApp::Account
     end
 
-    def find_by_id(id)
-      attrs_to_entity(port.find(id: id))
+    def find_by_id(id, options = {})
+      attrs_to_entity(port.find({ id: id }, options))
     end
 
     def persist(entity)

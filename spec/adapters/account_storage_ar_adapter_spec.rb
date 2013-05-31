@@ -46,7 +46,7 @@ describe ORMivoreApp::AccountStorageArAdapter do
   describe '#create' do
     let(:attrs) do
       v = 'Foo'
-      { firstname: v, lastname: v, email: v, status: 1, login: v, crypted_password: v }
+      { firstname: v, lastname: v, email: v, status: 1 }
     end
 
     context 'when attempting to create record with id that is already present in database' do

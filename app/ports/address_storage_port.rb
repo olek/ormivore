@@ -17,14 +17,14 @@ module ORMivoreApp
       begin
         adapter.create(attrs)
       rescue => e
-        raise StorageError, e.message
+        raise ORMivore::StorageError, e.message
       end
     end
 
     def update(attrs, conditions)
       adapter.update(attrs, conditions)
     rescue => e
-      raise StorageError, e.message
+      raise ORMivore::StorageError, e.message
     end
 
     private
