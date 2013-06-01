@@ -1,5 +1,4 @@
-require 'spec'
-
+require 'rspec'
 require 'active_record'
 
 require_relative '../app/require_helpers'

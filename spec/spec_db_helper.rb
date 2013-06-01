@@ -1,9 +1,11 @@
-ConnectionManager.establish_connection 'test'
+require 'logger'
+
+ConnectionManager.establish_connection 'test'#, Logger.new(STDOUT)
 
 require 'database_cleaner'
 
 if true
-  Spec::Runner.configure do |config|
+  RSpec.configure do |config|
     # config.include Rack::Test::Methods
 
     config.before(:suite) do

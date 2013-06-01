@@ -21,7 +21,8 @@ module ORMivoreApp
       entity_attributes(
         record_class.create!(
           extend_with_defaults(
-            converter.to_storage(attrs))))
+            converter.to_storage(attrs))) { |o| o.id = attrs[:id] }
+      )
     end
 
     def update(attrs, conditions)
@@ -52,7 +53,7 @@ module ORMivoreApp
     end
 
     class AccountRecord < ActiveRecord::Base
-      set_table_name 'accounts'
+      self.table_name = 'accounts'
       def attributes_protected_by_default; []; end
       # self.logger = Logger.new(STDOUT)
     end

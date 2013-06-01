@@ -20,8 +20,8 @@ module ORMivoreApp
     def create(attrs)
       entity_attributes(
         record_class.create!(
-          converter.to_storage(
-            attrs)))
+          converter.to_storage(attrs)) { |o| o.id = attrs[:id] }
+      )
     end
 
     def update(attrs, conditions)
@@ -45,7 +45,7 @@ module ORMivoreApp
     end
 
     class AddressRecord < ActiveRecord::Base
-      set_table_name 'addresses'
+      self.table_name = 'addresses'
       self.inheritance_column = :_type_disabled
       def attributes_protected_by_default; []; end
       # self.logger = Logger.new(STDOUT)
