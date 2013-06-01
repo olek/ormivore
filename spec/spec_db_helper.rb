@@ -9,8 +9,7 @@ if true
     # config.include Rack::Test::Methods
 
     config.before(:suite) do
-      # DatabaseCleaner.strategy = :transaction
-      DatabaseCleaner.strategy = :truncation
+      DatabaseCleaner.strategy = :transaction
     end
 
     config.before(:each) do
