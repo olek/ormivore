@@ -12,11 +12,10 @@ module ORMivoreApp
     private
 
     def coerce(attrs)
-      attrs.type = attrs.type.to_sym
+      attrs[:type] = attrs[:type].to_sym
     end
 
     def validate
-      type = attributes.type
       raise "Invalid type #{type}" unless %w(shipping billing).include?(type.to_s)
     end
   end

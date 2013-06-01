@@ -35,11 +35,11 @@ module ORMivore
         methods.each do |method|
           method = method.to_s
 
-            exception = %(raise "#{self}##{method} delegated to attributes.#{method}, but attributes is nil: \#{self.inspect}")
+            exception = %(raise "#{self}##{method} delegated to attributes[:#{method}], but attributes is nil: \#{self.inspect}")
 
             module_eval(<<-EOS, file, line - 1)
               def #{method}(*args, &block)
-                attributes.__send__(:#{method}, *args, &block)
+                attributes[:#{method}]
               rescue NoMethodError
                 if attributes.nil?
                   #{exception}
@@ -108,10 +108,10 @@ module ORMivore
       raise BadArgumentError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
 
-    def initialize(attr_options)
-      validate_presence_of_proper_attributes(attr_options.symbolize_keys)
+    def initialize(attributes)
+      validate_presence_of_proper_attributes(attributes.symbolize_keys)
 
-      @attributes = Hashie::Mash.new(attr_options).tap { |attrs|
+      @attributes = attributes.symbolize_keys.tap { |attrs|
         coerce_primary_key(attrs)
         coerce(attrs)
       }.freeze

@@ -12,7 +12,6 @@ module ORMivoreApp
     private
 
     def validate
-      status = attributes.status
       raise "Invalid status #{status}" unless STATUSES.include?(status)
     end
   end

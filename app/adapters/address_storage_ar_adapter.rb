@@ -39,8 +39,6 @@ module ORMivoreApp
     def entity_attributes(record)
       # TODO we should not be reading all those columns from database in first place - performance hit
 
-      # TODO find out how to handle those 'optional' model attributes, do we need to load them or do we not?
-      # attrs_to_ignore = %w(login crypted_password salt created_at updated_at)
       attrs_to_ignore = %w(created_at updated_at)
 
       converter.from_storage(record.attributes.except(*attrs_to_ignore).symbolize_keys)
