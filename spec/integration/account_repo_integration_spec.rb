@@ -51,8 +51,7 @@ describe ORMivoreApp::AccountRepo do
         entity = ORMivoreApp::Account.new(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
-        # TODO this should be == check, not include
-        saved_entity.to_hash.should include(attrs)
+        saved_entity.to_hash.should == attrs
         saved_entity.id.should be_kind_of(Integer)
 
         new_firstname = execute_simple_string_query( "select firstname from accounts where id = #{saved_entity.id}")
@@ -66,11 +65,10 @@ describe ORMivoreApp::AccountRepo do
       }
 
       it 'updates record in database' do
-        entity = ORMivoreApp::Account.new(attrs.merge(id: existing_entity_id))
+        entity = ORMivoreApp::Account.new(attrs, existing_entity_id)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
-        # TODO this should be == check, not include
-        saved_entity.to_hash.should include(attrs)
+        saved_entity.to_hash.should == attrs
         saved_entity.id.should == existing_entity_id
 
         new_firstname = execute_simple_string_query( "select firstname from accounts where id = #{saved_entity.id}")

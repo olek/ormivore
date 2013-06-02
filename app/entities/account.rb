@@ -6,8 +6,7 @@ module ORMivoreApp
 
     STATUSES = %w(active inactive deleted).map(&:to_sym).freeze
 
-    attributes :id, :firstname, :lastname, :email, :status
-    optional :id
+    attributes :firstname, :lastname, :email, :status
 
     private
 

@@ -15,9 +15,7 @@ module ORMivoreApp
       if entity.new?
         attrs_to_entity(port.create(entity.to_hash))
       else
-        attrs_to_update = entity.to_hash
-        entity_id = attrs_to_update.delete(:id)
-        count = port.update(attrs_to_update, { :id => to_id(entity_id) })
+        count = port.update(entity.to_hash, { :id => entity.id })
         raise ORMivore::StorageError, 'No records updated' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
 
@@ -29,16 +27,11 @@ module ORMivoreApp
 
     attr_reader :port, :entity_class
 
-    def to_id(value)
-      int_value = value.to_i
-      raise ORMivore::StorageError, "Not a valid id: #{value.inspect}" unless int_value > 0
-
-      int_value
-    end
-
     def attrs_to_entity(attrs)
       if attrs
-        entity_class.new(attrs)
+        entity_id = attrs.delete(:id)
+        attrs.reject! {|k,v| v.nil? }
+        entity_class.new(attrs, entity_id)
       else
         nil
       end

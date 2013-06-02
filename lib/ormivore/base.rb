@@ -2,12 +2,6 @@ module ORMivore
   module Base
     module ClassMethods
 
-#      attr_accessor :storage
-
-      def primary_key
-        :id
-      end
-
       attr_reader :attributes_list
       attr_reader :optional_attributes_list
 
@@ -60,43 +54,19 @@ module ORMivore
       base.extend(ClassMethods)
     end
 
-=begin
-    def save
-      new? ? create : update
-    end
-=end
-
     def new?
-      !attributes[primary_key]
+      !id
     end
 
     def to_hash
       attributes.to_hash.symbolize_keys
     end
 
-=begin
-    def storage
-      self.class.storage
-    end
-=end
-
-    def primary_key
-      self.class.primary_key
-    end
+    attr_reader :id
 
     private
 
     attr_reader :attributes
-
-=begin
-    def create
-      storage.create(self)
-    end
-
-    def update
-      storage.update(self)
-    end
-=end
 
     def validate_presence_of_proper_attributes(attrs)
       self.class.attributes_list.each do |attr|
@@ -108,20 +78,21 @@ module ORMivore
       raise BadArgumentError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
 
-    def initialize(attributes)
+    def initialize(attributes, id = nil)
+      @id = coerce_id(id)
       validate_presence_of_proper_attributes(attributes.symbolize_keys)
 
       @attributes = attributes.symbolize_keys.tap { |attrs|
-        coerce_primary_key(attrs)
         coerce(attrs)
       }.freeze
 
       validate
     end
 
-    def coerce_primary_key(attrs)
-      pk = attrs[primary_key]
-      attrs[primary_key] = Integer(pk) if pk
+    def coerce_id(value)
+      value ? Integer(value) : nil
+    rescue ArgumentError
+      raise ORMivore::BadArgumentError, "Not a valid id: #{value.inspect}"
     end
 
     def coerce(attrs)

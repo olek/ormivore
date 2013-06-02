@@ -59,8 +59,7 @@ describe ORMivoreApp::AddressRepo do
         entity = ORMivoreApp::Address.new(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
-        # TODO this should be == check, not include
-        saved_entity.to_hash.should include(attrs)
+        saved_entity.to_hash.should == attrs
         saved_entity.id.should be_kind_of(Integer)
 
         new_street_1 = execute_simple_string_query( "select street_1 from addresses where id = #{saved_entity.id}")
@@ -74,11 +73,10 @@ describe ORMivoreApp::AddressRepo do
       }
 
       it 'updates record in database' do
-        entity = ORMivoreApp::Address.new(attrs.merge(id: existing_entity_id))
+        entity = ORMivoreApp::Address.new(attrs, existing_entity_id)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
-        # TODO this should be == check, not include
-        saved_entity.to_hash.should include(attrs)
+        saved_entity.to_hash.should == attrs
         saved_entity.id.should == existing_entity_id
 
         new_street_1 = execute_simple_string_query( "select street_1 from addresses where id = #{saved_entity.id}")

@@ -4,10 +4,10 @@ module ORMivoreApp
   class Address
     include ORMivore::Base
 
-    attributes :id, :street_1, :street_2, :city, :postal_code, :country_code, :region_code,
+    attributes :street_1, :street_2, :city, :postal_code, :country_code, :region_code,
         :type, :account_id
 
-    optional :id, :street_2, :region_code, :account_id
+    optional :street_2, :region_code, :account_id
 
     private
 

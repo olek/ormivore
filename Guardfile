@@ -5,7 +5,9 @@ guard :rspec,
   :run_all => { :cli => '--color --drb' },
   :cli => '--color --format nested --drb' do
   watch(%r{^spec/.+_spec\.rb$})
-  watch(%r{^app/(.+)\.rb$})                           { |m| ["spec/#{m[1]}_spec.rb", 'spec/integration'] }
+  #watch(%r{^app/(.+)\.rb$})                           { |m| ["spec/#{m[1]}_spec.rb", 'spec/integration'] }
+  watch(%r{^app/(.+)\.rb$}) { |m| "spec/#{m[1]}_spec.rb" }
+  watch(%r{^spec/(.+)/shared\.rb$}) { |m| "spec/#{m[1]}" }
   watch('spec/spec_(db_)?helper.rb')  { 'spec' }
-  watch(%r{^lib/(.+)\.rb$})     { 'spec' }
+  watch(%r{^lib/(.+)\.rb$}) { 'spec' }
 end
