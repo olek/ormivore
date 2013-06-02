@@ -1,10 +1,15 @@
 source :rubygems
 
-gem 'rake'
-gem 'rspec'
-gem 'sqlite3'
-gem 'activesupport', '~>3.2.3'
-gem 'activerecord', '~>3.2.3'
 gem 'nested_exceptions'
-gem 'factory_girl'
-gem 'database_cleaner'
+
+group :development do
+  gem 'rake'
+  gem 'activesupport', '~>3.2.3'
+  gem 'activerecord', '~>3.2.3'
+  gem 'sqlite3'
+  gem 'rspec'
+  gem 'factory_girl'
+  gem 'database_cleaner'
+  gem 'guard-rspec'
+  gem 'spork', '~> 1.0rc'
+end
