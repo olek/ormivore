@@ -15,7 +15,9 @@ module ORMivoreApp
       if entity.new?
         attrs_to_entity(port.create(entity.to_hash))
       else
-        count = port.update(entity.to_hash, { :id => to_id(entity.id) })
+        attrs_to_update = entity.to_hash
+        entity_id = attrs_to_update.delete(:id)
+        count = port.update(attrs_to_update, { :id => to_id(entity_id) })
         raise ORMivore::StorageError, 'No records updated' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
 

@@ -45,10 +45,7 @@ describe ORMivoreApp::AccountRepo do
     context 'when entity is not new' do
       before do
         entity.stub(:new?).and_return(false)
-        # TODO noticed problem - code will attempt to update id among other
-        # attributes, not nice
-        # entity.stub(:to_hash).and_return(id: 123, foo: 'bar')
-        entity.stub(:id).and_return(123)
+        entity.stub(:to_hash).and_return(id: 123, foo: 'bar')
         port.stub(:update).with({ foo: 'bar' }, id: 123).and_return(1)
       end
 
@@ -63,14 +60,14 @@ describe ORMivoreApp::AccountRepo do
         subject.persist(entity).should == entity
       end
 
-      # TODO is this even valid behavioor here?
+      # TODO is this even valid behavior here?
       it 'handles stringified id on entity' do
-        entity.stub(:id).and_return('123')
+        entity.stub(:to_hash).and_return(id: '123', foo: 'bar')
         subject.persist(entity).should == entity
       end
 
       it 'raises error if entity id is not integer' do
-        entity.stub(:id).and_return('foo')
+        entity.stub(:to_hash).and_return(id: 'foo', foo: 'bar')
         expect {
           subject.persist(entity)
         }.to raise_error ORMivore::StorageError
