@@ -17,14 +17,14 @@ module App
 
     def from_storage(attrs)
       attrs.dup.tap { |copy|
-        copy[:type] = REVERSE_ADDRESS_TYPE_MAP[copy[:type]]
+        copy[:type] = REVERSE_ADDRESS_TYPE_MAP[copy[:type]] if copy[:type]
         addressable_id, addressable_type = copy.delete(:addressable_id), copy.delete(:addressable_type)
         if addressable_id && addressable_type
           replacement_attr = case addressable_type
           when 'Account'
             :account_id
           else
-            raise ORMivore::StorageError, "Unknown addressable_type #{addressable_type.inspect}"
+            raise ORMivore::BadArgumentError, "Unknown addressable_type #{addressable_type.inspect}"
           end
           copy[replacement_attr] = addressable_id
         end
@@ -33,7 +33,7 @@ module App
 
     def to_storage(attrs)
       attrs.dup.tap { |copy|
-        copy[:type] = ADDRESS_TYPE_MAP[copy[:type]]
+        copy[:type] = ADDRESS_TYPE_MAP[copy[:type]] if copy[:type]
         account_id = copy.delete(:account_id)
         if account_id
           copy[:addressable_id] = account_id

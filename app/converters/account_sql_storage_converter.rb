@@ -18,13 +18,13 @@ module App
 
     def from_storage(attrs)
       attrs.dup.tap { |copy|
-        copy[:status] = REVERSE_STATUS_MAP[copy[:status]]
+        copy[:status] = REVERSE_STATUS_MAP[copy[:status]] if copy[:status]
       }
     end
 
     def to_storage(attrs)
       attrs.dup.tap { |copy|
-        copy[:status] = STATUS_MAP[copy[:status]]
+        copy[:status] = STATUS_MAP[copy[:status]] if copy[:status]
       }
     end
   end
