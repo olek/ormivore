@@ -54,10 +54,6 @@ module ORMivore
       base.extend(ClassMethods)
     end
 
-    def new?
-      !id
-    end
-
     def to_hash
       attributes.to_hash.symbolize_keys
     end

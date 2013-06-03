@@ -1,7 +1,6 @@
 shared_examples_for 'a repo' do
   let(:entity) {
-    # TODO .new? is too similar to .new, confusing, fix the code
-    double('entity', new?: true, id: nil, to_hash: { foo: 'bar' })
+    double('entity', id: nil, to_hash: { foo: 'bar' })
   }
 
   let(:entity_class) {
@@ -47,7 +46,6 @@ shared_examples_for 'a repo' do
 
     context 'when entity is not new' do
       before do
-        entity.stub(:new?).and_return(false)
         entity.stub(:id).and_return(123)
         port.stub(:update).with({ foo: 'bar' }, id: 123).and_return(1)
       end

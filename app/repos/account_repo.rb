@@ -12,14 +12,14 @@ module App
     end
 
     def persist(entity)
-      if entity.new?
-        attrs_to_entity(port.create(entity.to_hash))
-      else
+      if entity.id
         count = port.update(entity.to_hash, { :id => entity.id })
         raise ORMivore::StorageError, 'No records updated' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
 
         entity
+      else
+        attrs_to_entity(port.create(entity.to_hash))
       end
     end
 
