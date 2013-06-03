@@ -1,4 +1,4 @@
-module ORMivoreApp
+module App
   class AccountStorageArAdapter
 
     def initialize(converter = nil)

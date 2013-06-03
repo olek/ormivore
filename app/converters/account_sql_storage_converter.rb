@@ -1,6 +1,6 @@
 # coding: utf-8
 
-module ORMivoreApp
+module App
   class AccountSqlStorageConverter
     STATUS_MAP = Hash.new { |h, k|
       raise ArgumentError, "Status #{k.inspect} not known"

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-module ORMivoreApp
+module App
   class Address
     include ORMivore::Base
 

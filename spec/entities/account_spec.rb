@@ -1,7 +1,7 @@
 require 'spec_helper'
 require_relative 'shared'
 
-describe ORMivoreApp::Account do
+describe App::Account do
   it_behaves_like 'an entity' do
     let(:attrs) do
       v = test_value

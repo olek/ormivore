@@ -1,10 +1,10 @@
 # coding: utf-8
 
-module ORMivoreApp
+module App
   class AccountRepo
     def initialize(port, entity_class = nil)
       @port = port
-      @entity_class = entity_class || ORMivoreApp::Account
+      @entity_class = entity_class || App::Account
     end
 
     def find_by_id(id, options = {})

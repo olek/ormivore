@@ -1,6 +1,6 @@
 # coding: utf-8
 
-module ORMivoreApp
+module App
   class AddressSqlStorageConverter
     ADDRESS_TYPE_MAP = Hash.new { |h, k|
       raise ArgumentError, "Addressable type #{k.inspect} not known"

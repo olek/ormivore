@@ -1,5 +1,5 @@
 FactoryGirl.define do
-  factory :account, class: ORMivoreApp::AccountStorageArAdapter::AccountRecord do
+  factory :account, class: App::AccountStorageArAdapter::AccountRecord do
     login 'test@test.com'
     crypted_password '1234567890'
     firstname 'John'
@@ -15,7 +15,7 @@ FactoryGirl.define do
     end
   end
 
-  factory :shipping_address, class: ORMivoreApp::AddressStorageArAdapter::AddressRecord do
+  factory :shipping_address, class: App::AddressStorageArAdapter::AddressRecord do
     street_1 'Some street 123'
     street_2 'appartment 1'
     city 'Test'

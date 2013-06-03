@@ -1,11 +1,11 @@
 # coding: utf-8
 
-module ORMivoreApp
+module App
   class AddressRepo
 
     def initialize(port, entity_class = nil)
       @port = port
-      @entity_class = entity_class || ORMivoreApp::Address
+      @entity_class = entity_class || App::Address
     end
 
     def find_by_id(id, options = {})

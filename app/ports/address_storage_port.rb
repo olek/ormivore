@@ -1,4 +1,4 @@
-module ORMivoreApp
+module App
   class AddressStoragePort
     # a good place to add generic storage functionality,
     # like 'around' logging/performance monitoring/notifications/etc

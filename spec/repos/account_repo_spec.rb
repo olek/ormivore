@@ -1,6 +1,6 @@
 require 'spec_helper'
 require_relative 'shared'
 
-describe ORMivoreApp::AccountRepo do
+describe App::AccountRepo do
   it_behaves_like 'a repo'
 end

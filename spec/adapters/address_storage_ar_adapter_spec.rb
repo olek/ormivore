@@ -10,10 +10,10 @@ module Helpers
   end
 end
 
-describe ORMivoreApp::AddressStorageArAdapter do
+describe App::AddressStorageArAdapter do
   include Helpers
 
-  subject { described_class.new(ORMivoreApp::NoopConverter.new) }
+  subject { described_class.new(App::NoopConverter.new) }
 
   let(:attrs) do
     v = 'Foo'

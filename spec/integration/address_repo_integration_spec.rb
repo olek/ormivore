@@ -10,13 +10,13 @@ module Helpers
   end
 end
 
-describe ORMivoreApp::AddressRepo do
+describe App::AddressRepo do
   include Helpers
 
   subject {
     described_class.new(
-      ORMivoreApp::AddressStoragePort.new(
-        ORMivoreApp::AddressStorageArAdapter.new
+      App::AddressStoragePort.new(
+        App::AddressStorageArAdapter.new
       )
     )
   }
@@ -56,7 +56,7 @@ describe ORMivoreApp::AddressRepo do
   describe '#persist' do
     context 'when entity is new' do
       it 'creates and returns new entity' do
-        entity = ORMivoreApp::Address.new(attrs)
+        entity = App::Address.new(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.to_hash.should == attrs
@@ -73,7 +73,7 @@ describe ORMivoreApp::AddressRepo do
       }
 
       it 'updates record in database' do
-        entity = ORMivoreApp::Address.new(attrs, existing_entity_id)
+        entity = App::Address.new(attrs, existing_entity_id)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.to_hash.should == attrs

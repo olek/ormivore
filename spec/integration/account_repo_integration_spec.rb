@@ -10,13 +10,13 @@ module Helpers
   end
 end
 
-describe ORMivoreApp::AccountRepo do
+describe App::AccountRepo do
   include Helpers
 
   subject {
     described_class.new(
-      ORMivoreApp::AccountStoragePort.new(
-        ORMivoreApp::AccountStorageArAdapter.new
+      App::AccountStoragePort.new(
+        App::AccountStorageArAdapter.new
       )
     )
   }
@@ -48,7 +48,7 @@ describe ORMivoreApp::AccountRepo do
   describe '#persist' do
     context 'when entity is new' do
       it 'creates and returns new entity' do
-        entity = ORMivoreApp::Account.new(attrs)
+        entity = App::Account.new(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.to_hash.should == attrs
@@ -65,7 +65,7 @@ describe ORMivoreApp::AccountRepo do
       }
 
       it 'updates record in database' do
-        entity = ORMivoreApp::Account.new(attrs, existing_entity_id)
+        entity = App::Account.new(attrs, existing_entity_id)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.to_hash.should == attrs

@@ -1,4 +1,4 @@
-module ORMivoreApp
+module App
   module Storage
     module AR
       class AddressStorage
@@ -18,7 +18,7 @@ module ORMivoreApp
         end
 
         def self.model_class
-          ORMivoreApp::Address
+          App::Address
         end
 
         def self.create(model)
@@ -84,7 +84,7 @@ module ORMivoreApp
           attributes.except(*%w(type addressable_id addressable_type created_at updated_at)).tap { |attrs|
             attrs[:type] = AddressTypeConverter.storage_to_model(type)
             # TODO sometimes lazy loading is needed
-            attrs[:addressable] = ORMivoreApp.const_get(addressable_type, false).
+            attrs[:addressable] = App.const_get(addressable_type, false).
               find_by_id(addressable_id)
           }
         end
@@ -108,4 +108,4 @@ module ORMivoreApp
   end
 end
 
-ORMivoreApp::Address.storage = ORMivoreApp::Storage::AR::AddressStorage
+App::Address.storage = App::Storage::AR::AddressStorage

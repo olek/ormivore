@@ -1,4 +1,4 @@
-module ORMivoreApp
+module App
   class AddressStorageArAdapter
 
     def initialize(converter = nil)

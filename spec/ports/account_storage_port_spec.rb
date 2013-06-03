@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ORMivoreApp::AccountStoragePort do
+describe App::AccountStoragePort do
   let(:adapter) {
     double('adapter')
   }

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-module ORMivoreApp
+module App
   class NoopConverter
     def from_storage(attrs)
       attrs

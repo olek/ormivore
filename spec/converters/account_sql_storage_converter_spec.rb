@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ORMivoreApp::AccountSqlStorageConverter do
+describe App::AccountSqlStorageConverter do
   let(:attrs) do
     v = 'Foo'
     { firstname: v, lastname: v, email: v }

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ORMivoreApp::AddressStoragePort do
+describe App::AddressStoragePort do
   let(:adapter) {
     double('adapter')
   }
