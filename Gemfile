@@ -11,5 +11,4 @@ group :development do
   gem 'factory_girl'
   gem 'database_cleaner'
   gem 'guard-rspec'
-  gem 'spork', '~> 1.0rc'
 end
