@@ -9,7 +9,8 @@ module App
     end
 
     def find(conditions, options = {})
-      # TODO verify conditions and options
+      # TODO verify conditions to contain only keys that match attribute names and value of proper type
+      validate_finder_options(options)
       adapter.find(conditions, options)
     end
 
@@ -30,5 +31,17 @@ module App
     private
 
     attr_reader :adapter
+
+    def validate_finder_options(options)
+      options = options.dup
+      valid = true
+
+      valid = false unless [nil, true, false].include?(options.delete(:quiet))
+      valid = false unless options.empty?
+
+      raise ORMivore::BadArgumentError, "Invalid finder options #{options.inspect}" unless valid
+
+      nil
+    end
   end
 end
