@@ -2,7 +2,7 @@
 
 module App
   class Account
-    include ORMivore::Base
+    include ORMivore::Entity
 
     STATUSES = %w(active inactive deleted).map(&:to_sym).freeze
 

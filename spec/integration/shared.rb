@@ -8,7 +8,7 @@ module Helpers
   end
 end
 
-shared_examples_for 'a repo' do
+shared_examples_for 'an integrated repo' do
   include Helpers
 
   let(:test_value) { 'Foo' }

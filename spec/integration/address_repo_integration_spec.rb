@@ -30,5 +30,5 @@ describe App::AddressRepo do
     FactoryGirl.create(:shipping_address, test_attr => test_value, addressable_id: account_id)
   end
 
-  it_behaves_like 'a repo'
+  it_behaves_like 'an integrated repo'
 end

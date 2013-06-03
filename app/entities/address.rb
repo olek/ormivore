@@ -2,7 +2,7 @@
 
 module App
   class Address
-    include ORMivore::Base
+    include ORMivore::Entity
 
     attributes :street_1, :street_2, :city, :postal_code, :country_code, :region_code,
         :type, :account_id

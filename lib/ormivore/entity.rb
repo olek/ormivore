@@ -1,5 +1,5 @@
 module ORMivore
-  module Base
+  module Entity
     module ClassMethods
 
       attr_reader :attributes_list

@@ -2,4 +2,7 @@
 #$LOAD_PATH.unshift(File.join(root))
 
 require 'ormivore/errors'
-require 'ormivore/base'
+require 'ormivore/entity'
+require 'ormivore/port'
+require 'ormivore/repo'
+require 'ormivore/ar_adapter'
