@@ -1,9 +1,7 @@
 require 'spec_helper'
-require_relative 'shared'
+require_relative 'shared_ar'
 
 describe App::AddressStorageArAdapter do
-  include Helpers
-
   let(:account_id) { FactoryGirl.create(:account).id }
 
   let(:attrs) do

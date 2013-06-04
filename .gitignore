@@ -1,5 +1,6 @@
 .rbenv-version
 .ruby-version
+tags
 
 .bundle
 vendor/bundle

@@ -1,5 +1,5 @@
 require 'spec_helper'
-require_relative 'shared'
+require_relative 'shared_ar'
 
 describe App::AccountRepo do
   let(:attrs) do

@@ -1,9 +1,7 @@
 require 'spec_helper'
-require_relative 'shared'
+require_relative 'shared_ar'
 
 describe App::AccountStorageArAdapter do
-  include Helpers
-
   let(:attrs) do
     v = 'Foo'
     { firstname: v, lastname: v, email: v, status: 1 }
