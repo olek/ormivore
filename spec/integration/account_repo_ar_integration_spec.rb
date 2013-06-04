@@ -10,18 +10,12 @@ describe App::AccountRepo do
   let(:test_attr) { :firstname }
   let(:entity_table) { 'accounts' }
   let(:entity_class) { App::Account }
-
-  subject {
-    described_class.new(
-      App::AccountStoragePort.new(
-        App::AccountStorageArAdapter.new
-      )
-    )
-  }
+  let(:adapter) { App::AccountStorageArAdapter.new }
+  let(:port) { App::AccountStoragePort.new(adapter) }
 
   def create_entity
-    FactoryGirl.create(:account, test_attr => test_value)
+    FactoryGirl.create(:account, test_attr => test_value).attributes.symbolize_keys
   end
 
-  it_behaves_like 'an integrated repo'
+  it_behaves_like 'an integrated activerecord repo'
 end

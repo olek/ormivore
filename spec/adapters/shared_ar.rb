@@ -1,15 +1,11 @@
-module Helpers
-  def execute_simple_int_query(query)
-    execute_simple_string_query(query).to_i
-  end
-
+shared_examples_for 'an adapter' do
   def execute_simple_string_query(query)
     ActiveRecord::Base.connection.execute(query).first[0]
   end
-end
 
-shared_examples_for 'an adapter' do
-  include Helpers
+  def load_test_value(id)
+    execute_simple_string_query( "select #{test_attr.to_s} from #{entity_table} where id = #{id}")
+  end
 
   let(:test_value) { 'Foo' }
 
@@ -31,9 +27,9 @@ shared_examples_for 'an adapter' do
     context 'when id points to existing entity' do
       it 'should return proper entity attrs' do
         entity = create_entity
-        data = subject.find(id: entity.id)
+        data = subject.find(id: entity[:id])
         data.should_not be_nil
-        data[test_attr].should == entity.public_send(test_attr)
+        data[test_attr].should == entity[test_attr]
       end
     end
   end
@@ -57,8 +53,7 @@ shared_examples_for 'an adapter' do
       it 'inserts record in database' do
         data = subject.create(attrs)
 
-        new_value = execute_simple_string_query( "select #{test_attr.to_s} from #{entity_table} where id = #{data[:id]}")
-        new_value.should == test_value
+        load_test_value(data[:id]).should == test_value
       end
     end
   end
@@ -75,24 +70,23 @@ shared_examples_for 'an adapter' do
       it 'returns update count 1' do
         entity = create_entity
 
-        subject.update(attrs, id: entity.id).should == 1
+        subject.update(attrs, id: entity[:id]).should == 1
       end
 
       it 'updates record attributes' do
         entity = create_entity
 
-        subject.update(attrs, id: entity.id)
+        subject.update({test_attr => 'Bar'}, id: entity[:id])
 
-        new_value = execute_simple_string_query( "select #{test_attr.to_s} from #{entity_table} where id = #{entity.id}")
-        new_value.should == test_value
+        load_test_value(entity[:id]).should == 'Bar'
       end
     end
 
     context 'when 2 matching records existed' do
       it 'returns update count 2' do
         entity_ids = []
-        entity_ids << create_entity.id
-        entity_ids << create_entity.id
+        entity_ids << create_entity[:id]
+        entity_ids << create_entity[:id]
 
         subject.update(attrs, id: entity_ids).should == 2
       end

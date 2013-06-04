@@ -1,11 +1,15 @@
 shared_examples_for 'a memory adapter' do
-  let(:test_value) { 'Foo' }
-
-  subject { described_class.new(App::NoopConverter.new) }
-
   def create_entity
     subject.create(attrs)
   end
+
+  def load_test_value(id)
+    subject.storage.first { |o| o[:id] = id }[test_attr]
+  end
+
+  let(:test_value) { 'Foo' }
+
+  subject { described_class.new(App::NoopConverter.new) }
 
   it 'responds to find' do
     subject.should respond_to(:find)
@@ -51,8 +55,7 @@ shared_examples_for 'a memory adapter' do
 
         data.should_not be_nil
 
-        new_value = subject.storage.first { |o| o[:id] = data[:id] }[test_attr]
-        new_value.should == test_value
+        load_test_value(data[:id]).should == test_value
       end
     end
   end
@@ -77,8 +80,7 @@ shared_examples_for 'a memory adapter' do
 
         subject.update({test_attr => 'Bar'}, id: entity[:id])
 
-        new_value = subject.storage.first { |o| o[:id] = entity[:id] }[test_attr]
-        new_value.should == 'Bar'
+        load_test_value(entity[:id]).should == 'Bar'
       end
     end
 

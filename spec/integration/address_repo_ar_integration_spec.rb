@@ -17,18 +17,12 @@ describe App::AddressRepo do
   let(:test_attr) { :street_1 }
   let(:entity_table) { 'addresses' }
   let(:entity_class) { App::Address }
-
-  subject {
-    described_class.new(
-      App::AddressStoragePort.new(
-        App::AddressStorageArAdapter.new
-      )
-    )
-  }
+  let(:adapter) { App::AddressStorageArAdapter.new }
+  let(:port) { App::AddressStoragePort.new(adapter) }
 
   def create_entity
-    FactoryGirl.create(:shipping_address, test_attr => test_value, addressable_id: account_id)
+    FactoryGirl.create(:shipping_address, test_attr => test_value, addressable_id: account_id).attributes.symbolize_keys
   end
 
-  it_behaves_like 'an integrated repo'
+  it_behaves_like 'an integrated activerecord repo'
 end
