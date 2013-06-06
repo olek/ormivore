@@ -1,6 +1,6 @@
 shared_examples_for 'a repo' do
   let(:entity) {
-    double('entity', id: nil, to_hash: { foo: 'bar' })
+    double('entity', id: nil, changes: { foo: 'bar' })
   }
 
   let(:entity_class) {
@@ -50,15 +50,17 @@ shared_examples_for 'a repo' do
         port.stub(:update).with({ foo: 'bar' }, id: 123).and_return(1)
       end
 
-      it 'delegates to port.update' do
+      it 'delegates changes to port.update' do
+        entity.stub(:attributes).and_return(a: 'b')
+        entity.stub(:create).with({a: 'b'}, entity.id).and_return(:baz)
         port.should_receive(:update).with({ foo: 'bar' }, id: 123).and_return(1)
         subject.persist(entity)
       end
 
-      # TODO really? the same entity? For now, yes, but not for long -
-      # 'dirty' flags will need to be updated
-      it 'returns same entity' do
-        subject.persist(entity).should == entity
+      it 'creates new entity with all attributes' do
+        entity.should_receive(:attributes).and_return(a: 'b')
+        entity.should_receive(:create).with({a: 'b'}, entity.id).and_return(:baz)
+        subject.persist(entity).should == :baz
       end
 
       it 'raises error if record was not updated' do

@@ -22,13 +22,13 @@ module ORMivore
 
     def persist(entity)
       if entity.id
-        count = port.update(entity.to_hash, { :id => entity.id })
+        count = port.update(entity.changes, { :id => entity.id })
         raise ORMivore::StorageError, 'No records updated' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
 
-        entity
+        entity.create(entity.attributes, entity.id)
       else
-        attrs_to_entity(port.create(entity.to_hash))
+        attrs_to_entity(port.create(entity.changes))
       end
     end
 

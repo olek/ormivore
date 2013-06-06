@@ -12,7 +12,7 @@ module App
     private
 
     def coerce(attrs)
-      attrs[:type] = attrs[:type].to_sym
+      attrs[:type] = attrs[:type].to_sym if attrs[:type]
     end
 
     def validate

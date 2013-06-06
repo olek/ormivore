@@ -28,20 +28,11 @@ module ORMivore
 
         methods.each do |method|
           method = method.to_s
-
-            exception = %(raise "#{self}##{method} delegated to attributes[:#{method}], but attributes is nil: \#{self.inspect}")
-
-            module_eval(<<-EOS, file, line - 1)
-              def #{method}(*args, &block)
-                attributes[:#{method}]
-              rescue NoMethodError
-                if attributes.nil?
-                  #{exception}
-                else
-                  raise
-                end
-              end
-            EOS
+          module_eval(<<-EOS, file, line - 1)
+            def #{method}
+              dirty_attributes[:#{method}] || base_attributes[:#{method}]
+            end
+          EOS
         end
       end
 
@@ -54,17 +45,50 @@ module ORMivore
       base.extend(ClassMethods)
     end
 
-    def to_hash
-      attributes.to_hash.symbolize_keys
+    def attributes
+      all_attributes
     end
 
     attr_reader :id
 
+    def create(attrs, id = nil)
+      self.class.new(attrs, id)
+    end
+
+    def prototype(attrs)
+      if id
+        self.class.new(base_attributes, id, dirty_attributes.merge(attrs))
+      else
+        self.class.new(dirty_attributes.merge(attrs))
+      end
+    end
+
+    def changes
+      dirty_attributes
+    end
+
+    protected
+
+    def dirty_attributes=(attrs)
+      if dirty_attributes
+        raise InvalidStateError, "Dirty attributes already set to #{dirty_attributes.inspect}, can not change to #{attrs}"
+      else
+        @dirty_attributes = attrs
+      end
+    end
+
     private
 
-    attr_reader :attributes
+    attr_reader :base_attributes, :dirty_attributes
 
-    def validate_presence_of_proper_attributes(attrs)
+    def all_attributes
+      # memory / performance tradeoff can be played with here
+      base_attributes.merge(dirty_attributes)
+    end
+
+    def validate_presence_of_proper_attributes
+      attrs = all_attributes
+
       self.class.attributes_list.each do |attr|
         unless attrs.delete(attr) || self.class.optional_attributes_list.include?(attr)
           raise BadAttributesError, "Missing attribute '#{attr}'"
@@ -74,13 +98,24 @@ module ORMivore
       raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
 
-    def initialize(attributes, id = nil)
+    def initialize(attrs, id = nil, dirty_attrs = {})
       @id = coerce_id(id)
-      validate_presence_of_proper_attributes(attributes.symbolize_keys)
 
-      @attributes = attributes.symbolize_keys.tap { |attrs|
-        coerce(attrs)
-      }.freeze
+      coerced_attrs = attrs.symbolize_keys.tap { |h| coerce(h) }.freeze
+
+      if id
+        @base_attributes = coerced_attrs
+        @dirty_attributes =
+          dirty_attrs.symbolize_keys.tap { |h| coerce(h) }.
+            reject { |k, v|
+              coerced_attrs[k] == v
+            }.freeze
+      else
+        @base_attributes = {}.freeze
+        @dirty_attributes = coerced_attrs
+      end
+
+      validate_presence_of_proper_attributes
 
       validate
     end
@@ -94,9 +129,5 @@ module ORMivore
     def coerce(attrs)
       # override me!
     end
-
-#    def prototype(attrs)
-#      self.class.new(attributes.merge(attrs))
-#    end
   end
 end

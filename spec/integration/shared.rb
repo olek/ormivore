@@ -28,7 +28,7 @@ shared_examples_for 'an integrated repo' do
         entity = entity_class.new(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
-        saved_entity.to_hash.should == attrs
+        saved_entity.attributes.should == attrs
         saved_entity.id.should be_kind_of(Integer)
 
         load_test_value(saved_entity.id).should == attrs[test_attr]
@@ -41,10 +41,10 @@ shared_examples_for 'an integrated repo' do
       }
 
       it 'updates record in database' do
-        entity = entity_class.new(attrs, existing_entity_id)
+        entity = entity_class.new({}, existing_entity_id, attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
-        saved_entity.to_hash.should == attrs
+        saved_entity.attributes.should == attrs
         saved_entity.id.should == existing_entity_id
 
         load_test_value(saved_entity.id).should == attrs[test_attr]

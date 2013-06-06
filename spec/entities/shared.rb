@@ -54,7 +54,7 @@ shared_examples_for 'an entity' do
 
   describe '#attributes' do
     it 'should return hash with all the model attributes keyed as symbols' do
-      subject.to_hash.should == attrs
+      subject.attributes.should == attrs
     end
   end
 end
