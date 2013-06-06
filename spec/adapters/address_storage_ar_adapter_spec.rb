@@ -22,5 +22,5 @@ describe App::AddressStorageArAdapter do
     FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account')
   end
 
-  it_behaves_like 'an adapter'
+  it_behaves_like 'an activerecord adapter'
 end

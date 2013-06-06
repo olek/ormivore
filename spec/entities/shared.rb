@@ -13,13 +13,13 @@ shared_examples_for 'an entity' do
     it 'should fail if not enough attributes are provided' do
       expect {
         described_class.new(test_attr => test_value)
-      }.to raise_error ORMivore::BadArgumentError
+      }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'should fail if unknown attributes are specified' do
        expect {
         described_class.new(attrs.merge(foo: 'Foo'))
-      }.to raise_error ORMivore::BadArgumentError
+      }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'should allow specifying id' do

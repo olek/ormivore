@@ -54,7 +54,7 @@ module ORMivore
       if quiet
         record ? entity_attributes(record) : nil
       else
-        raise ORMivore::RecordNotFound, "#{ar_class} with conditions #{conditions} was not found" if record.nil?
+        raise RecordNotFound, "#{ar_class} with conditions #{conditions} was not found" if record.nil?
         entity_attributes(record)
       end
     end
@@ -65,10 +65,14 @@ module ORMivore
           extend_with_defaults(
             converter.to_storage(attrs))) { |o| o.id = attrs[:id] }
       )
+    rescue ActiveRecord::ActiveRecordError => e
+      raise StorageError.new(e)
     end
 
     def update(attrs, conditions)
       ar_class.update_all(converter.to_storage(attrs), conditions)
+    rescue ActiveRecord::ActiveRecordError => e
+      raise StorageError.new(e)
     end
 
     private

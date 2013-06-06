@@ -22,7 +22,7 @@ describe App::AddressSqlStorageConverter do
     it 'raises error converting unknown addressable_type' do
       expect {
         subject.from_storage(attrs.merge(addressable_type: 'Foo', addressable_id: 123))
-      }.to raise_error ORMivore::BadArgumentError
+      }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'passes through other attributes' do

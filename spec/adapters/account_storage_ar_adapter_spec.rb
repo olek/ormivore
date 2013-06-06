@@ -14,5 +14,5 @@ describe App::AccountStorageArAdapter do
     FactoryGirl.create(:account)
   end
 
-  it_behaves_like 'an adapter'
+  it_behaves_like 'an activerecord adapter'
 end

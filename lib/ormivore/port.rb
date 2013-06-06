@@ -1,5 +1,16 @@
+# TODO maybe add validations for conditions, if not attributes
 module ORMivore
   module Port
+    module ClassMethods
+      attr_reader :attributes
+
+      private
+      attr_writer :attributes
+    end
+
+    def self.included(base)
+      base.extend(ClassMethods)
+    end
     # a good place to add generic storage functionality,
     # like 'around' logging/performance monitoring/notifications/etc
     # first obvious candidate is exception handling
@@ -11,6 +22,7 @@ module ORMivore
     def find(conditions, options = {})
       # TODO verify conditions to contain only keys that match attribute names and value of proper type
       validate_finder_options(options)
+
       adapter.find(conditions, options)
     end
 
@@ -31,6 +43,17 @@ module ORMivore
     private
 
     attr_reader :adapter
+
+=begin
+    def attributes
+      self.class.attributes
+    end
+
+    def validate_conditions(conditions)
+      extra = conditions.keys - attributes.keys
+      raise BadConditionsError, extra.join("\n") unless extra.empty?
+    end
+=end
 
     def validate_finder_options(options)
       options = options.dup

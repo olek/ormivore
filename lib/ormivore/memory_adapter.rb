@@ -17,12 +17,14 @@ module ORMivore
       @converter = converter || self.class.default_converter_class.new
     end
 
+    # TODO it should return multiple records, not one!
     def find(conditions, options = {})
       # TODO how about other finder options, like order, limit, offset?
       quiet = options.fetch(:quiet, false)
       record = select_from_storage(conditions).first
 
-      raise ORMivore::RecordNotFound, "#{self.class.entity_name} with conditions #{conditions} was not found" if record.nil? && !quiet
+      # raising error is port's job
+      raise RecordNotFound, "#{self.class.entity_name} with conditions #{conditions} was not found" if record.nil? && !quiet
 
       record
     end
@@ -30,7 +32,7 @@ module ORMivore
     def create(attrs)
       id = attrs[:id]
       if id
-        raise StorageError if storage.any? { |o| o[:id] == id }
+        raise RecordAlreadyExists if storage.any? { |o| o[:id] == id }
       else
         id = next_id
       end

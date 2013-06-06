@@ -67,11 +67,11 @@ module ORMivore
     def validate_presence_of_proper_attributes(attrs)
       self.class.attributes_list.each do |attr|
         unless attrs.delete(attr) || self.class.optional_attributes_list.include?(attr)
-          raise BadArgumentError, "Missing attribute '#{attr}'"
+          raise BadAttributesError, "Missing attribute '#{attr}'"
         end
       end
 
-      raise BadArgumentError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
+      raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
 
     def initialize(attributes, id = nil)

@@ -24,7 +24,7 @@ module App
           when 'Account'
             :account_id
           else
-            raise ORMivore::BadArgumentError, "Unknown addressable_type #{addressable_type.inspect}"
+            raise ORMivore::BadAttributesError, "Unknown addressable_type #{addressable_type.inspect}"
           end
           copy[replacement_attr] = addressable_id
         end
