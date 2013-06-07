@@ -87,4 +87,40 @@ shared_examples_for 'an entity' do
       o.public_send(test_attr).should == 'dirty'
     end
   end
+
+  describe '#create' do
+    it 'delegates to constructor' do
+      subject.create(attrs).should be_kind_of(described_class)
+    end
+  end
+
+  describe '#prototype' do
+    subject { described_class.new(attrs, 123) }
+
+    it 'creates copy of this entity' do
+      proto = subject.prototype({})
+      proto.should_not == subject
+      proto.attributes.should == subject.attributes
+    end
+
+    it 'adds changes to the copy it makes' do
+      proto = subject.prototype(test_attr => 'dirty')
+      proto.attributes.should == attrs.merge(test_attr => 'dirty')
+    end
+  end
+
+  describe '#changes' do
+    it 'returns all attributes on new entity' do
+      subject.changes.should == attrs
+    end
+
+    it 'returns no attributes on "persisted" entity' do
+      described_class.new(attrs, 123).changes.should be_empty
+    end
+
+    it 'returns incremental changes added by prototyping' do
+      o = described_class.new(attrs, 123)
+      o.prototype(test_attr => 'dirty').changes.should == { test_attr => 'dirty' }
+    end
+  end
 end

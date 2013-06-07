@@ -33,6 +33,13 @@ shared_examples_for 'an integrated repo' do
 
         load_test_value(saved_entity.id).should == attrs[test_attr]
       end
+
+      it 'creates entity with no "changes" recorded on it' do
+        entity = entity_class.new(attrs)
+        entity.changes.should == attrs
+        saved_entity = subject.persist(entity)
+        saved_entity.changes.should be_empty
+      end
     end
 
     context 'when entity is not new' do
@@ -48,6 +55,13 @@ shared_examples_for 'an integrated repo' do
         saved_entity.id.should == existing_entity_id
 
         load_test_value(saved_entity.id).should == attrs[test_attr]
+      end
+
+      it 'creates entity with no "changes" recorded on it' do
+        entity = entity_class.new({}, existing_entity_id, attrs)
+        entity.changes.should == attrs
+        saved_entity = subject.persist(entity)
+        saved_entity.changes.should be_empty
       end
     end
   end
