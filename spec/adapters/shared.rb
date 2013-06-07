@@ -9,10 +9,8 @@ shared_examples_for 'an adapter' do
 
   describe '#find' do
     context 'when conditions points to non-existing entity' do
-      it 'should raise error' do
-        expect {
-          subject.find(id: 123456789)
-        }.to raise_error ORMivore::RecordNotFound
+      it 'should return empty array' do
+        subject.find(id: 123456789).should be_empty
       end
     end
 
@@ -21,7 +19,7 @@ shared_examples_for 'an adapter' do
         entity = create_entity
         data = subject.find(id: entity[:id])
         data.should_not be_nil
-        data[test_attr].should == entity[test_attr]
+        data.first[test_attr].should == entity[test_attr]
       end
     end
   end

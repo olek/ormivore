@@ -48,15 +48,7 @@ module ORMivore
     end
 
     def find(conditions, options = {})
-      # TODO how about other finder options, like order, limit, offset?
-      quiet = options.fetch(:quiet, false)
-      record = ar_class.first(:conditions => conditions)
-      if quiet
-        record ? entity_attributes(record) : nil
-      else
-        raise RecordNotFound, "#{ar_class} with conditions #{conditions} was not found" if record.nil?
-        entity_attributes(record)
-      end
+      ar_class.all(:conditions => conditions).map { |r| entity_attributes(r) }
     end
 
     def create(attrs)

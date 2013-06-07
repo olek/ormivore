@@ -4,7 +4,7 @@ shared_examples_for 'a repo' do
   }
 
   let(:entity_class) {
-    double('entity_class', new: :new_entity)
+    double('entity_class', new: :new_entity, name: 'FakeEntity')
   }
 
   let(:port) {
@@ -15,19 +15,28 @@ shared_examples_for 'a repo' do
 
   describe '#find_by_id' do
     it 'delegates to port' do
-      port.should_receive(:find).with({ id: :foo }, {})
+      port.should_receive(:find).with({ id: :foo }, {}).and_return([a: 'b'])
       subject.find_by_id(:foo)
     end
 
     it 'creates and returns new entity' do
-      port.stub(:find).with({ id: 123 }, {}).and_return(foo: 'bar')
+      port.stub(:find).with({ id: 123 }, {}).and_return([foo: 'bar'])
       subject.find_by_id(123).should == :new_entity
     end
 
     it 'creates new entity with proper attributes' do
-      port.stub(:find).with({ id: :foo }, {}).and_return(id: 123, foo: 'bar')
+      port.stub(:find).with({ id: :foo }, {}).and_return([id: 123, foo: 'bar'])
       entity_class.should_receive(:new).with({foo: 'bar'}, 123)
       subject.find_by_id(:foo)
+    end
+
+    context 'when port returns empty array' do
+      it 'should raise error' do
+        expect {
+          port.should_receive(:find).with({ id: :foo }, {}).and_return([])
+          subject.find_by_id(:foo)
+        }.to raise_error ORMivore::RecordNotFound
+      end
     end
   end
 

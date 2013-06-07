@@ -2,11 +2,9 @@ module ORMivore
   module MemoryAdapter
     module ClassMethods
       attr_reader :default_converter_class
-      attr_reader :entity_name
 
       private
       attr_writer :default_converter_class
-      attr_writer :entity_name
     end
 
     def self.included(base)
@@ -17,16 +15,8 @@ module ORMivore
       @converter = converter || self.class.default_converter_class.new
     end
 
-    # TODO it should return multiple records, not one!
     def find(conditions, options = {})
-      # TODO how about other finder options, like order, limit, offset?
-      quiet = options.fetch(:quiet, false)
-      record = select_from_storage(conditions).first
-
-      # raising error is port's job
-      raise RecordNotFound, "#{self.class.entity_name} with conditions #{conditions} was not found" if record.nil? && !quiet
-
-      record
+      select_from_storage(conditions)
     end
 
     def create(attrs)
