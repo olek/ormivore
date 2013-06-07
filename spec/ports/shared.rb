@@ -7,23 +7,23 @@ shared_examples_for 'a port' do
 
   describe '#find' do
     it 'delegates to adapter' do
-      adapter.should_receive(:find).with(:foo, quiet: true).and_return(:bar)
-      subject.find(:foo, quiet: true).should == :bar
+      adapter.should_receive(:find).with(:foo, :list, quiet: true).and_return(:bar)
+      subject.find(:foo, :list, quiet: true).should == :bar
     end
 
     it 'assumes empty options' do
-      adapter.should_receive(:find).with(:foo, {}).and_return(:bar)
-      subject.find(:foo).should == :bar
+      adapter.should_receive(:find).with(:foo, :list, {}).and_return(:bar)
+      subject.find(:foo, :list).should == :bar
     end
 
     it 'allows empty options' do
-      adapter.should_receive(:find).with(:foo, {}).and_return(:bar)
-      subject.find(:foo, {}).should == :bar
+      adapter.should_receive(:find).with(:foo, :list, {}).and_return(:baz)
+      subject.find(:foo, :list, {}).should == :baz
     end
 
     it 'raises error on invalid options' do
       expect {
-        subject.find(:foo, foo: 'bar')
+        subject.find(:foo, :list, foo: 'bar')
       }.to raise_error ORMivore::BadArgumentError
     end
   end

@@ -19,11 +19,11 @@ module ORMivore
       @adapter = adapter
     end
 
-    def find(conditions, options = {})
+    def find(conditions, attributes_to_load, options = {})
       # TODO verify conditions to contain only keys that match attribute names and value of proper type
       validate_finder_options(options)
 
-      adapter.find(conditions, options)
+      adapter.find(conditions, attributes_to_load, options)
     end
 
     def create(attrs)

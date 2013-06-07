@@ -2,6 +2,10 @@
 
 module App
   class NoopConverter
+    def attributes_list_to_storage(list)
+      list
+    end
+
     def from_storage(attrs)
       attrs
     end

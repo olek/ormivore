@@ -20,7 +20,7 @@ module ORMivore
       # TODO how about other finder options, like order, limit, offset?
       quiet = options.fetch(:quiet, false)
 
-      attrs_to_entity(port.find({ id: id }, options).first).tap { |record|
+      attrs_to_entity(port.find({ id: id }, entity_class.attributes_list, options).first).tap { |record|
         raise RecordNotFound, "#{entity_class.name} with id #{id} was not found" if record.nil? && !quiet
       }
     end

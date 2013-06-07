@@ -15,8 +15,8 @@ module ORMivore
       @converter = converter || self.class.default_converter_class.new
     end
 
-    def find(conditions, options = {})
-      select_from_storage(conditions)
+    def find(conditions, attributes_to_load, options = {})
+      filter_from_storage(conditions, attributes_to_load)
     end
 
     def create(attrs)
@@ -53,6 +53,12 @@ module ORMivore
             o[k] == v
           end
         }
+      }
+    end
+
+    def filter_from_storage(conditions, attributes_to_load)
+      select_from_storage(conditions).map { |record|
+        record.select { |k, v| attributes_to_load.include?(k) }
       }
     end
 

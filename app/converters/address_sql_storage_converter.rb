@@ -15,6 +15,14 @@ module App
       Hash[ADDRESS_TYPE_MAP.to_a.map(&:reverse)]
     ).freeze
 
+    def attributes_list_to_storage(list)
+      list.dup.tap { |converted|
+        if converted.delete(:account_id)
+          converted << :addressable_id << :addressable_type
+        end
+      }
+    end
+
     def from_storage(attrs)
       attrs.dup.tap { |copy|
         copy[:type] = REVERSE_ADDRESS_TYPE_MAP[copy[:type]] if copy[:type]

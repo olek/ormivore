@@ -47,16 +47,18 @@ module ORMivore
       @converter = converter || self.class.default_converter_class.new
     end
 
-    def find(conditions, options = {})
-      ar_class.all(:conditions => conditions).map { |r| entity_attributes(r) }
+    def find(conditions, attributes_to_load, options = {})
+      ar_class.all(
+        select: converter.attributes_list_to_storage(attributes_to_load),
+        conditions: conditions).
+          map { |r| entity_attributes(r) }
     end
 
     def create(attrs)
-      entity_attributes(
-        ar_class.create!(
-          extend_with_defaults(
-            converter.to_storage(attrs))) { |o| o.id = attrs[:id] }
-      )
+      record = ar_class.create!(
+        extend_with_defaults(
+          converter.to_storage(attrs))) { |o| o.id = attrs[:id] }
+       attrs.merge(id: record.id)
     rescue ActiveRecord::ActiveRecordError => e
       raise StorageError.new(e)
     end
@@ -84,10 +86,7 @@ module ORMivore
     end
 
     def entity_attributes(record)
-      # TODO we should not be reading all those columns from database in first place - performance hit
-      attrs_to_ignore = self.class.ignored_columns
-
-      converter.from_storage(record.attributes.except(*attrs_to_ignore).symbolize_keys)
+      converter.from_storage(record.attributes.symbolize_keys)
     end
   end
 end

@@ -16,6 +16,10 @@ module App
       Hash[STATUS_MAP.to_a.map(&:reverse)]
     ).freeze
 
+    def attributes_list_to_storage(list)
+      list
+    end
+
     def from_storage(attrs)
       attrs.dup.tap { |copy|
         copy[:status] = REVERSE_STATUS_MAP[copy[:status]] if copy[:status]

@@ -1,6 +1,8 @@
 shared_examples_for 'an adapter' do
   let(:test_value) { 'Foo' }
 
+  let(:attrs_list) { attrs.keys }
+
   subject { described_class.new(App::NoopConverter.new) }
 
   it 'responds to find' do
@@ -10,16 +12,22 @@ shared_examples_for 'an adapter' do
   describe '#find' do
     context 'when conditions points to non-existing entity' do
       it 'should return empty array' do
-        subject.find(id: 123456789).should be_empty
+        subject.find({id: 123456789}, attrs_list).should be_empty
       end
     end
 
     context 'when id points to existing entity' do
       it 'should return proper entity attrs' do
         entity = create_entity
-        data = subject.find(id: entity[:id])
+        data = subject.find({id: entity[:id]}, attrs_list)
         data.should_not be_nil
         data.first[test_attr].should == entity[test_attr]
+      end
+
+      it 'should return only required entity attrs' do
+        entity = create_entity
+        data = subject.find({id: entity[:id]}, [test_attr]).first
+        data.should == { test_attr => entity[test_attr] }
       end
     end
   end
