@@ -4,57 +4,87 @@ shared_examples_for 'an entity' do
   let(:test_value) { 'Foo' }
 
   describe '#initialize' do
-    it 'should fail if no attributes are provided' do
+    it 'fails if no attributes are provided' do
       expect {
         described_class.new
       }.to raise_error ArgumentError
     end
 
-    it 'should fail if not enough attributes are provided' do
+    it 'fails if not enough attributes are provided' do
       expect {
         described_class.new(test_attr => test_value)
       }.to raise_error ORMivore::BadAttributesError
     end
 
-    it 'should fail if unknown attributes are specified' do
+    it 'fails if unknown attributes are specified' do
        expect {
         described_class.new(attrs.merge(foo: 'Foo'))
       }.to raise_error ORMivore::BadAttributesError
     end
 
-    it 'should allow specifying id' do
+    it 'allows specifying id' do
       o = described_class.new(attrs, 123)
       o.id.should == 123
     end
 
-    it 'should allow string id that is convertable to integer' do
+    it 'allows string id that is convertable to integer' do
       o = described_class.new(attrs, '123')
       o.id.should == 123
     end
 
-    it 'should refuse non-integer id' do
+    it 'refuses non-integer id' do
       expect {
         described_class.new(attrs, '123a')
       }.to raise_error ORMivore::BadArgumentError
     end
 
     context 'when all mandatory attributes are specified' do
-      it 'should succeed' do
+      it 'succeeds' do
         o = described_class.new(attrs)
       end
 
       context 'when some of them are keyed by strings (not symbols)' do
-        it 'should succeed' do
+        it 'succeeds' do
           attrs.except!(test_attr).merge!(test_attr.to_s => test_value)
           o = described_class.new(attrs)
         end
       end
     end
+
+    context 'when id is specified' do
+      it 'assumes first param attributes to be "clean" attributes' do
+        o = described_class.new(attrs, 123)
+        o.changes.should be_empty
+      end
+
+      it 'allows specifying "dirty" attributes' do
+        o = described_class.new(attrs, 123, test_attr => 'dirty')
+        o.changes.should_not be_empty
+        o.changes.should == { test_attr => 'dirty' }
+      end
+    end
   end
 
   describe '#attributes' do
-    it 'should return hash with all the model attributes keyed as symbols' do
+    it 'returns hash with all the model attributes keyed as symbols' do
       subject.attributes.should == attrs
+    end
+
+    it 'combines clean and dirty attributes' do
+      o = described_class.new(attrs, 123, test_attr => 'dirty')
+      o.attributes.should == attrs.merge(test_attr => 'dirty')
+    end
+  end
+
+  describe 'attribute methods' do
+    it 'return value of attribute' do
+      subject.public_send(test_attr).should == test_value
+    end
+
+    it 'return dirty value of attribute if available' do
+      o = described_class.new(attrs, 123, test_attr => 'dirty')
+      o.changes.should == { test_attr => 'dirty' }
+      o.public_send(test_attr).should == 'dirty'
     end
   end
 end

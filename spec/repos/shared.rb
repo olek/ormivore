@@ -53,7 +53,8 @@ shared_examples_for 'a repo' do
       it 'delegates changes to port.update' do
         entity.stub(:attributes).and_return(a: 'b')
         entity.stub(:create).with({a: 'b'}, entity.id).and_return(:baz)
-        port.should_receive(:update).with({ foo: 'bar' }, id: 123).and_return(1)
+        entity.should_receive(:changes).and_return(foo: 'changed')
+        port.should_receive(:update).with({ foo: 'changed' }, id: 123).and_return(1)
         subject.persist(entity)
       end
 
