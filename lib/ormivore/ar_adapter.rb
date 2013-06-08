@@ -3,9 +3,7 @@ module ORMivore
   module ArAdapter
     module ClassMethods
       attr_reader :default_converter_class
-      attr_reader :ignored_columns
       attr_reader :table_name
-      attr_reader :default_attributes
 
       def ar_class
         finalize
@@ -14,11 +12,10 @@ module ORMivore
 
       private
       attr_writer :default_converter_class
-      attr_writer :ignored_columns
       attr_writer :table_name
 
-      def define_default_attributes(&block)
-        @default_attributes = block
+      def expand_on_create(&block)
+        @expand_on_create = block
       end
 
       def finalize
@@ -77,8 +74,9 @@ module ORMivore
     attr_reader :converter
 
     def extend_with_defaults(attrs)
-      if self.class.default_attributes
-        attrs.merge(self.class.default_attributes.call(attrs))
+      expansion = self.class.instance_variable_get(:@expand_on_create)
+      if expansion
+        attrs.merge(expansion.call(attrs))
       else
         attrs
       end

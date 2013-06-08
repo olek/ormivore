@@ -2,11 +2,10 @@ require 'spec_helper'
 require_relative 'shared_ar'
 
 describe App::AddressRepo do
-
   let(:account_id) { FactoryGirl.create(:account).id }
 
   let(:attrs) do
-    v = 'Foo'
+    v = test_value
     {
       street_1: v, city: v, postal_code: v,
       country_code: v, region_code: v,
@@ -21,7 +20,9 @@ describe App::AddressRepo do
   let(:port) { App::AddressStoragePort.new(adapter) }
 
   def create_entity
-    FactoryGirl.create(:shipping_address, test_attr => test_value, addressable_id: account_id).attributes.symbolize_keys
+    FactoryGirl.create(
+      :shipping_address, test_attr => test_value, addressable_id: account_id, addressable_type: 'Account'
+    ).attributes.symbolize_keys
   end
 
   it_behaves_like 'an integrated activerecord repo'

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 module App
   class Account
     include ORMivore::Entity

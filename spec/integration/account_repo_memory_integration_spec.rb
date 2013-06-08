@@ -3,7 +3,7 @@ require_relative 'shared_memory'
 
 describe App::AccountRepo do
   let(:attrs) do
-    v = 'Foo'
+    v = test_value
     { firstname: v, lastname: v, email: v, status: :active }
   end
 

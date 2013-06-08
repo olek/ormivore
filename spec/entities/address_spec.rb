@@ -13,17 +13,5 @@ describe App::Address do
     end
 
     let(:test_attr) { :street_1 }
-
-    describe '#street_1' do
-      it 'should return first line of street address' do
-        subject.street_1.should == test_value
-      end
-    end
-
-    describe '#type' do
-      it 'should return either shipping or billing type' do
-        subject.type.should == :shipping
-      end
-    end
   end
 end

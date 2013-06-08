@@ -1,5 +1,3 @@
-# coding: utf-8
-
 module App
   class AddressSqlStorageConverter
     ADDRESS_TYPE_MAP = Hash.new { |h, k|

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 module App
   class AccountSqlStorageConverter
     STATUS_MAP = Hash.new { |h, k|

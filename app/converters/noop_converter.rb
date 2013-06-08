@@ -1,5 +1,3 @@
-# coding: utf-8
-
 module App
   class NoopConverter
     def attributes_list_to_storage(list)

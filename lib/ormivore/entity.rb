@@ -1,3 +1,4 @@
+# TODO figure out how to add validation in a nice way
 module ORMivore
   module Entity
     module ClassMethods
@@ -6,18 +7,6 @@ module ORMivore
       attr_reader :optional_attributes_list
 
       private
-
-=begin
-      def finders(*methods)
-        methods.each do |method|
-          instance_eval <<-EOS
-            def #{method}(*args, &block)
-              storage.__send__(:#{method}, *args, &block)
-            end
-          EOS
-        end
-      end
-=end
 
       def attributes(*methods)
         @attributes_list = methods.map(&:to_sym)

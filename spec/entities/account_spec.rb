@@ -9,17 +9,5 @@ describe App::Account do
     end
 
     let(:test_attr) { :firstname }
-
-    describe '#firstname' do
-      it 'should return first name' do
-        subject.firstname.should == test_value
-      end
-    end
-
-    describe '#status' do
-      it 'should return proper symbol' do
-        subject.status.should == :active
-      end
-    end
   end
 end

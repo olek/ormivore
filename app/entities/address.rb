@@ -1,5 +1,3 @@
-# coding: utf-8
-
 module App
   class Address
     include ORMivore::Entity

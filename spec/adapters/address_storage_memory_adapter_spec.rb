@@ -3,7 +3,7 @@ require_relative 'shared_memory'
 
 describe App::AddressStorageMemoryAdapter do
   let(:attrs) do
-    v = 'Foo'
+    v = test_value
     {
       street_1: v, city: v, postal_code: v,
       country_code: v, region_code: v,

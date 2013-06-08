@@ -5,7 +5,7 @@ describe App::AddressStorageArAdapter do
   let(:account_id) { FactoryGirl.create(:account).id }
 
   let(:attrs) do
-    v = 'Foo'
+    v = test_value
     {
       street_1: v, city: v, postal_code: v,
       country_code: v, region_code: v,
@@ -18,10 +18,9 @@ describe App::AddressStorageArAdapter do
   let(:entity_table) { 'addresses' }
 
   def create_entity(overrides = {})
-    account = FactoryGirl.create(:account)
     FactoryGirl.create(
       :shipping_address,
-      { addressable_id: account.id, addressable_type: 'Account' }.merge(overrides)
+      { addressable_id: account_id, addressable_type: 'Account' }.merge(overrides)
     ).attributes.symbolize_keys
   end
 

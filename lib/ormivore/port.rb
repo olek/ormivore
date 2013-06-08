@@ -1,4 +1,5 @@
 # TODO maybe add validations for conditions, if not attributes
+# TODO add support for transactions
 module ORMivore
   module Port
     module ClassMethods
@@ -6,6 +7,18 @@ module ORMivore
 
       private
       attr_writer :attributes
+
+=begin
+      def finders(*methods)
+        methods.each do |method|
+          instance_eval <<-EOS
+            def #{method}(*args, &block)
+              storage.__send__(:#{method}, *args, &block)
+            end
+          EOS
+        end
+      end
+=end
     end
 
     def self.included(base)

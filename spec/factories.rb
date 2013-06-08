@@ -1,3 +1,5 @@
+# TODO add builder classes to entities and integrate them with FactoryGirl
+#   see https://github.com/thoughtbot/factory_girl/wiki/How-factory_girl-interacts-with-ActiveRecord
 FactoryGirl.define do
   factory :account, class: App::AccountStorageArAdapter.ar_class do
     login 'test@test.com'
