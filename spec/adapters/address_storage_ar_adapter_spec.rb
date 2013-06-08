@@ -1,28 +1,14 @@
 require 'spec_helper'
-require_relative 'shared_ar'
+
+require_relative 'shared_address'
+require_relative 'ar_helpers'
 
 describe App::AddressStorageArAdapter do
-  let(:account_id) { FactoryGirl.create(:account).id }
+  include ArHelpers
 
-  let(:attrs) do
-    v = test_value
-    {
-      street_1: v, city: v, postal_code: v,
-      country_code: v, region_code: v,
-      addressable_type: 'Account',
-      addressable_id: account_id
-    }
-  end
-
-  let(:test_attr) { :street_1 }
+  let(:account_adapter) { App::AccountStorageArAdapter.new }
   let(:entity_table) { 'addresses' }
+  let(:adapter) { App::AddressStorageArAdapter.new }
 
-  def create_entity(overrides = {})
-    FactoryGirl.create(
-      :shipping_address,
-      { addressable_id: account_id, addressable_type: 'Account' }.merge(overrides)
-    ).attributes.symbolize_keys
-  end
-
-  it_behaves_like 'an activerecord adapter'
+  it_behaves_like 'an address adapter'
 end

@@ -1,14 +1,12 @@
 require 'spec_helper'
-require_relative 'shared_memory'
+
+require_relative 'shared_account'
+require_relative 'memory_helpers'
 
 describe App::AccountStorageMemoryAdapter do
-  let(:attrs) do
-    v = test_value
-    { firstname: v, lastname: v, email: v, status: :active }
-  end
+  include MemoryHelpers
 
-  let(:test_attr) { :firstname }
+  let(:adapter) { App::AccountStorageMemoryAdapter.new }
 
-  it_behaves_like 'a memory adapter'
+  it_behaves_like 'an account adapter'
 end
-

@@ -1,16 +1,11 @@
 require 'spec_helper'
-require_relative 'shared_memory'
+require_relative 'shared_account'
+require_relative '../adapters/memory_helpers'
 
 describe App::AccountRepo do
-  let(:attrs) do
-    v = test_value
-    { firstname: v, lastname: v, email: v, status: :active }
-  end
+  include MemoryHelpers
 
-  let(:test_attr) { :firstname }
-  let(:entity_class) { App::Account }
   let(:adapter) { App::AccountStorageMemoryAdapter.new }
-  let(:port) { App::AccountStoragePort.new(adapter) }
 
-  it_behaves_like 'an integrated memory repo'
+  it_behaves_like 'an integrated account repo'
 end

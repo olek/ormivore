@@ -1,6 +1,12 @@
 shared_examples_for 'an integrated repo' do
   let(:test_value) { 'Foo' }
 
+  def create_entity
+    FactoryGirl.create(
+      factory_name, factory_attrs.merge(adapter: adapter, test_attr => test_value)
+    ).attributes.symbolize_keys
+  end
+
   subject { described_class.new(port) }
 
   describe '#find_by_id' do

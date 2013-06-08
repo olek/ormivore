@@ -3,7 +3,13 @@ shared_examples_for 'an adapter' do
 
   let(:attrs_list) { [:id].concat(attrs.keys) }
 
-  subject { described_class.new(App::NoopConverter.new) }
+  subject { adapter } # only 1 instance of adapter, please
+
+  def create_entity(overrides = {})
+    FactoryGirl.create(
+      factory_name, factory_attrs.merge(adapter: subject, test_attr => test_value).merge(overrides)
+    ).attributes.symbolize_keys
+  end
 
   it 'responds to find' do
     subject.should respond_to(:find)

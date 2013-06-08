@@ -10,6 +10,7 @@ guard :rspec,
   watch(%r{^spec/.+_spec\.rb$})
   watch(%r{^app/(.+)\.rb$}) { |m| "spec/#{m[1]}_spec.rb" }
   watch(%r{^spec/(.+)/shared.*\.rb$}) { |m| "spec/#{m[1]}" }
+  watch(%r{^spec/(.+)/.*helpers\.rb$}) { |m| "spec/#{m[1]}" }
   watch(%r{spec/spec_(db_)?helper.rb}) { 'spec' }
   watch('spec/factories.rb') { 'spec' }
   watch(%r{^lib/(.+)\.rb$}) { 'spec' }

@@ -1,18 +1,13 @@
 require 'spec_helper'
-require_relative 'shared_ar'
+
+require_relative 'shared_account'
+require_relative 'ar_helpers'
 
 describe App::AccountStorageArAdapter do
-  let(:attrs) do
-    v = 'Foo'
-    { firstname: v, lastname: v, email: v, status: 1 }
-  end
+  include ArHelpers
 
-  let(:test_attr) { :firstname }
   let(:entity_table) { 'accounts' }
+  let(:adapter) { App::AccountStorageArAdapter.new }
 
-  def create_entity(overrides = {})
-    FactoryGirl.create(:account, overrides).attributes.symbolize_keys
-  end
-
-  it_behaves_like 'an activerecord adapter'
+  it_behaves_like 'an account adapter'
 end

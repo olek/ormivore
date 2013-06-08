@@ -12,14 +12,19 @@ module ORMivore
         @attributes_list = methods.map(&:to_sym)
         @optional_attributes_list ||= []
 
-        file, line = caller.first.split(':', 2)
-        line = line.to_i
-
         methods.each do |method|
           method = method.to_s
-          module_eval(<<-EOS, file, line - 1)
+          module_eval(<<-EOS)
             def #{method}
               dirty_attributes[:#{method}] || base_attributes[:#{method}]
+            end
+          EOS
+          self::Builder.module_eval(<<-EOS)
+            def #{method}
+              attributes[:#{method}]
+            end
+            def #{method}=(value)
+              attributes[:#{method}] = value
             end
           EOS
         end
@@ -32,6 +37,29 @@ module ORMivore
 
     def self.included(base)
       base.extend(ClassMethods)
+
+      base.module_eval(<<-EOS)
+        class Builder
+          def initialize
+            @attributes = {}
+          end
+
+          def id
+            attributes[:id]
+          end
+
+          def adapter=(value)
+            @adapter = value
+          end
+
+          # FactoryGirl integration point
+          def save!
+            @attributes = @adapter.create(attributes)
+          end
+
+          attr_reader :attributes
+        end
+      EOS
     end
 
     def attributes

@@ -1,20 +1,13 @@
 require 'spec_helper'
-require_relative 'shared_memory'
+
+require_relative 'shared_address'
+require_relative 'memory_helpers'
 
 describe App::AddressStorageMemoryAdapter do
-  let(:attrs) do
-    v = test_value
-    {
-      street_1: v, city: v, postal_code: v,
-      country_code: v, region_code: v,
-      addressable_type: 'Account',
-      addressable_id: 123
-    }
-  end
+  include MemoryHelpers
 
-  let(:test_attr) { :street_1 }
+  let(:account_adapter) { App::AccountStorageMemoryAdapter.new }
+  let(:adapter) { App::AddressStorageMemoryAdapter.new }
 
-  it_behaves_like 'a memory adapter'
+  it_behaves_like 'an address adapter'
 end
-
-
