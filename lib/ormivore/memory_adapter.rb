@@ -16,7 +16,12 @@ module ORMivore
     end
 
     def find(conditions, attributes_to_load, options = {})
-      filter_from_storage(conditions, attributes_to_load)
+      order = options.fetch(:order, {})
+
+      reorder(
+        filter_from_storage(conditions, attributes_to_load),
+        order
+      )
     end
 
     def create(attrs)
@@ -26,8 +31,8 @@ module ORMivore
       else
         id = next_id
       end
-      attrs.merge(id: id).tap { |attr_with_id|
-        storage << attr_with_id
+      attrs.merge(id: id).tap { |attrs_with_id|
+        storage << attrs_with_id
       }
     end
 
@@ -59,6 +64,27 @@ module ORMivore
     def filter_from_storage(conditions, attributes_to_load)
       select_from_storage(conditions).map { |record|
         record.select { |k, v| attributes_to_load.include?(k) }
+      }
+    end
+
+    def reorder(records, order)
+      return records if order.empty?
+
+      records.sort { |x, y|
+        order.inject(0) { |acc, (k, v)|
+          break unless acc.zero?
+
+          multiplier =
+            case v
+            when :ascending
+              1
+            when :descending
+              -1
+            else
+              raise BadArgumentError, "Order direction #{v} is invalid"
+            end
+          (x[k] <=> y[k]) * multiplier
+        }
       }
     end
 

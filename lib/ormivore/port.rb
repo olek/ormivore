@@ -21,7 +21,7 @@ module ORMivore
 
     def find(conditions, attributes_to_load, options = {})
       # TODO verify conditions to contain only keys that match attribute names and value of proper type
-      validate_finder_options(options)
+      validate_finder_options(options, attributes_to_load)
 
       adapter.find(conditions, attributes_to_load, options)
     end
@@ -55,16 +55,28 @@ module ORMivore
     end
 =end
 
-    def validate_finder_options(options)
+    def validate_finder_options(options, attributes_to_load)
       options = options.dup
       valid = true
 
-      valid = false unless [nil, true, false].include?(options.delete(:quiet))
+      # TODO how about other finder options, like limit and offset?
+      order = options.delete(:order) || {}
       valid = false unless options.empty?
 
       raise ORMivore::BadArgumentError, "Invalid finder options #{options.inspect}" unless valid
 
+      validate_order(order, attributes_to_load)
+
       nil
+    end
+
+    def validate_order(order, attributes_to_load)
+      # TODO matching agains attributes_to_load is not good, sometimes user wants to sort on non-loaded attribute
+      return if order.empty?
+
+      unless order.keys.all? { |k| attributes_to_load.include?(k) }
+        raise BadArgumentError, "Invalid order key in #{order.inspect}"
+      end
     end
   end
 end

@@ -17,12 +17,16 @@ module ORMivore
     end
 
     def find_by_id(id, options = {})
-      # TODO how about other finder options, like order, limit, offset?
       quiet = options.fetch(:quiet, false)
 
-      attrs_to_entity(port.find({ id: id }, entity_class.attributes_list, options).first).tap { |record|
-        raise RecordNotFound, "#{entity_class.name} with id #{id} was not found" if record.nil? && !quiet
-      }
+      attrs_to_entity(port.find(
+          { id: id },
+          [:id].concat(entity_class.attributes_list),
+          {}
+        ).first
+     ).tap { |record|
+       raise RecordNotFound, "#{entity_class.name} with id #{id} was not found" if record.nil? && !quiet
+     }
     end
 
     def persist(entity)

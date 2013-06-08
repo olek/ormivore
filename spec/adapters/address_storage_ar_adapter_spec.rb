@@ -17,9 +17,12 @@ describe App::AddressStorageArAdapter do
   let(:test_attr) { :street_1 }
   let(:entity_table) { 'addresses' }
 
-  def create_entity
+  def create_entity(overrides = {})
     account = FactoryGirl.create(:account)
-    FactoryGirl.create(:shipping_address, addressable_id: account.id, addressable_type: 'Account')
+    FactoryGirl.create(
+      :shipping_address,
+      { addressable_id: account.id, addressable_type: 'Account' }.merge(overrides)
+    ).attributes.symbolize_keys
   end
 
   it_behaves_like 'an activerecord adapter'

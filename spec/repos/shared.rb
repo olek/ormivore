@@ -3,10 +3,10 @@ shared_examples_for 'a repo' do
     double('entity', id: nil, changes: { foo: 'bar' })
   }
 
-  let(:attributes_list) { [:foo] }
+  let(:attributes_list) { [:id, :foo] }
 
   let(:entity_class) {
-    double('entity_class', new: :new_entity, name: 'FakeEntity', attributes_list: attributes_list)
+    double('entity_class', new: :new_entity, name: 'FakeEntity', attributes_list: [:foo])
   }
 
   let(:port) {

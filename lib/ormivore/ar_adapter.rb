@@ -48,10 +48,13 @@ module ORMivore
     end
 
     def find(conditions, attributes_to_load, options = {})
+      order = options.fetch(:order, {})
+
       ar_class.all(
         select: converter.attributes_list_to_storage(attributes_to_load),
-        conditions: conditions).
-          map { |r| entity_attributes(r) }
+        conditions: conditions,
+        order: order_by_clause(order)
+      ).map { |r| entity_attributes(r) }
     end
 
     def create(attrs)
@@ -79,6 +82,24 @@ module ORMivore
       else
         attrs
       end
+    end
+
+    def order_by_clause(order)
+      return '' if order.empty?
+
+      order.map { |k, v|
+        direction =
+          case v
+          when :ascending
+            'asc'
+          when :descending
+            'desc'
+          else
+            raise BadArgumentError, "Order direction #{v} is invalid"
+          end
+
+        "#{k} #{direction}"
+      }.join(', ')
     end
 
     def ar_class

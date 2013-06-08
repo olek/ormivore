@@ -10,8 +10,8 @@ describe App::AccountStorageArAdapter do
   let(:test_attr) { :firstname }
   let(:entity_table) { 'accounts' }
 
-  def create_entity
-    FactoryGirl.create(:account)
+  def create_entity(overrides = {})
+    FactoryGirl.create(:account, overrides).attributes.symbolize_keys
   end
 
   it_behaves_like 'an activerecord adapter'

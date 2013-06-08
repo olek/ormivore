@@ -7,8 +7,8 @@ shared_examples_for 'a port' do
 
   describe '#find' do
     it 'delegates to adapter' do
-      adapter.should_receive(:find).with(:foo, :list, quiet: true).and_return(:bar)
-      subject.find(:foo, :list, quiet: true).should == :bar
+      adapter.should_receive(:find).with(:foo, :list, {}).and_return(:bar)
+      subject.find(:foo, :list).should == :bar
     end
 
     it 'assumes empty options' do
@@ -24,6 +24,12 @@ shared_examples_for 'a port' do
     it 'raises error on invalid options' do
       expect {
         subject.find(:foo, :list, foo: 'bar')
+      }.to raise_error ORMivore::BadArgumentError
+    end
+
+    it 'raises error if ordering on unknown key' do
+      expect {
+        subject.find({}, [:foo], order: { :bar => :ascending })
       }.to raise_error ORMivore::BadArgumentError
     end
   end
