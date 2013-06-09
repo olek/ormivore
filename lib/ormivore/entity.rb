@@ -6,7 +6,63 @@ module ORMivore
       attr_reader :attributes_list
       attr_reader :optional_attributes_list
 
+      def construct(attrs, id)
+        id = coerce_id(id)
+
+        # TODO coercion of attributes should be done automatically based on entity attribute types
+        coerced_attrs = attrs.symbolize_keys.tap { |h| coerce(h) }.freeze
+
+        base_attributes = coerced_attrs
+        dirty_attributes = {}.freeze
+
+        validate_presence_of_proper_attributes(base_attributes, dirty_attributes)
+
+        obj = allocate
+
+        obj.instance_variable_set(:@id, id)
+        obj.instance_variable_set(:@base_attributes, base_attributes)
+        obj.instance_variable_set(:@dirty_attributes, dirty_attributes)
+
+        # TODO how to do custom validation?
+        # validate
+
+        obj
+      end
+
+      def validate_presence_of_proper_attributes(base, dirty)
+        # doing complicated way first because it is much more memory efficient
+        # but it does not allow for good error messages, so if something is
+        # wrong, need to proceed to inefficient validation that produces nice
+        # messages
+        missing = 0
+        known_counts = attributes_list.each_with_object([0, 0]) { |attr, acc|
+          acc[0] += 1 if base[attr]
+          acc[1] += 1 if dirty[attr]
+          missing +=1 unless optional_attributes_list.include?(attr) || base[attr] || dirty[attr]
+        }
+
+        if missing > 0 || [base.length, dirty.length] != known_counts
+          expensive_validate_presence_of_proper_attributes(
+            base.merge(dirty)
+          )
+        end
+      end
+
+      def coerce(attrs)
+        # template method pattern
+      end
+
       private
+
+      def expensive_validate_presence_of_proper_attributes(attrs)
+        attributes_list.each do |attr|
+          unless attrs.delete(attr) || optional_attributes_list.include?(attr)
+            raise BadAttributesError, "Missing attribute '#{attr}'"
+          end
+        end
+
+        raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
+      end
 
       def attributes(*methods)
         @attributes_list = methods.map(&:to_sym)
@@ -16,7 +72,7 @@ module ORMivore
           method = method.to_s
           module_eval(<<-EOS)
             def #{method}
-              dirty_attributes[:#{method}] || base_attributes[:#{method}]
+              @dirty_attributes[:#{method}] || @base_attributes[:#{method}]
             end
           EOS
           self::Builder.module_eval(<<-EOS)
@@ -32,6 +88,12 @@ module ORMivore
 
       def optional(*methods)
         @optional_attributes_list = methods.map(&:to_sym)
+      end
+
+      def coerce_id(value)
+        value ? Integer(value) : nil
+      rescue ArgumentError
+        raise ORMivore::BadArgumentError, "Not a valid id: #{value.inspect}"
       end
     end
 
@@ -62,89 +124,52 @@ module ORMivore
       EOS
     end
 
+    attr_reader :id
+
     def attributes
       all_attributes
     end
 
-    attr_reader :id
-
-    def create(attrs, id = nil)
-      self.class.new(attrs, id)
-    end
-
-    def prototype(attrs)
-      if id
-        self.class.new(base_attributes, id, dirty_attributes.merge(attrs))
-      else
-        self.class.new(dirty_attributes.merge(attrs))
-      end
-    end
-
     def changes
-      dirty_attributes
+      @dirty_attributes
+    end
+
+    def apply(attrs)
+      self.dup.tap { |other|
+        other.expand_changes(attrs)
+      }
     end
 
     protected
 
-    def dirty_attributes=(attrs)
-      if dirty_attributes
-        raise InvalidStateError, "Dirty attributes already set to #{dirty_attributes.inspect}, can not change to #{attrs}"
-      else
-        @dirty_attributes = attrs
-      end
+    # to be used only by #change
+    def expand_changes(attrs)
+      attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }
+      @dirty_attributes = @dirty_attributes.merge(attrs).freeze # melt and freeze, huh
+      @all_attributes = nil # it is not valid anymore
+
+      self.class.validate_presence_of_proper_attributes(@base_attributes, @dirty_attributes)
     end
 
     private
 
-    attr_reader :base_attributes, :dirty_attributes
-
     def all_attributes
-      # memory / performance tradeoff can be played with here
-      base_attributes.merge(dirty_attributes)
+      # memory / performance tradeoff can be played with here by keeping
+      # all_attributes around or generating it each time
+      @all_attributes = @base_attributes.merge(@dirty_attributes)
     end
 
-    def validate_presence_of_proper_attributes
-      attrs = all_attributes
+    def initialize(attrs)
+      # TODO coercion of attributes should be done automatically based on entity attribute types
+      coerced_attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }.freeze
 
-      self.class.attributes_list.each do |attr|
-        unless attrs.delete(attr) || self.class.optional_attributes_list.include?(attr)
-          raise BadAttributesError, "Missing attribute '#{attr}'"
-        end
-      end
+      @base_attributes = {}.freeze
+      @dirty_attributes = coerced_attrs
 
-      raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
-    end
+      self.class.validate_presence_of_proper_attributes(@base_attributes, @dirty_attributes)
 
-    def initialize(attrs, id = nil, dirty_attrs = {})
-      @id = coerce_id(id)
-
-      coerced_attrs = attrs.symbolize_keys.tap { |h| coerce(h) }.freeze
-
-      if id
-        @base_attributes = coerced_attrs
-        @dirty_attributes =
-          dirty_attrs.symbolize_keys.tap { |h| coerce(h) }.
-            reject { |k, v|
-              coerced_attrs[k] == v
-            }.freeze
-      else
-        @base_attributes = {}.freeze
-        @dirty_attributes = coerced_attrs
-      end
-
-      validate_presence_of_proper_attributes
-
-      validate
-    end
-
-    def coerce_id(value)
-      value ? Integer(value) : nil
-    rescue ArgumentError
-      raise ORMivore::BadArgumentError, "Not a valid id: #{value.inspect}"
-    end
-
-    def coerce(attrs)
-      # override me!
+      # TODO how to do custom validation?
+      # validate
     end
   end
 end

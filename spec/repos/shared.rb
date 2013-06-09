@@ -6,7 +6,7 @@ shared_examples_for 'a repo' do
   let(:attributes_list) { [:id, :foo] }
 
   let(:entity_class) {
-    double('entity_class', new: :new_entity, name: 'FakeEntity', attributes_list: [:foo])
+    double('entity_class', construct: :new_entity, name: 'FakeEntity', attributes_list: [:foo])
   }
 
   let(:port) {
@@ -28,7 +28,7 @@ shared_examples_for 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find).with({ id: :foo }, attributes_list, {}).and_return([id: 123, foo: 'bar'])
-      entity_class.should_receive(:new).with({foo: 'bar'}, 123)
+      entity_class.should_receive(:construct).with({foo: 'bar'}, 123)
       subject.find_by_id(:foo)
     end
 
@@ -63,7 +63,6 @@ shared_examples_for 'a repo' do
 
       it 'delegates changes to port.update' do
         entity.stub(:attributes).and_return(a: 'b')
-        entity.stub(:create).with({a: 'b'}, entity.id).and_return(:baz)
         entity.should_receive(:changes).and_return(foo: 'changed')
         port.should_receive(:update).with({ foo: 'changed' }, id: 123).and_return(1)
         subject.persist(entity)
@@ -71,7 +70,7 @@ shared_examples_for 'a repo' do
 
       it 'creates new entity with all attributes' do
         entity.should_receive(:attributes).and_return(a: 'b')
-        entity.should_receive(:create).with({a: 'b'}, entity.id).and_return(:baz)
+        entity_class.should_receive(:construct).with({a: 'b'}, entity.id).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 

@@ -35,7 +35,7 @@ module ORMivore
         raise ORMivore::StorageError, 'No records updated' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
 
-        entity.create(entity.attributes, entity.id)
+        entity_class.construct(entity.attributes, entity.id)
       else
         attrs_to_entity(port.create(entity.changes))
       end
@@ -49,7 +49,7 @@ module ORMivore
       if attrs
         entity_id = attrs.delete(:id)
         attrs.reject! {|k,v| v.nil? }
-        entity_class.new(attrs, entity_id)
+        entity_class.construct(attrs, entity_id)
       else
         nil
       end

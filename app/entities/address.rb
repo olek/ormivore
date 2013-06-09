@@ -7,11 +7,11 @@ module App
 
     optional :street_2, :region_code, :account_id
 
-    private
-
-    def coerce(attrs)
+    def self.coerce(attrs)
       attrs[:type] = attrs[:type].to_sym if attrs[:type]
     end
+
+    private
 
     def validate
       raise "Invalid type #{type}" unless %w(shipping billing).include?(type.to_s)
