@@ -44,7 +44,7 @@ slowly eliminate them on your legacy app.
 ## Philosophy summary
 
 - Everything the system does FOR you, the system also does TO you
-- Actions that will lead to long term pain better be painfull
+- Actions that will lead to long term pain better be painful
 immediately, and never sugar-coated with short term gain
 - Long term maintenability trumps supersonic speed of initial development
 - There is much to be learned from functional programming
