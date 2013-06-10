@@ -2,7 +2,7 @@ require 'spec_helper'
 require_relative 'shared_account'
 require_relative '../adapters/ar_helpers'
 
-describe App::AccountRepo do
+describe App::AccountRepo, :relational_db do
   include ArHelpers
 
   let(:entity_table) { 'accounts' }

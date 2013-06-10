@@ -6,17 +6,16 @@ require 'database_cleaner'
 
 if true
   RSpec.configure do |config|
-    # config.include Rack::Test::Methods
+    config.treat_symbols_as_metadata_keys_with_true_values = true
 
-    config.before(:suite) do
+    relational_db = { relational_db: true }
+
+    config.before(:each, relational_db) do
       DatabaseCleaner.strategy = :transaction
-    end
-
-    config.before(:each) do
       DatabaseCleaner.start
     end
 
-    config.after(:each) do
+    config.after(:each, relational_db) do
       DatabaseCleaner.clean
     end
   end
