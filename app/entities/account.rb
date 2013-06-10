@@ -4,7 +4,12 @@ module App
 
     STATUSES = %w(active inactive deleted).map(&:to_sym).freeze
 
-    attributes :firstname, :lastname, :email, :status
+    attributes(
+      firstname: String,
+      lastname: String,
+      email: String,
+      status: Symbol
+    )
 
     private
 

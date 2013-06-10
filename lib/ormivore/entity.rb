@@ -2,14 +2,18 @@
 module ORMivore
   module Entity
     module ClassMethods
+      ALLOWED_ATTRIBUTE_TYPES = [String, Symbol, Integer, Float].freeze
 
-      attr_reader :attributes_list
+      attr_reader :attributes_declaration
       attr_reader :optional_attributes_list
+
+      def attributes_list
+        attributes_declaration.keys
+      end
 
       def construct(attrs, id)
         id = coerce_id(id)
 
-        # TODO coercion of attributes should be done automatically based on entity attribute types
         coerced_attrs = attrs.symbolize_keys.tap { |h| coerce(h) }.freeze
 
         base_attributes = coerced_attrs
@@ -49,11 +53,50 @@ module ORMivore
       end
 
       def coerce(attrs)
-        # template method pattern
+        attrs.each do |name, type|
+          attr_value = attrs[name]
+          declared_type = attributes_declaration[name]
+          if declared_type && !attr_value.is_a?(declared_type)
+            attrs[name] = Kernel.public_send(declared_type.name.to_sym, attr_value)
+          end
+        end
+      rescue ArgumentError => e
+        raise ORMivore::BadArgumentError.new(e)
       end
 
       private
 
+      def attributes(declaration)
+        @attributes_declaration = declaration.symbolize_keys.freeze
+        validate_attributes_declaration
+        # @attributes_list = methods.map(&:to_sym)
+        @optional_attributes_list ||= []
+
+        attributes_list.map(&:to_s).each do |attr|
+          module_eval(<<-EOS)
+            def #{attr}
+              @dirty_attributes[:#{attr}] || @base_attributes[:#{attr}]
+            end
+          EOS
+          self::Builder.module_eval(<<-EOS)
+            def #{attr}
+              attributes[:#{attr}]
+            end
+            def #{attr}=(value)
+              attributes[:#{attr}] = value
+            end
+          EOS
+        end
+      end
+
+      def optional(*methods)
+        @optional_attributes_list = methods.map(&:to_sym)
+      end
+
+      # now, really private methods, not part of API
+
+      # TODO figure out how to differenciate private methods that are part of
+      # ORMivore API from those that are NOT
       def expensive_validate_presence_of_proper_attributes(attrs)
         attributes_list.each do |attr|
           unless attrs.delete(attr) || optional_attributes_list.include?(attr)
@@ -64,30 +107,12 @@ module ORMivore
         raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
       end
 
-      def attributes(*methods)
-        @attributes_list = methods.map(&:to_sym)
-        @optional_attributes_list ||= []
-
-        methods.each do |method|
-          method = method.to_s
-          module_eval(<<-EOS)
-            def #{method}
-              @dirty_attributes[:#{method}] || @base_attributes[:#{method}]
-            end
-          EOS
-          self::Builder.module_eval(<<-EOS)
-            def #{method}
-              attributes[:#{method}]
-            end
-            def #{method}=(value)
-              attributes[:#{method}] = value
-            end
-          EOS
+      def validate_attributes_declaration
+        attributes_declaration.each do |name, type|
+          unless ALLOWED_ATTRIBUTE_TYPES.include?(type)
+            raise ORMivore::BadArgumentError, "Invalid attribute type #{type.inspect}"
+          end
         end
-      end
-
-      def optional(*methods)
-        @optional_attributes_list = methods.map(&:to_sym)
       end
 
       def coerce_id(value)

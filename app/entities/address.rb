@@ -2,14 +2,18 @@ module App
   class Address
     include ORMivore::Entity
 
-    attributes :street_1, :street_2, :city, :postal_code, :country_code, :region_code,
-        :type, :account_id
+    attributes(
+      street_1: String,
+      street_2: String,
+      city: String,
+      postal_code: String,
+      country_code: String,
+      region_code: String,
+      type: Symbol,
+      account_id: Integer
+    )
 
     optional :street_2, :region_code, :account_id
-
-    def self.coerce(attrs)
-      attrs[:type] = attrs[:type].to_sym if attrs[:type]
-    end
 
     private
 
