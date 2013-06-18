@@ -17,11 +17,17 @@ module ORMivore
 
     def find(conditions, attributes_to_load, options = {})
       order = options.fetch(:order, {})
+      limit = options[:limit]
+      offset = options[:offset]
 
       reorder(
         filter_from_storage(conditions, attributes_to_load),
         order
-      )
+      ).tap { |rtn|
+        rtn.slice!(0, Integer(offset)) if offset
+        rtn.slice!(Integer(limit)..-1) if limit
+      }
+
     end
 
     def create(attrs)

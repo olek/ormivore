@@ -46,11 +46,15 @@ module ORMivore
 
     def find(conditions, attributes_to_load, options = {})
       order = options.fetch(:order, {})
+      limit = Integer(options[:limit]) if options[:limit]
+      offset = Integer(options[:offset]) if options[:offset]
 
       ar_class.all(
         select: converter.attributes_list_to_storage(attributes_to_load),
         conditions: conditions,
-        order: order_by_clause(order)
+        order: order_by_clause(order),
+        limit: limit,
+        offset: offset
       ).map { |r| entity_attributes(r) }
     end
 

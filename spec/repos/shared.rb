@@ -1,3 +1,4 @@
+# TODO figure out how to allow for 'callbacks' implementation by creating wrapper repo
 shared_examples_for 'a repo' do
   let(:entity) {
     double('entity', id: nil, changes: { foo: 'bar' })

@@ -72,13 +72,16 @@ module ORMivore
       options = options.dup
       valid = true
 
-      # TODO how about other finder options, like limit and offset?
       order = options.delete(:order) || {}
+      limit = options.delete(:limit)
+      offset = options.delete(:offset)
       valid = false unless options.empty?
 
       raise ORMivore::BadArgumentError, "Invalid finder options #{options.inspect}" unless valid
 
       validate_order(order, attributes_to_load)
+      Integer(limit) if limit
+      Integer(offset) if offset
 
       nil
     end

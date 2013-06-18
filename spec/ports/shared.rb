@@ -21,6 +21,21 @@ shared_examples_for 'a port' do
       subject.find(:foo, :list, {}).should == :baz
     end
 
+    it 'allows order option' do
+      adapter.should_receive(:find).with(:foo, :list, { order: {}}).and_return(:baz)
+      subject.find(:foo, :list, { order: {} }).should == :baz
+    end
+
+    it 'allows limit option' do
+      adapter.should_receive(:find).with(:foo, :list, { limit: 1}).and_return(:baz)
+      subject.find(:foo, :list, { limit: 1 }).should == :baz
+    end
+
+    it 'allows offset option' do
+      adapter.should_receive(:find).with(:foo, :list, { offset: 1}).and_return(:baz)
+      subject.find(:foo, :list, { offset: 1 }).should == :baz
+    end
+
     it 'raises error on invalid options' do
       expect {
         subject.find(:foo, :list, foo: 'bar')

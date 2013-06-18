@@ -82,6 +82,54 @@ shared_examples_for 'an adapter' do
           }.to raise_error ORMivore::BadArgumentError
         end
       end
+
+      context 'when limit option is provided' do
+        it 'limits number of records returned' do
+          subject.find(
+            {}, attrs_list, limit: 1
+          ).should have(1).record
+        end
+
+        it 'selects records in their order' do
+          subject.find(
+            {}, attrs_list, order: { test_attr => :ascending }, limit: 1
+          ).map { |o| o[test_attr] }.should == ['v1']
+
+          subject.find(
+            {}, attrs_list, order: { test_attr => :descending }, limit: 1
+          ).map { |o| o[test_attr] }.should == ['v2']
+        end
+
+        it 'raises error if non-integer limit is provided' do
+          expect {
+            subject.find({}, attrs_list, limit: 'foo')
+          }.to raise_error ArgumentError
+        end
+      end
+
+      context 'when offset option is provided' do
+        it 'limits number of records returned' do
+          subject.find(
+            {}, attrs_list, offset: 1
+          ).should have(1).record
+        end
+
+        it 'offsets records in their order' do
+          subject.find(
+            {}, attrs_list, order: { test_attr => :ascending }, offset: 1
+          ).map { |o| o[test_attr] }.should == ['v2']
+
+          subject.find(
+            {}, attrs_list, order: { test_attr => :descending }, offset: 1
+          ).map { |o| o[test_attr] }.should == ['v1']
+        end
+
+        it 'raises error if non-integer offset is provided' do
+          expect {
+            subject.find({}, attrs_list, offset: 'foo')
+          }.to raise_error ArgumentError
+        end
+      end
     end
   end
 

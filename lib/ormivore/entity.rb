@@ -185,7 +185,6 @@ module ORMivore
     end
 
     def initialize(attrs)
-      # TODO coercion of attributes should be done automatically based on entity attribute types
       coerced_attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }.freeze
 
       @base_attributes = {}.freeze
