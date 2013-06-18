@@ -1,5 +1,7 @@
 # ORMivore
 
+[![Build Status](https://secure.travis-ci.org/olek/ormivore.png)](http://travis-ci.org/olek/ormivore)
+
 ## Synopsis
 
 ORM framework for **long lived** ruby projects with a twist.
