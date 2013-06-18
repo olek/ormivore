@@ -4,7 +4,7 @@ module ConnectionManager
 
     unless ActiveRecord::Base.connected?
       configuration = YAML::load(
-        File.open(File.join(RequireHelpers.root, 'app', 'database.yml'))
+        File.open(File.join(RequireHelpers.root, 'db', 'database.yml'))
       )[env.to_s]
 
       puts "Connecting to database #{configuration['database']}"
