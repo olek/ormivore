@@ -48,12 +48,13 @@ module ORMivore
       limit = Integer(options[:limit]) if options[:limit]
       offset = Integer(options[:offset]) if options[:offset]
 
-      ar_class.all(
-        select: converter.attributes_list_to_storage(attributes_to_load),
-        conditions: conditions,
-        order: order_by_clause(order),
-        limit: limit,
-        offset: offset
+      ActiveRecord::Base.connection.select_all(
+        ar_class.
+          select(converter.attributes_list_to_storage(attributes_to_load)).
+          where(conditions).
+          order(order_by_clause(order)).
+          limit(limit).
+          offset(offset)
       ).map { |r| entity_attributes(r) }
     end
 
@@ -108,7 +109,7 @@ module ORMivore
     end
 
     def entity_attributes(record)
-      converter.from_storage(record.attributes.symbolize_keys)
+      converter.from_storage(record.symbolize_keys)
     end
   end
 end

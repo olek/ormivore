@@ -2,7 +2,6 @@
 
 ## TODOs
 
-- fix AR adapter to use lightweight queries that do not create models
 - add Redis adapter
 - add a functionality to repo that allows querying for multiple entities
 by thier ids, returning map of id to found entity; even better - allow
