@@ -1,5 +1,4 @@
 # TODO maybe add validations for conditions, if not attributes
-# TODO add support for transactions
 module ORMivore
   module Port
     module ClassMethods

@@ -1,4 +1,3 @@
-# TODO ArAdapter is really ugly; replace it with some simple Sql adapter without AR 'goodness'
 module ORMivore
   module ArAdapter
     module ClassMethods
