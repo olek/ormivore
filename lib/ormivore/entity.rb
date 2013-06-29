@@ -53,11 +53,17 @@ module ORMivore
       end
 
       def coerce(attrs)
-        attrs.each do |name, type|
-          attr_value = attrs[name]
+        attrs.each do |name, attr_value|
           declared_type = attributes_declaration[name]
           if declared_type && !attr_value.is_a?(declared_type)
-            attrs[name] = Kernel.public_send(declared_type.name.to_sym, attr_value)
+            attrs[name] =
+              # TODO thos case statement is not elegant; figure it out
+              case declared_type.name
+              when Symbol.name
+                attr_value.to_sym
+              else
+                Kernel.public_send(declared_type.name.to_sym, attr_value)
+              end
           end
         end
       rescue ArgumentError => e

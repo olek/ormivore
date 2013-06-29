@@ -43,6 +43,10 @@ module ORMivore
       @converter = converter || self.class.default_converter_class.new
     end
 
+    def find_by_id(id, attributes_to_load)
+      find({ id: id }, attributes_to_load)
+    end
+
     def find(conditions, attributes_to_load, options = {})
       order = options.fetch(:order, {})
       limit = Integer(options[:limit]) if options[:limit]
@@ -67,7 +71,12 @@ module ORMivore
       raise StorageError.new(e)
     end
 
-    def update(attrs, conditions)
+
+    def update_one(id, attrs)
+      update_all({ id: id }, attrs)
+    end
+
+    def update_all(conditions, attrs)
       ar_class.update_all(converter.to_storage(attrs), conditions)
     rescue ActiveRecord::ActiveRecordError => e
       raise StorageError.new(e)

@@ -19,10 +19,9 @@ module ORMivore
     def find_by_id(id, options = {})
       quiet = options.fetch(:quiet, false)
 
-      attrs_to_entity(port.find(
-          { id: id },
-          [:id].concat(entity_class.attributes_list),
-          {}
+      attrs_to_entity(port.find_by_id(
+          id,
+          [:id].concat(entity_class.attributes_list)
         ).first
      ).tap { |record|
        raise RecordNotFound, "#{entity_class.name} with id #{id} was not found" if record.nil? && !quiet
@@ -31,7 +30,7 @@ module ORMivore
 
     def persist(entity)
       if entity.id
-        count = port.update(entity.changes, { :id => entity.id })
+        count = port.update_one(entity.id, entity.changes)
         raise ORMivore::StorageError, 'No records updated' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
 

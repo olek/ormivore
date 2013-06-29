@@ -7,6 +7,7 @@ group :development do
   gem 'activesupport', '~>3.2.3'
   gem 'activerecord', '~>3.2.3'
   gem 'sqlite3'
+  gem 'redis'
   gem 'rspec'
   gem 'factory_girl'
   gem 'database_cleaner'

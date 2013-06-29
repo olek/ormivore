@@ -13,5 +13,8 @@ module ConnectionManager
 
       ActiveRecord::Base.logger = logger
     end
+    # TODO manage redis connection creation better (configurable?, no globals?)
+    $redis = Redis.new(:host => 'localhost', :port => 6379)
+    $redis.client.logger = logger
   end
 end

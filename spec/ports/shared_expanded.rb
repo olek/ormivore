@@ -1,9 +1,13 @@
-shared_examples_for 'a port' do
+require_relative 'shared_basic'
+
+shared_examples_for 'an expanded port' do
   let(:adapter) {
     double('adapter')
   }
 
   subject { described_class.new(adapter) }
+
+  include_examples 'a basic port'
 
   describe '#find' do
     it 'delegates to adapter' do
@@ -49,17 +53,10 @@ shared_examples_for 'a port' do
     end
   end
 
-  describe '#create' do
+  describe '#update_all' do
     it 'delegates to adapter' do
-      adapter.should_receive(:create).with(:foo).and_return(:bar)
-      subject.create(:foo).should == :bar
-    end
-  end
-
-  describe '#update' do
-    it 'delegates to adapter' do
-      adapter.should_receive(:update).with(:foo, a: 'b').and_return(:bar)
-      subject.update(:foo, a: 'b').should == :bar
+      adapter.should_receive(:update_all).with(:foo, a: 'b').and_return(:bar)
+      subject.update_all(:foo, a: 'b').should == :bar
     end
   end
 end

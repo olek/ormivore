@@ -15,6 +15,10 @@ module ORMivore
       @converter = converter || self.class.default_converter_class.new
     end
 
+    def find_by_id(id, attributes_to_load)
+      find({ id: id }, attributes_to_load)
+    end
+
     def find(conditions, attributes_to_load, options = {})
       order = options.fetch(:order, {})
       limit = options[:limit]
@@ -42,7 +46,11 @@ module ORMivore
       }
     end
 
-    def update(attrs, conditions)
+    def update_one(id, attrs)
+      update_all({ id: id }, attrs)
+    end
+
+    def update_all(conditions, attrs)
       select_from_storage(conditions).each { |record|
         record.merge!(attrs)
       }.length
@@ -54,6 +62,8 @@ module ORMivore
     end
 
     private
+
+    attr_reader :converter
 
     def select_from_storage(conditions)
       storage.select { |o|
@@ -93,8 +103,6 @@ module ORMivore
         }
       }
     end
-
-    attr_reader :converter
 
     def next_id
       (@next_id ||= 1).tap { |current_id|

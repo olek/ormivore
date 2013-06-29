@@ -17,17 +17,17 @@ shared_examples_for 'a repo' do
 
   describe '#find_by_id' do
     it 'delegates to port' do
-      port.should_receive(:find).with({ id: :foo }, attributes_list, {}).and_return([a: 'b'])
+      port.should_receive(:find_by_id).with(:foo, attributes_list).and_return([a: 'b'])
       subject.find_by_id(:foo)
     end
 
     it 'creates and returns new entity' do
-      port.stub(:find).with({ id: 123 }, attributes_list, {}).and_return([foo: 'bar'])
+      port.stub(:find_by_id).with(123, attributes_list).and_return([foo: 'bar'])
       subject.find_by_id(123).should == :new_entity
     end
 
     it 'creates new entity with proper attributes' do
-      port.stub(:find).with({ id: :foo }, attributes_list, {}).and_return([id: 123, foo: 'bar'])
+      port.stub(:find_by_id).with(:foo, attributes_list).and_return([id: 123, foo: 'bar'])
       entity_class.should_receive(:construct).with({foo: 'bar'}, 123)
       subject.find_by_id(:foo)
     end
@@ -35,7 +35,7 @@ shared_examples_for 'a repo' do
     context 'when port returns empty array' do
       it 'should raise error' do
         expect {
-          port.should_receive(:find).with({ id: :foo }, attributes_list, {}).and_return([])
+          port.should_receive(:find_by_id).with(:foo, attributes_list).and_return([])
           subject.find_by_id(:foo)
         }.to raise_error ORMivore::RecordNotFound
       end
@@ -58,13 +58,13 @@ shared_examples_for 'a repo' do
     context 'when entity is not new' do
       before do
         entity.stub(:id).and_return(123)
-        port.stub(:update).with({ foo: 'bar' }, id: 123).and_return(1)
+        port.stub(:update_one).with(123, foo: 'bar').and_return(1)
       end
 
-      it 'delegates changes to port.update' do
+      it 'delegates changes to port.update_one' do
         entity.stub(:attributes).and_return(a: 'b')
         entity.should_receive(:changes).and_return(foo: 'changed')
-        port.should_receive(:update).with({ foo: 'changed' }, id: 123).and_return(1)
+        port.should_receive(:update_one).with(123, foo: 'changed').and_return(1)
         subject.persist(entity)
       end
 
@@ -75,14 +75,14 @@ shared_examples_for 'a repo' do
       end
 
       it 'raises error if record was not updated' do
-        port.should_receive(:update).with({ foo: 'bar' }, id: 123).and_return(0)
+        port.should_receive(:update_one).with(123, foo: 'bar').and_return(0)
         expect {
           subject.persist(entity)
         }.to raise_error ORMivore::StorageError
       end
 
       it 'raises error if more than one record was updated' do
-        port.should_receive(:update).with({ foo: 'bar' }, id: 123).and_return(2)
+        port.should_receive(:update_one).with(123, foo: 'bar').and_return(2)
         expect {
           subject.persist(entity)
         }.to raise_error ORMivore::StorageError

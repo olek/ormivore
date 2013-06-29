@@ -31,6 +31,12 @@ module ORMivore
       @adapter = adapter
     end
 
+    def find_by_id(id, attributes_to_load)
+      validate_finder_options({}, attributes_to_load)
+
+      adapter.find_by_id(id, attributes_to_load)
+    end
+
     def find(conditions, attributes_to_load, options = {})
       # TODO verify conditions to contain only keys that match attribute names and value of proper type
       validate_finder_options(options, attributes_to_load)
@@ -46,8 +52,14 @@ module ORMivore
       end
     end
 
-    def update(attrs, conditions)
-      adapter.update(attrs, conditions)
+    def update_one(id, attrs)
+      adapter.update_one(id, attrs)
+    rescue => e
+      raise ORMivore::StorageError, e.message
+    end
+
+    def update_all(attrs, conditions)
+      adapter.update_all(attrs, conditions)
     rescue => e
       raise ORMivore::StorageError, e.message
     end

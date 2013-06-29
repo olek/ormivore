@@ -1,4 +1,6 @@
-shared_examples_for 'an adapter' do
+require_relative 'shared_basic'
+
+shared_examples_for 'an expanded adapter' do
   let(:test_value) { 'Foo' }
 
   let(:attrs_list) { [:id].concat(attrs.keys) }
@@ -10,6 +12,8 @@ shared_examples_for 'an adapter' do
       factory_name, factory_attrs.merge(adapter: subject, test_attr => test_value).merge(overrides)
     ).attributes.symbolize_keys
   end
+
+  include_examples 'a basic adapter'
 
   it 'responds to find' do
     subject.should respond_to(:find)
@@ -133,35 +137,11 @@ shared_examples_for 'an adapter' do
     end
   end
 
-  describe '#create' do
-    context 'when attempting to create record with id that is already present in database' do
-      it 'raises error' do
-        expect {
-          subject.create(subject.create(attrs))
-        }.to raise_error ORMivore::StorageError
-      end
-    end
-
-    context 'when record does not have an id' do
-      it 'returns back attributes including new id' do
-        data = subject.create(attrs)
-        data.should include(attrs)
-        data[:id].should be_kind_of(Integer)
-      end
-
-      it 'inserts record in database' do
-        data = subject.create(attrs)
-
-        load_test_value(data[:id]).should == test_value
-      end
-    end
-  end
-
-  describe '#update' do
+  describe '#update_all' do
     context 'when record did not exist' do
       it 'returns 0 update count' do
         create_entity
-        subject.update(attrs, id: 123).should == 0
+        subject.update_all({ id: 123 }, attrs).should == 0
       end
     end
 
@@ -169,13 +149,13 @@ shared_examples_for 'an adapter' do
       it 'returns update count 1' do
         entity = create_entity
 
-        subject.update(attrs, id: entity[:id]).should == 1
+        subject.update_all({ id: entity[:id] }, attrs).should == 1
       end
 
       it 'updates record attributes' do
         entity = create_entity
 
-        subject.update({test_attr => 'Bar'}, id: entity[:id])
+        subject.update_all({ id: entity[:id] }, test_attr => 'Bar')
 
         load_test_value(entity[:id]).should == 'Bar'
       end
@@ -187,7 +167,7 @@ shared_examples_for 'an adapter' do
         entity_ids << create_entity[:id]
         entity_ids << create_entity[:id]
 
-        subject.update(attrs, id: entity_ids).should == 2
+        subject.update_all({ id: entity_ids }, attrs).should == 2
       end
     end
   end

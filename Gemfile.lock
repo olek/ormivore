@@ -49,6 +49,7 @@ GEM
       ffi (>= 0.5.0)
     rb-kqueue (0.2.0)
       ffi (>= 0.5.0)
+    redis (3.0.4)
     rspec (2.13.0)
       rspec-core (~> 2.13.0)
       rspec-expectations (~> 2.13.0)
@@ -73,5 +74,6 @@ DEPENDENCIES
   guard-rspec
   nested_exceptions
   rake
+  redis
   rspec
   sqlite3

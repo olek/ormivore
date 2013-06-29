@@ -1,6 +1,6 @@
 require 'logger'
 
-ConnectionManager.establish_connection 'test'#, Logger.new(STDOUT)
+ConnectionManager.establish_connection 'test' #, Logger.new(STDOUT)
 
 require 'database_cleaner'
 
@@ -9,13 +9,25 @@ if true
     config.treat_symbols_as_metadata_keys_with_true_values = true
 
     relational_db = { relational_db: true }
+    redis_db = { redis_db: true }
 
     config.before(:each, relational_db) do
-      DatabaseCleaner.strategy = :transaction
+      DatabaseCleaner[:active_record].strategy = :transaction
+      DatabaseCleaner[:redis].strategy = nil
+      DatabaseCleaner.start
+    end
+
+    config.before(:each, redis_db) do
+      DatabaseCleaner[:active_record].strategy = nil
+      DatabaseCleaner[:redis].strategy = :truncation
       DatabaseCleaner.start
     end
 
     config.after(:each, relational_db) do
+      DatabaseCleaner.clean
+    end
+
+    config.after(:each, redis_db) do
       DatabaseCleaner.clean
     end
   end
