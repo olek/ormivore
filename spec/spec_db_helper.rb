@@ -11,14 +11,17 @@ if true
     relational_db = { relational_db: true }
     redis_db = { redis_db: true }
 
+    config.before(:each) do
+      DatabaseCleaner[:active_record].strategy = nil
+      DatabaseCleaner[:redis].strategy = nil
+    end
+
     config.before(:each, relational_db) do
       DatabaseCleaner[:active_record].strategy = :transaction
-      DatabaseCleaner[:redis].strategy = nil
       DatabaseCleaner.start
     end
 
     config.before(:each, redis_db) do
-      DatabaseCleaner[:active_record].strategy = nil
       DatabaseCleaner[:redis].strategy = :truncation
       DatabaseCleaner.start
     end
