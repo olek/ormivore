@@ -1,7 +1,7 @@
-test:
-  adapter: sqlite3
-  database: db/db.test.sqlite3
-
-dev:
+dev: &dev
   adapter: sqlite3
   database: db/db.dev.sqlite3
+
+test:
+  <<: *dev
+  database: db/db.test.sqlite3

@@ -18,7 +18,7 @@ module ORMivore
     # TODO convert initialize to use named arguments (hash)
     def initialize(converter = nil, redis = nil)
       @converter = converter || self.class.default_converter_class.new
-      @redis = redis || $redis || Redis.new
+      @redis = (redis || ORMivore::Connections.redis) or fail "Redis connection is not provided/available"
     end
 
     def find_by_id(id, attributes_to_load)
