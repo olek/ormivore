@@ -57,12 +57,10 @@ module ORMivore
           declared_type = attributes_declaration[name]
           if declared_type && !attr_value.is_a?(declared_type)
             attrs[name] =
-              # TODO thos case statement is not elegant; figure it out
-              case declared_type.name
-              when Symbol.name
+              if declared_type == Symbol
                 attr_value.to_sym
               else
-                Kernel.public_send(declared_type.name.to_sym, attr_value)
+                Kernel.public_send(declared_type.name, attr_value)
               end
           end
         end
