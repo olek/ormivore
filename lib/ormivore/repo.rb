@@ -22,10 +22,14 @@ module ORMivore
       attrs_to_entity(port.find_by_id(
           id,
           [:id].concat(entity_class.attributes_list)
-        ).first
-     ).tap { |record|
-       raise RecordNotFound, "#{entity_class.name} with id #{id} was not found" if record.nil? && !quiet
-     }
+        )
+     )
+    rescue RecordNotFound => e
+      if quiet
+        return nil
+      else
+        raise e, "#{entity_class.name} with id #{id} was not found"
+      end
     end
 
     def persist(entity)

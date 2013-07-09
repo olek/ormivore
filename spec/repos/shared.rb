@@ -17,25 +17,25 @@ shared_examples_for 'a repo' do
 
   describe '#find_by_id' do
     it 'delegates to port' do
-      port.should_receive(:find_by_id).with(:foo, attributes_list).and_return([a: 'b'])
+      port.should_receive(:find_by_id).with(:foo, attributes_list).and_return(a: 'b')
       subject.find_by_id(:foo)
     end
 
     it 'creates and returns new entity' do
-      port.stub(:find_by_id).with(123, attributes_list).and_return([foo: 'bar'])
+      port.stub(:find_by_id).with(123, attributes_list).and_return(foo: 'bar')
       subject.find_by_id(123).should == :new_entity
     end
 
     it 'creates new entity with proper attributes' do
-      port.stub(:find_by_id).with(:foo, attributes_list).and_return([id: 123, foo: 'bar'])
+      port.stub(:find_by_id).with(:foo, attributes_list).and_return(id: 123, foo: 'bar')
       entity_class.should_receive(:construct).with({foo: 'bar'}, 123)
       subject.find_by_id(:foo)
     end
 
-    context 'when port returns empty array' do
-      it 'should raise error' do
+    context 'when port raises RecordNotFound' do
+      it 'should re-raise error' do
         expect {
-          port.should_receive(:find_by_id).with(:foo, attributes_list).and_return([])
+          port.should_receive(:find_by_id).with(:foo, attributes_list).and_raise(ORMivore::RecordNotFound)
           subject.find_by_id(:foo)
         }.to raise_error ORMivore::RecordNotFound
       end

@@ -11,6 +11,10 @@ if true
     relational_db = { relational_db: true }
     redis_db = { redis_db: true }
 
+    # it would be nice to be able to specify redis connection itself, so that
+    # cleanup is logged, but redis-rb does not allow for that
+    DatabaseCleaner[:redis, { :connection => ORMivore::Connections.redis.id }]
+
     config.before(:each) do
       DatabaseCleaner[:active_record].strategy = nil
       DatabaseCleaner[:redis].strategy = nil

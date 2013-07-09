@@ -17,9 +17,10 @@ shared_examples_for 'a basic adapter' do
 
   describe '#find_by_id' do
     context 'when id points to non-existing entity' do
-      # TODO returning array from find_by_id is madness, refactor it
-      it 'returns empty array' do
-        subject.find_by_id(123456789, attrs_list).should be_empty
+      it 'raises RecordNotFound error' do
+        expect {
+          subject.find_by_id(123456789, attrs_list)
+        }.to raise_error ORMivore::RecordNotFound
       end
     end
 
@@ -27,19 +28,18 @@ shared_examples_for 'a basic adapter' do
       it 'returns entity with id' do
         entity = create_entity
         data = subject.find_by_id(entity[:id], attrs_list)
-        data.first[:id].should == entity[:id]
+        data[:id].should == entity[:id]
       end
 
       it 'returns entity with proper attrs' do
         entity = create_entity
         data = subject.find_by_id(entity[:id], attrs_list)
-        data.should_not be_nil
-        data.first[test_attr].should == entity[test_attr]
+        data[test_attr].should == entity[test_attr]
       end
 
       it 'returns only required entity attrs' do
         entity = create_entity
-        data = subject.find_by_id(entity[:id], [test_attr]).first
+        data = subject.find_by_id(entity[:id], [test_attr])
         data.should == { test_attr => entity[test_attr] }
       end
     end

@@ -44,7 +44,16 @@ module ORMivore
     end
 
     def find_by_id(id, attributes_to_load)
-      find({ id: id }, attributes_to_load)
+      found = find({ id: id }, attributes_to_load)
+      case found.length
+      when 0
+        raise RecordNotFound, "Entity with id #{id} does not exist"
+      when 1
+        found.first
+      else
+        # should never happen, right?
+        raise StorageError, "More than one entity with id #{id} exists"
+      end
     end
 
     def find(conditions, attributes_to_load, options = {})

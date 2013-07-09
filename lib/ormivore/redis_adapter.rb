@@ -27,11 +27,10 @@ module ORMivore
       redis_reference = "#{prefix}:#{id}"
       if redis.exists(redis_reference)
         rtn = redis.mapped_hmget(redis_reference, *attributes_to_load).symbolize_keys
-        [ attributes_to_load.include?(:id) ? rtn.merge(id: id) : rtn ]
+        attributes_to_load.include?(:id) ? rtn.merge(id: id) : rtn
       else
-        []
+        raise RecordNotFound, "Entity with id #{id} does not exist"
       end
-      # keys = attributes_to_load.map { |attr| "#{key_prefix}:#{attr}" }
     end
 
     def find(conditions, attributes_to_load, options = {})

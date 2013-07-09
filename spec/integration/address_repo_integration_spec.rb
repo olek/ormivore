@@ -23,7 +23,7 @@ describe App::AddressRepo do
   let(:factory_name) { :shipping_address }
   let(:factory_attrs) { { account_id: account_id } }
 
-  context 'with AccountStorageArAdapter', :relational_db do
+  context 'with AddressStorageArAdapter', :relational_db do
     include ArHelpers
 
     let(:account_adapter) { App::AccountStorageArAdapter.new }
@@ -33,7 +33,7 @@ describe App::AddressRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AccountStorageMemoryAdapter' do
+  context 'with AddressStorageMemoryAdapter' do
     include MemoryHelpers
 
     let(:account_adapter) { App::AccountStorageMemoryAdapter.new }
@@ -42,7 +42,7 @@ describe App::AddressRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AccountStorageRedisAdapter', :redis_db do
+  context 'with AddressStorageRedisAdapter', :redis_db do
     include RedisHelpers
 
     let(:account_adapter) { App::AccountStorageRedisAdapter.new }
