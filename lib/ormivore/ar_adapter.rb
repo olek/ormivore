@@ -39,8 +39,8 @@ module ORMivore
       base.extend(ClassMethods)
     end
 
-    def initialize(converter = nil)
-      @converter = converter || self.class.default_converter_class.new
+    def initialize(options = {})
+      @converter = options[:converter] || self.class.default_converter_class.new
     end
 
     def find_by_id(id, attributes_to_load)

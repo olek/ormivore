@@ -8,8 +8,11 @@ require 'bundler/setup'
 
 Bundler.require(:default)
 
+require 'active_record'
+require 'logger'
+
 require_relative 'require_helpers'
 
 RequireHelpers.require_all
 
-ConnectionManager.establish_connection(YAML::load(File.open('./db/database.yml')), Logger.new(STDOUT))
+ConnectionManager.establish_connection(:dev, Logger.new(STDOUT))
