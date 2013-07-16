@@ -1,4 +1,3 @@
-# TODO figure out how to add validation in a nice way
 module ORMivore
   module Entity
     module ClassMethods
@@ -26,9 +25,6 @@ module ORMivore
         obj.instance_variable_set(:@id, id)
         obj.instance_variable_set(:@base_attributes, base_attributes)
         obj.instance_variable_set(:@dirty_attributes, dirty_attributes)
-
-        # TODO how to do custom validation?
-        # validate
 
         obj
       end
@@ -195,9 +191,6 @@ module ORMivore
       @dirty_attributes = coerced_attrs
 
       self.class.validate_presence_of_proper_attributes(@base_attributes, @dirty_attributes)
-
-      # TODO how to do custom validation?
-      # validate
     end
   end
 end

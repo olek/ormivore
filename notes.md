@@ -2,7 +2,6 @@
 
 ## TODOs
 
-- add integration specs for redis adapter
 - add a functionality to repo that allows querying for multiple entities
 by thier ids, returning map of id to found entity; even better - allow
 arbitrary input objects, require block that translates that input object

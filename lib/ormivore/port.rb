@@ -1,4 +1,3 @@
-# TODO maybe add validations for conditions, if not attributes
 module ORMivore
   module Port
     module ClassMethods
@@ -6,18 +5,6 @@ module ORMivore
 
       private
       attr_writer :attributes
-
-=begin
-      def finders(*methods)
-        methods.each do |method|
-          instance_eval <<-EOS
-            def #{method}(*args, &block)
-              storage.__send__(:#{method}, *args, &block)
-            end
-          EOS
-        end
-      end
-=end
     end
 
     def self.included(base)
@@ -38,7 +25,6 @@ module ORMivore
     end
 
     def find(conditions, attributes_to_load, options = {})
-      # TODO verify conditions to contain only keys that match attribute names and value of proper type
       validate_finder_options(options, attributes_to_load)
 
       adapter.find(conditions, attributes_to_load, options)
@@ -67,17 +53,6 @@ module ORMivore
     private
 
     attr_reader :adapter
-
-=begin
-    def attributes
-      self.class.attributes
-    end
-
-    def validate_conditions(conditions)
-      extra = conditions.keys - attributes.keys
-      raise BadConditionsError, extra.join("\n") unless extra.empty?
-    end
-=end
 
     def validate_finder_options(options, attributes_to_load)
       options = options.dup

@@ -57,5 +57,12 @@ module ORMivore
         nil
       end
     end
+
+=begin
+    def validate_conditions(conditions)
+      extra = conditions.keys - attributes.keys
+      raise BadConditionsError, extra.join("\n") unless extra.empty?
+    end
+=end
   end
 end
