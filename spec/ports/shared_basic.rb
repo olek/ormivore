@@ -12,6 +12,13 @@ shared_examples_for 'a basic port' do
     end
   end
 
+  describe '#find_by_ids' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:find_by_ids).with(:foo, :list).and_return(:bar)
+      subject.find_by_ids(:foo, :list).should == :bar
+    end
+  end
+
   describe '#create' do
     it 'delegates to adapter' do
       adapter.should_receive(:create).with(:foo).and_return(:bar)

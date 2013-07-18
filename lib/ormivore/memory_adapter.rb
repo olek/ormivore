@@ -28,6 +28,13 @@ module ORMivore
       end
     end
 
+    def find_by_ids(ids, attributes_to_load)
+      find(
+        { id: ids },
+        attributes_to_load
+      )
+    end
+
     def find(conditions, attributes_to_load, options = {})
       order = options.fetch(:order, {})
       limit = options[:limit]

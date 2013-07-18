@@ -24,6 +24,12 @@ module ORMivore
       adapter.find_by_id(id, attributes_to_load)
     end
 
+    def find_by_ids(ids, attributes_to_load)
+      validate_finder_options({}, attributes_to_load)
+
+      adapter.find_by_ids(ids, attributes_to_load)
+    end
+
     def find(conditions, attributes_to_load, options = {})
       validate_finder_options(options, attributes_to_load)
 

@@ -2,10 +2,6 @@
 
 ## TODOs
 
-- add a functionality to repo that allows querying for multiple entities
-by thier ids, returning map of id to found entity; even better - allow
-arbitrary input objects, require block that translates that input object
-to id, and return map of objects to found entities
 - add support for transactions
 - add optional 'finder' cache
 - add optional identity map

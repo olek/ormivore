@@ -23,13 +23,39 @@ module ORMivore
           id,
           [:id].concat(entity_class.attributes_list)
         )
-     )
+      )
     rescue RecordNotFound => e
       if quiet
         return nil
       else
         raise e, "#{entity_class.name} with id #{id} was not found"
       end
+    end
+
+    def find_by_ids(objects, options = {})
+      quiet = options.fetch(:quiet, false)
+
+      ids =
+        if block_given?
+          objects.map { |o| yield(o) }
+        else
+          objects
+        end
+
+      entities_attrs = port.find_by_ids(
+        ids,
+        [:id].concat(entity_class.attributes_list)
+      )
+
+      objects.each_with_object({}) { |o, entities_map|
+        id = block_given? ? yield(o) : o
+        entity_attrs = entities_attrs.find { |e| e[:id] == id }
+        if entity_attrs
+          entities_map[o] = attrs_to_entity(entity_attrs)
+        elsif !quiet
+          raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
+        end
+      }
     end
 
     def persist(entity)

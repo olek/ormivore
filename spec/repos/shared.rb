@@ -3,10 +3,14 @@ shared_examples_for 'a repo' do
     double('entity', id: nil, changes: { foo: 'bar' })
   }
 
+  let(:new_entity) {
+    double('new_entity', id: 123)
+  }
+
   let(:attributes_list) { [:id, :foo] }
 
   let(:entity_class) {
-    double('entity_class', construct: :new_entity, name: 'FakeEntity', attributes_list: [:foo])
+    double('entity_class', construct: new_entity, name: 'FakeEntity', attributes_list: [:foo])
   }
 
   let(:port) {
@@ -23,7 +27,7 @@ shared_examples_for 'a repo' do
 
     it 'creates and returns new entity' do
       port.stub(:find_by_id).with(123, attributes_list).and_return(foo: 'bar')
-      subject.find_by_id(123).should == :new_entity
+      subject.find_by_id(123).should == new_entity
     end
 
     it 'creates new entity with proper attributes' do
@@ -42,6 +46,54 @@ shared_examples_for 'a repo' do
     end
   end
 
+  # TODO now add integration test for it
+  describe '#find_by_ids' do
+    it 'delegates to port' do
+      port.should_receive(:find_by_ids).with([123, 124], attributes_list).and_return([{}, {}])
+      subject.find_by_ids([123, 124], quiet: true)
+    end
+
+    it 'creates and returns new entity' do
+      port.stub(:find_by_ids).with(anything, anything).and_return([{ id: 123 }, {}])
+      subject.find_by_ids([123, 124], quiet: true).should == { new_entity.id => new_entity }
+    end
+
+    it 'creates new entity with proper attributes' do
+      port.stub(:find_by_ids).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
+      entity_class.should_receive(:construct).with({a: 'b'}, 123)
+      entity_class.should_receive(:construct).with({c: 'd'}, 124)
+      subject.find_by_ids([123, 124], quiet: true)
+    end
+
+    context 'when entity is not found by id' do
+      context 'when quiet option is set to false (default)' do
+        it 'raises error' do
+          expect {
+            port.should_receive(:find_by_ids).with(anything, anything).and_return([])
+            subject.find_by_ids([123])
+          }.to raise_error ORMivore::RecordNotFound
+        end
+      end
+    end
+
+    context 'when block is provided' do
+      it 'uses block to convert array of objects to array of ids' do
+        port.should_receive(:find_by_ids).with([123, 124], attributes_list).and_return([{}, {}])
+        subject.find_by_ids(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
+      end
+
+      it 'returns map of input objects to entities' do
+        port.stub(:find_by_ids).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
+        entity_class.stub(:construct).with({a: 'b'}, 123).and_return(:foo)
+        entity_class.stub(:construct).with({c: 'd'}, 124).and_return(:bar)
+        result = subject.find_by_ids(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
+        result.should have(2).entities
+        result['321'].should == :foo
+        result['421'].should == :bar
+      end
+    end
+  end
+
   describe '#persist' do
     context 'when entity is new' do
       it 'delegates to port.create' do
@@ -51,7 +103,7 @@ shared_examples_for 'a repo' do
 
       it 'creates and returns new entity' do
         port.stub(:create).with(foo: 'bar').and_return(id: 123, foo: 'bar')
-        subject.persist(entity).should == :new_entity
+        subject.persist(entity).should == new_entity
       end
     end
 

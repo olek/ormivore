@@ -1,7 +1,7 @@
 shared_examples_for 'an integrated repo' do
   let(:test_value) { 'Foo' }
 
-  def create_entity
+  def new_entity_attrs
     FactoryGirl.create(
       factory_name, factory_attrs.merge(adapter: adapter, test_attr => test_value)
     ).attributes.symbolize_keys
@@ -10,20 +10,70 @@ shared_examples_for 'an integrated repo' do
   subject { described_class.new(port) }
 
   describe '#find_by_id' do
-    it 'loads entity if found' do
-      account = create_entity
-      subject.find_by_id(account[:id]).public_send(test_attr).should == test_value
+    context 'when entity can be found' do
+      it 'loads entity' do
+        entity_attrs = new_entity_attrs
+        subject.find_by_id(entity_attrs[:id]).public_send(test_attr).should == test_value
+      end
     end
 
-    it 'raises error if entity is not found' do
-      expect {
-        subject.find_by_id(123)
-      }.to raise_error ORMivore::RecordNotFound
+    context 'when entity can not be found' do
+      it 'raises error if entity is not found' do
+        expect {
+          subject.find_by_id(123)
+        }.to raise_error ORMivore::RecordNotFound
+      end
+
+      context 'in quiet mode' do
+        it 'returns nil if entity is not found' do
+          subject.find_by_id(123, quiet: true).should be_nil
+        end
+      end
+    end
+  end
+
+  describe '#find_by_ids' do
+    context 'when all entities can be found' do
+      it 'loads entities' do
+        entity_attrs_1 = new_entity_attrs
+        entity_attrs_2 = new_entity_attrs
+        entity_id_1 = entity_attrs_1[:id]
+        entity_id_2 = entity_attrs_2[:id]
+
+        entities_map = subject.find_by_ids([entity_id_1, entity_id_2])
+        entity1 = entities_map[entity_id_1]
+        entity2 = entities_map[entity_id_2]
+
+        entity1.id.should == entity_id_1
+        entity2.id.should == entity_id_2
+        entity1.public_send(test_attr).should == test_value
+        entity2.public_send(test_attr).should == test_value
+      end
     end
 
-    context 'in quiet mode' do
-      it 'returns nil if entity is not found' do
-        subject.find_by_id(123, quiet: true).should be_nil
+    context 'when entity can not be found' do
+      it 'raises error if entity is not found' do
+        expect {
+          subject.find_by_ids([123])
+        }.to raise_error ORMivore::RecordNotFound
+      end
+
+      context 'in quiet mode' do
+        it 'returns empty array if no entities are found' do
+          subject.find_by_ids([123], quiet: true).should be_empty
+        end
+
+        it 'returns only found entities if not all entities are found' do
+          entity_attrs_1 = new_entity_attrs
+          entity_id_1 = entity_attrs_1[:id]
+
+          entities_map = subject.find_by_ids([entity_id_1, 124], quiet: true)
+
+          entities_map.should have(1).entity
+          entity1 = entities_map[entity_id_1]
+          entity1.should_not be_nil
+          entity1.id.should == entity_id_1
+        end
       end
     end
   end
@@ -50,7 +100,7 @@ shared_examples_for 'an integrated repo' do
 
     context 'when entity is not new' do
       let(:existing_entity_id) {
-        create_entity[:id]
+        new_entity_attrs[:id]
       }
 
       it 'updates record in database' do

@@ -20,16 +20,26 @@ module ORMivore
       @redis = (options[:redis] || ORMivore::Connections.redis) or fail "Redis connection is not provided/available"
     end
 
-    def find_by_id(id, attributes_to_load)
+    # options attribute is strictly private implementation detail
+    def find_by_id(id, attributes_to_load, options = {})
+      quiet = options.fetch(:quiet, false)
+
       raise ArgumentError unless id
       raise ArgumentError unless attributes_to_load && !attributes_to_load.empty?
       redis_reference = "#{prefix}:#{id}"
       if redis.exists(redis_reference)
         rtn = redis.mapped_hmget(redis_reference, *attributes_to_load).symbolize_keys
         attributes_to_load.include?(:id) ? rtn.merge(id: id) : rtn
+      elsif quiet
+        nil
       else
         raise RecordNotFound, "Entity with id #{id} does not exist"
       end
+    end
+
+    def find_by_ids(ids, attributes_to_load)
+      # TODO optimize loading of multiple entities from redis
+      ids.map { |id| find_by_id(id, attributes_to_load, quiet: true) }.compact
     end
 
     def find(conditions, attributes_to_load, options = {})
