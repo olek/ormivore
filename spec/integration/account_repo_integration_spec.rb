@@ -2,6 +2,7 @@ require 'spec_helper'
 require_relative 'shared'
 require_relative '../adapters/memory_helpers'
 require_relative '../adapters/ar_helpers'
+require_relative '../adapters/sequel_helpers'
 require_relative '../adapters/redis_helpers'
 
 describe App::AccountRepo do
@@ -17,6 +18,14 @@ describe App::AccountRepo do
   let(:factory_name) { :account }
   let(:factory_attrs) { {} }
 
+  context 'with AccountStorageMemoryAdapter' do
+    include MemoryHelpers
+
+    let(:adapter) { App::AccountStorageMemoryAdapter.new }
+
+    it_behaves_like 'an integrated repo'
+  end
+
   context 'with AccountStorageArAdapter', :relational_db do
     include ArHelpers
 
@@ -26,10 +35,11 @@ describe App::AccountRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AccountStorageMemoryAdapter' do
-    include MemoryHelpers
+  context 'with AccountStorageSequelAdapter', :relational_db do
+    include SequelHelpers
 
-    let(:adapter) { App::AccountStorageMemoryAdapter.new }
+    let(:entity_table) { 'accounts' }
+    let(:adapter) { App::AccountStorageSequelAdapter.new }
 
     it_behaves_like 'an integrated repo'
   end

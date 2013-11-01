@@ -4,6 +4,7 @@ module ConnectionManager
       raise unless env
 
       establish_activerecord_connection(env, logger)
+      establish_sequel_connection(env, logger)
       establish_redis_connection(env, logger)
     end
 
@@ -19,6 +20,17 @@ module ConnectionManager
 
         ActiveRecord::Base.logger = logger
       end
+    end
+ 
+    def establish_sequel_connection(env, logger)
+      configuration = load_configuration('database', env)
+
+      configuration[:adapter] = 'sqlite' if configuration[:adapter] == 'sqlite3'
+
+      puts "Connecting to sequel database #{configuration[:database]}"
+
+      ORMivore::Connections.sequel = Sequel.connect(
+        configuration.merge(logger: logger))
     end
 
     def establish_redis_connection(env, logger)

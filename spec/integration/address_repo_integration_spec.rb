@@ -2,6 +2,7 @@ require 'spec_helper'
 require_relative 'shared'
 require_relative '../adapters/memory_helpers'
 require_relative '../adapters/ar_helpers'
+require_relative '../adapters/sequel_helpers'
 require_relative '../adapters/redis_helpers'
 
 describe App::AddressRepo do
@@ -23,6 +24,15 @@ describe App::AddressRepo do
   let(:factory_name) { :shipping_address }
   let(:factory_attrs) { { account_id: account_id } }
 
+  context 'with AddressStorageMemoryAdapter' do
+    include MemoryHelpers
+
+    let(:account_adapter) { App::AccountStorageMemoryAdapter.new }
+    let(:adapter) { App::AddressStorageMemoryAdapter.new }
+
+    it_behaves_like 'an integrated repo'
+  end
+
   context 'with AddressStorageArAdapter', :relational_db do
     include ArHelpers
 
@@ -33,11 +43,12 @@ describe App::AddressRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AddressStorageMemoryAdapter' do
-    include MemoryHelpers
+  context 'with AddressStorageSequelAdapter', :relational_db do
+    include SequelHelpers
 
-    let(:account_adapter) { App::AccountStorageMemoryAdapter.new }
-    let(:adapter) { App::AddressStorageMemoryAdapter.new }
+    let(:account_adapter) { App::AccountStorageSequelAdapter.new }
+    let(:adapter) { App::AddressStorageSequelAdapter.new }
+    let(:entity_table) { 'addresses' }
 
     it_behaves_like 'an integrated repo'
   end

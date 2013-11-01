@@ -4,8 +4,9 @@ gem 'nested_exceptions'
 
 group :development do
   gem 'rake'
-  gem 'activesupport', '~>3.2.3'
-  gem 'activerecord', '~>3.2.3'
+  gem 'sequel', '~>4.4'
+  gem 'activesupport', '~>3.2'
+  gem 'activerecord', '~>3.2'
   gem 'sqlite3'
   gem 'redis'
   gem 'rspec'

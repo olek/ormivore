@@ -1,5 +1,6 @@
 require 'rspec'
 require 'active_record'
+require 'sequel'
 
 require_relative '../app/require_helpers'
 

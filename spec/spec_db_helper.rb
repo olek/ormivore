@@ -14,14 +14,18 @@ if true
     # it would be nice to be able to specify redis connection itself, so that
     # cleanup is logged, but redis-rb does not allow for that
     DatabaseCleaner[:redis, { :connection => ORMivore::Connections.redis.id }]
+    DatabaseCleaner[:sequel, { :connection => ORMivore::Connections.sequel }]
 
     config.before(:each) do
       DatabaseCleaner[:active_record].strategy = nil
+      DatabaseCleaner[:sequel].strategy = nil
       DatabaseCleaner[:redis].strategy = nil
     end
 
+    # TODO looks like :relational_db needs to be split to AR/Sequel
     config.before(:each, relational_db) do
       DatabaseCleaner[:active_record].strategy = :transaction
+      DatabaseCleaner[:sequel].strategy = :transaction
       DatabaseCleaner.start
     end
 

@@ -114,23 +114,23 @@ shared_examples_for 'an expanded adapter' do
       context 'when offset option is provided' do
         it 'limits number of records returned' do
           subject.find(
-            {}, attrs_list, offset: 1
+            {}, attrs_list, offset: 1, limit: 999
           ).should have(1).record
         end
 
         it 'offsets records in their order' do
           subject.find(
-            {}, attrs_list, order: { test_attr => :ascending }, offset: 1
+            {}, attrs_list, order: { test_attr => :ascending }, offset: 1, limit: 999
           ).map { |o| o[test_attr] }.should == ['v2']
 
           subject.find(
-            {}, attrs_list, order: { test_attr => :descending }, offset: 1
+            {}, attrs_list, order: { test_attr => :descending }, offset: 1, limit: 999
           ).map { |o| o[test_attr] }.should == ['v1']
         end
 
         it 'raises error if non-integer offset is provided' do
           expect {
-            subject.find({}, attrs_list, offset: 'foo')
+            subject.find({}, attrs_list, offset: 'foo', limit: 999)
           }.to raise_error ArgumentError
         end
       end

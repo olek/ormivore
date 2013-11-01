@@ -1,8 +1,9 @@
 require 'spec_helper'
 
 require_relative 'shared_expanded'
-require_relative 'ar_helpers'
 require_relative 'memory_helpers'
+require_relative 'ar_helpers'
+require_relative 'sequel_helpers'
 require_relative 'redis_helpers'
 
 describe 'address storage adapters' do
@@ -22,6 +23,15 @@ describe 'address storage adapters' do
   let(:factory_name) { :shipping_address }
   let(:factory_attrs) { { account_id: account_id } }
 
+  describe App::AddressStorageMemoryAdapter do
+    include MemoryHelpers
+
+    let(:account_adapter) { App::AccountStorageMemoryAdapter.new }
+    let(:adapter) { App::AddressStorageMemoryAdapter.new }
+
+    it_behaves_like 'an expanded adapter'
+  end
+
   describe App::AddressStorageArAdapter, :relational_db do
     include ArHelpers
 
@@ -32,11 +42,12 @@ describe 'address storage adapters' do
     it_behaves_like 'an expanded adapter'
   end
 
-  describe App::AddressStorageMemoryAdapter do
-    include MemoryHelpers
+  describe App::AddressStorageSequelAdapter, :relational_db do
+    include SequelHelpers
 
-    let(:account_adapter) { App::AccountStorageMemoryAdapter.new }
-    let(:adapter) { App::AddressStorageMemoryAdapter.new }
+    let(:account_adapter) { App::AccountStorageSequelAdapter.new }
+    let(:entity_table) { 'addresses' }
+    let(:adapter) { App::AddressStorageSequelAdapter.new }
 
     it_behaves_like 'an expanded adapter'
   end

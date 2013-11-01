@@ -5,7 +5,6 @@
 - add support for transactions
 - add optional 'finder' cache
 - add optional identity map
-- add simple SQL / Sequel adapter instead / in addition to AR
 
 ## Ideas
 

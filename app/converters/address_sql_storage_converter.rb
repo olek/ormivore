@@ -45,6 +45,9 @@ module App
           copy[:addressable_id] = account_id
           copy[:addressable_type] = 'Account'
         end
+        # TODO can this symbol to string conversion be automated?
+        copy[:country_code] = copy[:country_code].to_s if copy[:country_code]
+        copy[:region_code] = copy[:region_code].to_s if copy[:region_code]
       }
     end
   end

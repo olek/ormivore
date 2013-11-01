@@ -4,6 +4,7 @@ require_relative 'shared_basic'
 require_relative 'shared_expanded'
 require_relative 'memory_helpers'
 require_relative 'ar_helpers'
+require_relative 'sequel_helpers'
 require_relative 'redis_helpers'
 
 describe 'account storage adapters' do
@@ -29,6 +30,14 @@ describe 'account storage adapters' do
       include ArHelpers
       let(:entity_table) { 'accounts' }
       let(:adapter) { App::AccountStorageArAdapter.new }
+    end
+  end
+
+  describe App::AccountStorageSequelAdapter, :relational_db do
+    it_behaves_like 'an expanded adapter' do
+      include SequelHelpers
+      let(:entity_table) { 'accounts' }
+      let(:adapter) { App::AccountStorageSequelAdapter.new }
     end
   end
 
