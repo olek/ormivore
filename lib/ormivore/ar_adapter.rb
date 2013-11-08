@@ -1,5 +1,7 @@
 module ORMivore
   module ArAdapter
+    include ConvenienceIdFinders
+
     module ClassMethods
       attr_reader :default_converter_class
       attr_reader :table_name
@@ -41,27 +43,6 @@ module ORMivore
 
     def initialize(options = {})
       @converter = options[:converter] || self.class.default_converter_class.new
-    end
-
-    #TODO find_by_id and find_by_ids should be extracted and shared between ArAdapter and MemoryAdapter
-    def find_by_id(id, attributes_to_load)
-      found = find({ id: id }, attributes_to_load)
-      case found.length
-      when 0
-        raise RecordNotFound, "Entity with id #{id} does not exist"
-      when 1
-        found.first
-      else
-        # should never happen, right?
-        raise StorageError, "More than one entity with id #{id} exists"
-      end
-    end
-
-    def find_by_ids(ids, attributes_to_load)
-      find(
-        { id: ids },
-        attributes_to_load
-      )
     end
 
     def find(conditions, attributes_to_load, options = {})
