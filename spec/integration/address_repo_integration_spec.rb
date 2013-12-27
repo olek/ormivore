@@ -53,6 +53,16 @@ describe App::AddressRepo do
     it_behaves_like 'an integrated repo'
   end
 
+  context 'with AddressStoragePreparedSequelAdapter', :sequel_db do
+    include SequelHelpers
+
+    let(:account_adapter) { App::AccountStoragePreparedSequelAdapter.new }
+    let(:adapter) { App::AddressStoragePreparedSequelAdapter.new }
+    let(:entity_table) { 'addresses' }
+
+    it_behaves_like 'an integrated repo'
+  end
+
   context 'with AddressStorageRedisAdapter', :redis_db do
     include RedisHelpers
 

@@ -9,6 +9,7 @@ require 'bundler/setup'
 Bundler.require(:default)
 
 require 'active_record'
+require 'sequel'
 require 'logger'
 
 require_relative 'require_helpers'

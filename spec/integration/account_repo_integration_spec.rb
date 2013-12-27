@@ -44,6 +44,15 @@ describe App::AccountRepo do
     it_behaves_like 'an integrated repo'
   end
 
+  context 'with AccountStoragePreparedSequelAdapter', :sequel_db do
+    include SequelHelpers
+
+    let(:entity_table) { 'accounts' }
+    let(:adapter) { App::AccountStoragePreparedSequelAdapter.new }
+
+    it_behaves_like 'an integrated repo'
+  end
+
   context 'with AccountStorageRedisAdapter', :redis_db do
     include RedisHelpers
 

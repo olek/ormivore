@@ -52,6 +52,16 @@ describe 'address storage adapters' do
     it_behaves_like 'an expanded adapter'
   end
 
+  describe App::AddressStoragePreparedSequelAdapter, :relational_db do
+    include SequelHelpers
+
+    let(:account_adapter) { App::AccountStoragePreparedSequelAdapter.new }
+    let(:entity_table) { 'addresses' }
+    let(:adapter) { App::AddressStoragePreparedSequelAdapter.new }
+
+    it_behaves_like 'an expanded adapter'
+  end
+
   describe App::AddressStorageRedisAdapter, :redis_db do
     include RedisHelpers
 

@@ -41,6 +41,14 @@ describe 'account storage adapters' do
     end
   end
 
+  describe App::AccountStoragePreparedSequelAdapter, :relational_db do
+    it_behaves_like 'an expanded adapter' do
+      include SequelHelpers
+      let(:entity_table) { 'accounts' }
+      let(:adapter) { App::AccountStoragePreparedSequelAdapter.new }
+    end
+  end
+
   describe App::AccountStorageRedisAdapter, :redis_db do
     it_behaves_like 'a basic adapter' do
       include RedisHelpers

@@ -53,7 +53,7 @@ module ORMivore
               converter.to_storage(attrs))
           )
 
-        attrs.merge(id: id)
+      attrs.merge(id: id)
     rescue Sequel::DatabaseError => e
       raise StorageError.new(e)
     end
