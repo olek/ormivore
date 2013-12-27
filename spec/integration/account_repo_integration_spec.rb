@@ -26,7 +26,7 @@ describe App::AccountRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AccountStorageArAdapter', :relational_db do
+  context 'with AccountStorageArAdapter', :ar_db do
     include ArHelpers
 
     let(:entity_table) { 'accounts' }
@@ -35,7 +35,7 @@ describe App::AccountRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AccountStorageSequelAdapter', :relational_db do
+  context 'with AccountStorageSequelAdapter', :sequel_db do
     include SequelHelpers
 
     let(:entity_table) { 'accounts' }

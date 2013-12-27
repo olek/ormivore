@@ -32,7 +32,7 @@ describe 'address storage adapters' do
     it_behaves_like 'an expanded adapter'
   end
 
-  describe App::AddressStorageArAdapter, :relational_db do
+  describe App::AddressStorageArAdapter, :ar_db do
     include ArHelpers
 
     let(:account_adapter) { App::AccountStorageArAdapter.new }
@@ -42,7 +42,7 @@ describe 'address storage adapters' do
     it_behaves_like 'an expanded adapter'
   end
 
-  describe App::AddressStorageSequelAdapter, :relational_db do
+  describe App::AddressStorageSequelAdapter, :sequel_db do
     include SequelHelpers
 
     let(:account_adapter) { App::AccountStorageSequelAdapter.new }
@@ -52,7 +52,7 @@ describe 'address storage adapters' do
     it_behaves_like 'an expanded adapter'
   end
 
-  describe App::AddressStoragePreparedSequelAdapter, :relational_db do
+  describe App::AddressStoragePreparedSequelAdapter, :sequel_db do
     include SequelHelpers
 
     let(:account_adapter) { App::AccountStoragePreparedSequelAdapter.new }

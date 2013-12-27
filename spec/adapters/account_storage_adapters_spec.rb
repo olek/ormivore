@@ -25,7 +25,7 @@ describe 'account storage adapters' do
     end
   end
 
-  describe App::AccountStorageArAdapter, :relational_db do
+  describe App::AccountStorageArAdapter, :ar_db do
     it_behaves_like 'an expanded adapter' do
       include ArHelpers
       let(:entity_table) { 'accounts' }
@@ -33,7 +33,7 @@ describe 'account storage adapters' do
     end
   end
 
-  describe App::AccountStorageSequelAdapter, :relational_db do
+  describe App::AccountStorageSequelAdapter, :sequel_db do
     it_behaves_like 'an expanded adapter' do
       include SequelHelpers
       let(:entity_table) { 'accounts' }
@@ -41,7 +41,7 @@ describe 'account storage adapters' do
     end
   end
 
-  describe App::AccountStoragePreparedSequelAdapter, :relational_db do
+  describe App::AccountStoragePreparedSequelAdapter, :sequel_db do
     it_behaves_like 'an expanded adapter' do
       include SequelHelpers
       let(:entity_table) { 'accounts' }

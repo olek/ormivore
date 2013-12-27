@@ -33,7 +33,7 @@ describe App::AddressRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AddressStorageArAdapter', :relational_db do
+  context 'with AddressStorageArAdapter', :ar_db do
     include ArHelpers
 
     let(:account_adapter) { App::AccountStorageArAdapter.new }
@@ -43,7 +43,7 @@ describe App::AddressRepo do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with AddressStorageSequelAdapter', :relational_db do
+  context 'with AddressStorageSequelAdapter', :sequel_db do
     include SequelHelpers
 
     let(:account_adapter) { App::AccountStorageSequelAdapter.new }

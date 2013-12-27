@@ -8,7 +8,8 @@ if true
   RSpec.configure do |config|
     config.treat_symbols_as_metadata_keys_with_true_values = true
 
-    relational_db = { relational_db: true }
+    ar_db = { ar_db: true }
+    sequel_db = { sequel_db: true }
     redis_db = { redis_db: true }
 
     # it would be nice to be able to specify redis connection itself, so that
@@ -22,9 +23,12 @@ if true
       DatabaseCleaner[:redis].strategy = nil
     end
 
-    # TODO looks like :relational_db needs to be split to AR/Sequel
-    config.before(:each, relational_db) do
+    config.before(:each, ar_db) do
       DatabaseCleaner[:active_record].strategy = :transaction
+      DatabaseCleaner.start
+    end
+
+    config.before(:each, sequel_db) do
       DatabaseCleaner[:sequel].strategy = :transaction
       DatabaseCleaner.start
     end
@@ -34,7 +38,11 @@ if true
       DatabaseCleaner.start
     end
 
-    config.after(:each, relational_db) do
+    config.after(:each, ar_db) do
+      DatabaseCleaner.clean
+    end
+
+    config.after(:each, sequel_db) do
       DatabaseCleaner.clean
     end
 
