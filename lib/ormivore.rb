@@ -1,0 +1,7 @@
+require 'ormivore/errors'
+require 'ormivore/entity'
+require 'ormivore/port'
+require 'ormivore/repo'
+require 'ormivore/connections'
+require 'ormivore/convenience_id_finders'
+require 'ormivore/memory_adapter'

@@ -20,7 +20,12 @@ module RequireHelpers
     def require_all
       augment_load_path
 
-      require 'init'
+      require 'ormivore'
+
+      require 'ormivore/ar_adapter'
+      require 'ormivore/redis_adapter'
+      require 'ormivore/sequel_adapter'
+      require 'ormivore/prepared_sequel_adapter'
 
       require 'app/connection_manager'
 
