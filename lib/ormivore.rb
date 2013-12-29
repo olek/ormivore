@@ -1,4 +1,5 @@
 require 'ormivore/errors'
+require 'ormivore/entity_coercions'
 require 'ormivore/entity'
 require 'ormivore/port'
 require 'ormivore/repo'

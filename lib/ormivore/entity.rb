@@ -1,7 +1,7 @@
 module ORMivore
   module Entity
     module ClassMethods
-      ALLOWED_ATTRIBUTE_TYPES = [String, Symbol, Integer, Float].freeze
+      ALLOWED_ATTRIBUTE_TYPES = Coercions.constants.map { |sym| Coercions.const_get(sym) }.freeze
 
       attr_reader :attributes_declaration
       attr_reader :optional_attributes_list
@@ -53,11 +53,7 @@ module ORMivore
           declared_type = attributes_declaration[name]
           if declared_type && !attr_value.is_a?(declared_type)
             attrs[name] =
-              if declared_type == Symbol
-                attr_value.to_sym
-              else
-                Kernel.public_send(declared_type.name, attr_value)
-              end
+              declared_type.coerce(attr_value)
           end
         end
       rescue ArgumentError => e
@@ -99,7 +95,7 @@ module ORMivore
       # ORMivore API from those that are NOT
       def expensive_validate_presence_of_proper_attributes(attrs)
         attributes_list.each do |attr|
-          unless attrs.delete(attr) || optional_attributes_list.include?(attr)
+          unless attrs.delete(attr) != nil || optional_attributes_list.include?(attr)
             raise BadAttributesError, "Missing attribute '#{attr}'"
           end
         end
@@ -123,7 +119,8 @@ module ORMivore
     end
 
     def self.included(base)
-      base.extend(ClassMethods)
+      base.send(:include, Coercions) # how naughty of us
+      base.extend(ClassMethods) # not so naughty, but still...
 
       base.module_eval(<<-EOS)
         class Builder

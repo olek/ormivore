@@ -8,6 +8,7 @@
 
 ## Ideas
 
+- lazy coercion of attributes, at least dates
 - figure out how to allow for 'callbacks' implementation by creating wrapper repo
 - figure out how/when to do validation
 - add simple application using the ORMivore in addition to sample
