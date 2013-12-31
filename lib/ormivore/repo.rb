@@ -60,11 +60,15 @@ module ORMivore
 
     def persist(entity)
       if entity.id
-        count = port.update_one(entity.id, entity.changes)
-        raise ORMivore::StorageError, 'No records updated' if count.zero?
-        raise ORMivore::StorageError, 'WTF' if count > 1
+        if entity.changed?
+          count = port.update_one(entity.id, entity.changes)
+          raise ORMivore::StorageError, 'No records updated' if count.zero?
+          raise ORMivore::StorageError, 'WTF' if count > 1
 
-        entity_class.construct(entity.attributes, entity.id)
+          entity_class.construct(entity.attributes, entity.id)
+        else
+          entity
+        end
       else
         attrs_to_entity(port.create(entity.changes))
       end

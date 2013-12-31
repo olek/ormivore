@@ -1,7 +1,8 @@
 shared_examples_for 'an integrated repo' do
   let(:test_value) { 'Foo' }
+  let(:other_test_value) { 'Bar' }
 
-  def new_entity_attrs
+  def existing_entity_attrs
     FactoryGirl.create(
       factory_name, factory_attrs.merge(adapter: adapter, test_attr => test_value)
     ).attributes.symbolize_keys
@@ -12,7 +13,7 @@ shared_examples_for 'an integrated repo' do
   describe '#find_by_id' do
     context 'when entity can be found' do
       it 'loads entity' do
-        entity_attrs = new_entity_attrs
+        entity_attrs = existing_entity_attrs
         subject.find_by_id(entity_attrs[:id]).public_send(test_attr).should == test_value
       end
     end
@@ -35,8 +36,8 @@ shared_examples_for 'an integrated repo' do
   describe '#find_by_ids' do
     context 'when all entities can be found' do
       it 'loads entities' do
-        entity_attrs_1 = new_entity_attrs
-        entity_attrs_2 = new_entity_attrs
+        entity_attrs_1 = existing_entity_attrs
+        entity_attrs_2 = existing_entity_attrs
         entity_id_1 = entity_attrs_1[:id]
         entity_id_2 = entity_attrs_2[:id]
 
@@ -64,7 +65,7 @@ shared_examples_for 'an integrated repo' do
         end
 
         it 'returns only found entities if not all entities are found' do
-          entity_attrs_1 = new_entity_attrs
+          entity_attrs_1 = existing_entity_attrs
           entity_id_1 = entity_attrs_1[:id]
 
           entities_map = subject.find_by_ids([entity_id_1, 124], quiet: true)
@@ -100,7 +101,7 @@ shared_examples_for 'an integrated repo' do
 
     context 'when entity is not new' do
       let(:existing_entity_id) {
-        new_entity_attrs[:id]
+        existing_entity_attrs[:id]
       }
 
       it 'updates record in database' do
@@ -114,8 +115,9 @@ shared_examples_for 'an integrated repo' do
       end
 
       it 'creates entity with no "changes" recorded on it' do
-        entity = entity_class.construct(attrs, existing_entity_id).apply(attrs)
-        entity.changes.should == attrs
+        changes = { test_attr => other_test_value }
+        entity = entity_class.construct(attrs, existing_entity_id).apply(changes)
+        entity.changes.should == changes
         saved_entity = subject.persist(entity)
         saved_entity.changes.should be_empty
       end

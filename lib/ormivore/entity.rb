@@ -156,6 +156,10 @@ module ORMivore
       @dirty_attributes
     end
 
+    def changed?
+      !changes.empty?
+    end
+
     def apply(attrs)
       self.dup.tap { |other|
         other.expand_changes(attrs)
@@ -167,6 +171,7 @@ module ORMivore
     # to be used only by #change
     def expand_changes(attrs)
       attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }
+      attrs.delete_if { |k, v| v == @base_attributes[k] }
       @dirty_attributes = @dirty_attributes.merge(attrs).freeze # melt and freeze, huh
       @all_attributes = nil # it is not valid anymore
 

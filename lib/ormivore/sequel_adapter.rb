@@ -78,6 +78,7 @@ module ORMivore
 
     def extend_with_defaults(attrs)
       now = Time.now
+      # FIXME created_at/updated_at columns might not be in the table, will cause trouble
       attrs = { created_at: now, updated_at: now }.merge(attrs)
       expansion = self.class.instance_variable_get(:@expand_on_create)
       if expansion
