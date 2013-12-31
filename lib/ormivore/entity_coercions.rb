@@ -11,7 +11,7 @@ module ORMivore
       class Boolean
         def self.coerce(value)
           case value
-          when true, :true, 'true', 'TRUE'
+          when true, :true, 'true', 'TRUE', 1, '1', 't', 'T'
             true
           else
             false
