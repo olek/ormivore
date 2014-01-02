@@ -30,7 +30,9 @@ module ORMivore
             class ArRecord < ActiveRecord::Base
               self.table_name = '#{table_name}'
               self.inheritance_column = :_type_disabled
-              def attributes_protected_by_default; []; end
+              # This is cool but works only when strong parameters are in use (rails 4 or rails 3 + gem)
+              # include ActiveModel::ForbiddenAttributesProtection
+              attr_protected :id
             end
           EOS
         end
