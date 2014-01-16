@@ -17,7 +17,7 @@ shared_examples_for 'a repo' do
     double('port')
   }
 
-  subject { described_class.new(port, entity_class) }
+  subject { described_class.new(port, entity_class: entity_class) }
 
   describe '#find_by_id' do
     it 'delegates to port' do

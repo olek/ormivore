@@ -11,9 +11,11 @@ module ORMivore
       base.extend(ClassMethods)
     end
 
-    def initialize(port, entity_class = nil)
+    def initialize(port, options = {})
       @port = port
-      @entity_class = entity_class || self.class.default_entity_class
+      @entity_class = options.fetch(:entity_class, self.class.default_entity_class)
+      @family = options.fetch(:family, nil)
+      @family.add(self, @entity_class) if @family
     end
 
     def find_by_id(id, options = {})
