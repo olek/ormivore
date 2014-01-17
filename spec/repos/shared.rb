@@ -32,7 +32,7 @@ shared_examples_for 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_by_id).with(:foo, attributes_list).and_return(id: 123, foo: 'bar')
-      entity_class.should_receive(:construct).with({foo: 'bar'}, 123)
+      entity_class.should_receive(:construct).with({foo: 'bar'}, 123, subject)
       subject.find_by_id(:foo)
     end
 
@@ -60,8 +60,8 @@ shared_examples_for 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_by_ids).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-      entity_class.should_receive(:construct).with({a: 'b'}, 123)
-      entity_class.should_receive(:construct).with({c: 'd'}, 124)
+      entity_class.should_receive(:construct).with({a: 'b'}, 123, subject)
+      entity_class.should_receive(:construct).with({c: 'd'}, 124, subject)
       subject.find_by_ids([123, 124], quiet: true)
     end
 
@@ -84,8 +84,8 @@ shared_examples_for 'a repo' do
 
       it 'returns map of input objects to entities' do
         port.stub(:find_by_ids).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-        entity_class.stub(:construct).with({a: 'b'}, 123).and_return(:foo)
-        entity_class.stub(:construct).with({c: 'd'}, 124).and_return(:bar)
+        entity_class.stub(:construct).with({a: 'b'}, 123, subject).and_return(:foo)
+        entity_class.stub(:construct).with({c: 'd'}, 124, subject).and_return(:bar)
         result = subject.find_by_ids(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
         result.should have(2).entities
         result['321'].should == :foo
@@ -124,7 +124,7 @@ shared_examples_for 'a repo' do
       it 'creates new entity with all attributes' do
         entity.should_receive(:attributes).and_return(a: 'b')
         entity.should_receive(:changed?).and_return(true)
-        entity_class.should_receive(:construct).with({a: 'b'}, entity.id).and_return(:baz)
+        entity_class.should_receive(:construct).with({a: 'b'}, entity.id, subject).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 

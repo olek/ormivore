@@ -105,7 +105,7 @@ shared_examples_for 'an integrated repo' do
       }
 
       it 'updates record in database' do
-        entity = entity_class.construct(attrs, existing_entity_id).apply(attrs)
+        entity = entity_class.construct(attrs, existing_entity_id, subject).apply(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.attributes.should == attrs
@@ -116,7 +116,7 @@ shared_examples_for 'an integrated repo' do
 
       it 'creates entity with no "changes" recorded on it' do
         changes = { test_attr => other_test_value }
-        entity = entity_class.construct(attrs, existing_entity_id).apply(changes)
+        entity = entity_class.construct(attrs, existing_entity_id, subject).apply(changes)
         entity.changes.should == changes
         saved_entity = subject.persist(entity)
         saved_entity.changes.should be_empty

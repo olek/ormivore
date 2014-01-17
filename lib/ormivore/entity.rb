@@ -10,7 +10,7 @@ module ORMivore
         attributes_declaration.keys
       end
 
-      def construct(attrs, id)
+      def construct(attrs, id, repo)
         id = coerce_id(id)
 
         coerced_attrs = attrs.symbolize_keys.tap { |h| coerce(h) }.freeze
@@ -23,6 +23,7 @@ module ORMivore
         obj = allocate
 
         obj.instance_variable_set(:@id, id)
+        obj.instance_variable_set(:@repo, repo)
         obj.instance_variable_set(:@base_attributes, base_attributes)
         obj.instance_variable_set(:@dirty_attributes, dirty_attributes)
 
@@ -146,7 +147,7 @@ module ORMivore
       EOS
     end
 
-    attr_reader :id
+    attr_reader :id, :repo
 
     def attributes
       all_attributes

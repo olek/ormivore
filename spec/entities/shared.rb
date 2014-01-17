@@ -23,18 +23,18 @@ shared_examples_for 'an entity' do
     end
 
     it 'allows specifying id' do
-      o = described_class.construct(attrs, 123)
+      o = described_class.construct(attrs, 123, nil)
       o.id.should == 123
     end
 
     it 'allows string id that is convertable to integer' do
-      o = described_class.construct(attrs, '123')
+      o = described_class.construct(attrs, '123', nil)
       o.id.should == 123
     end
 
     it 'refuses non-integer id' do
       expect {
-        described_class.construct(attrs, '123a')
+        described_class.construct(attrs, '123a', nil)
       }.to raise_error ORMivore::BadArgumentError
     end
 
@@ -53,7 +53,7 @@ shared_examples_for 'an entity' do
 
     context 'when id is specified' do
       it 'assumes first param attributes to be "clean" attributes' do
-        o = described_class.construct(attrs, 123)
+        o = described_class.construct(attrs, 123, nil)
         o.changes.should be_empty
       end
     end
@@ -65,7 +65,7 @@ shared_examples_for 'an entity' do
     end
 
     it 'combines clean and dirty attributes' do
-      o = described_class.construct(attrs, 123).apply(test_attr => 'dirty')
+      o = described_class.construct(attrs, 123, nil).apply(test_attr => 'dirty')
       o.attributes.should == attrs.merge(test_attr => 'dirty')
     end
   end
@@ -76,14 +76,14 @@ shared_examples_for 'an entity' do
     end
 
     it 'return dirty value of attribute if available' do
-      o = described_class.construct(attrs, 123).apply(test_attr => 'dirty')
+      o = described_class.construct(attrs, 123, nil).apply(test_attr => 'dirty')
       o.changes.should == { test_attr => 'dirty' }
       o.public_send(test_attr).should == 'dirty'
     end
   end
 
   describe '#apply' do
-    subject { described_class.construct(attrs, 123) }
+    subject { described_class.construct(attrs, 123, nil) }
 
     it 'creates copy of this entity' do
       proto = subject.apply({})
@@ -103,11 +103,11 @@ shared_examples_for 'an entity' do
     end
 
     it 'returns no attributes on "persisted" entity' do
-      described_class.construct(attrs, 123).changes.should be_empty
+      described_class.construct(attrs, 123, nil).changes.should be_empty
     end
 
     it 'returns incremental changes added by applying attributes' do
-      o = described_class.construct(attrs, 123)
+      o = described_class.construct(attrs, 123, nil)
       o.apply(test_attr => 'dirty').changes.should == { test_attr => 'dirty' }
     end
   end
