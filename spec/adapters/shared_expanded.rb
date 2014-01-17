@@ -171,4 +171,39 @@ shared_examples_for 'an expanded adapter' do
       end
     end
   end
+
+  describe '#delete_all' do
+    context 'when record did not exist' do
+      it 'returns 0 delete count' do
+        create_entity
+        subject.delete_all({ id: 123 }).should == 0
+      end
+    end
+
+    context 'when record existed' do
+      it 'returns delete count 1' do
+        entity = create_entity
+
+        subject.delete_all({ id: entity[:id] }).should == 1
+      end
+
+      it 'deletes record attributes' do
+        entity = create_entity
+
+        subject.delete_all({ id: entity[:id] })
+
+        load_test_value(entity[:id]).should == nil
+      end
+    end
+
+    context 'when 2 matching records existed' do
+      it 'returns delete count 2' do
+        entity_ids = []
+        entity_ids << create_entity[:id]
+        entity_ids << create_entity[:id]
+
+        subject.delete_all({ id: entity_ids }).should == 2
+      end
+    end
+  end
 end

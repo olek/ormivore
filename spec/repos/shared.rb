@@ -145,4 +145,44 @@ shared_examples_for 'a repo' do
       end
     end
   end
+
+  describe '#delete' do
+    context 'when entity is new' do
+      it 'raises an error' do
+        expect {
+          subject.delete(entity)
+        }.to raise_error ORMivore::StorageError
+      end
+    end
+
+    context 'when entity is not new' do
+      before do
+        entity.stub(:id).and_return(123)
+        port.stub(:delete_one).with(123).and_return(1)
+      end
+
+      it 'delegates to port.delete_one' do
+        port.should_receive(:delete_one).with(123).and_return(1)
+        subject.delete(entity)
+      end
+
+      it 'returns true if record was deleted' do
+        subject.delete(entity).should == true
+      end
+
+      it 'raises error if record was not deleted' do
+        port.should_receive(:delete_one).with(123).and_return(0)
+        expect {
+          subject.delete(entity)
+        }.to raise_error ORMivore::StorageError
+      end
+
+      it 'raises error if more than one record was deleted' do
+        port.should_receive(:delete_one).with(123).and_return(2)
+        expect {
+          subject.delete(entity)
+        }.to raise_error ORMivore::StorageError
+      end
+    end
+  end
 end

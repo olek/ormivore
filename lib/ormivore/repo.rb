@@ -76,6 +76,18 @@ module ORMivore
       end
     end
 
+    def delete(entity)
+      if entity.id
+        count = port.delete_one(entity.id)
+        raise ORMivore::StorageError, 'No records deleted' if count.zero?
+        raise ORMivore::StorageError, 'WTF' if count > 1
+
+        true
+      else
+        raise ORMivore::StorageError, 'Can not delete unsaved entity'
+      end
+    end
+
     private
 
     attr_reader :port, :entity_class

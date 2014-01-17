@@ -93,4 +93,29 @@ shared_examples_for 'a basic adapter' do
       end
     end
   end
+
+  describe '#delete_one' do
+    context 'when record did not exist' do
+      it 'returns 0 delete count' do
+        create_entity
+        subject.delete_one(123).should == 0
+      end
+    end
+
+    context 'when record existed' do
+      it 'returns delete count 1' do
+        entity = create_entity
+
+        subject.delete_one(entity[:id]).should == 1
+      end
+
+      it 'deletes record attributes' do
+        entity = create_entity
+
+        subject.delete_one(entity[:id])
+
+        load_test_value(entity[:id]).should == nil
+      end
+    end
+  end
 end

@@ -71,13 +71,22 @@ module ORMivore
       raise StorageError.new(e)
     end
 
-
     def update_one(id, attrs)
       update_all({ id: id }, attrs)
     end
 
     def update_all(conditions, attrs)
       ar_class.update_all(converter.to_storage(attrs), conditions)
+    rescue ActiveRecord::ActiveRecordError => e
+      raise StorageError.new(e)
+    end
+
+    def delete_one(id)
+      delete_all({ id: id })
+    end
+
+    def delete_all(conditions)
+      ar_class.delete_all(conditions)
     rescue ActiveRecord::ActiveRecordError => e
       raise StorageError.new(e)
     end

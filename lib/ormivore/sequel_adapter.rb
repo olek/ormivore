@@ -72,6 +72,19 @@ module ORMivore
       raise StorageError.new(e)
     end
 
+    def delete_one(id)
+      delete_all({ id: id })
+    end
+
+    def delete_all(conditions)
+      sequel.
+        from(table_name).
+        where(conditions).
+        delete
+    rescue ActiveRecord::ActiveRecordError => e
+      raise StorageError.new(e)
+    end
+
     private
 
     attr_reader :converter, :sequel

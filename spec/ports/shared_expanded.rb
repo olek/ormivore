@@ -59,4 +59,11 @@ shared_examples_for 'an expanded port' do
       subject.update_all(:foo, a: 'b').should == :bar
     end
   end
+
+  describe '#delete_all' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:delete_all).with(:foo).and_return(:bar)
+      subject.delete_all(:foo).should == :bar
+    end
+  end
 end

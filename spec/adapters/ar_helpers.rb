@@ -1,6 +1,7 @@
 module ArHelpers
   def execute_simple_string_query(query)
-    ActiveRecord::Base.connection.execute(query).first[0]
+    record = ActiveRecord::Base.connection.execute(query).first
+    record[0] if record
   end
 
   def load_test_value(id)

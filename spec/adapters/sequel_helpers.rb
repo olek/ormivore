@@ -1,6 +1,7 @@
 module SequelHelpers
   def execute_simple_string_query(query)
-    adapter.send(:sequel)[query].first.values.first
+    record = adapter.send(:sequel)[query].first
+    record.values.first if record
   end
 
   def load_test_value(id)

@@ -74,6 +74,20 @@ module ORMivore
       raise NotImplementedError, "Generic update_all interface not available for this adapter, please implement specific update methods."
     end
 
+    def delete_one(id)
+      redis_reference = "#{prefix}:#{id}"
+      if redis.exists(redis_reference)
+        redis.del(redis_reference)
+        1
+      else
+        0
+      end
+    end
+
+    def delete_all(conditions)
+      raise NotImplementedError, "Generic delete_all interface not available for this adapter, please implement specific delete methods."
+    end
+
     private
 
     attr_reader :converter, :redis

@@ -50,8 +50,20 @@ module ORMivore
       raise ORMivore::StorageError, e.message
     end
 
-    def update_all(attrs, conditions)
-      adapter.update_all(attrs, conditions)
+    def update_all(conditions, attrs)
+      adapter.update_all(conditions, attrs)
+    rescue => e
+      raise ORMivore::StorageError, e.message
+    end
+
+    def delete_one(id)
+      adapter.delete_one(id)
+    rescue => e
+      raise ORMivore::StorageError, e.message
+    end
+
+    def delete_all(conditions)
+      adapter.delete_all(conditions)
     rescue => e
       raise ORMivore::StorageError, e.message
     end

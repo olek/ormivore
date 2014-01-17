@@ -32,4 +32,11 @@ shared_examples_for 'a basic port' do
       subject.update_one(:foo, a: 'b').should == :bar
     end
   end
+
+  describe '#delete_one' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:delete_one).with(:foo).and_return(:bar)
+      subject.delete_one(:foo).should == :bar
+    end
+  end
 end

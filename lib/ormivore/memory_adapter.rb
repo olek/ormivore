@@ -54,6 +54,16 @@ module ORMivore
       }.length
     end
 
+    def delete_one(id)
+      delete_all({ id: id })
+    end
+
+    def delete_all(conditions)
+      select_from_storage(conditions).each { |record|
+        storage.delete(record)
+      }.length
+    end
+
     # open for tests, not to be used by any other code
     def storage
       @storage ||= []

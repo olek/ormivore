@@ -1,5 +1,6 @@
 module MemoryHelpers
   def load_test_value(id)
-    adapter.storage.first { |o| o[:id] = id }[test_attr]
+    record = adapter.storage.first { |o| o[:id] = id }
+    record[test_attr] if record
   end
 end
