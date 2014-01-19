@@ -51,7 +51,7 @@ module ORMivore
 
       objects.each_with_object({}) { |o, entities_map|
         id = block_given? ? yield(o) : o
-        entity_attrs = entities_attrs.find { |e| e[:id] == id }
+        entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
           entities_map[o] = attrs_to_entity(entity_attrs)
         elsif !quiet
@@ -88,14 +88,15 @@ module ORMivore
       end
     end
 
-    attr_reader :family
+    attr_reader :family, :entity_class
 
     private
 
-    attr_reader :port, :entity_class
+    attr_reader :port
 
     def attrs_to_entity(attrs)
       if attrs
+        attrs = attrs.dup
         entity_id = attrs.delete(:id)
         attrs.reject! {|k,v| v.nil? }
         entity_class.construct(attrs, entity_id, self)
