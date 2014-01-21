@@ -18,6 +18,10 @@ module ORMivore
       @family.add(self, @entity_class) if @family
     end
 
+    def create
+      entity_class.new({}, self)
+    end
+
     def find_by_id(id, options = {})
       quiet = options.fetch(:quiet, false)
 

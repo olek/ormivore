@@ -189,7 +189,9 @@ module ORMivore
       @all_attributes = @base_attributes.merge(@dirty_attributes)
     end
 
-    def initialize(attrs)
+    def initialize(attrs, repo = nil)
+      @repo = repo
+
       coerced_attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }.freeze
 
       @base_attributes = {}.freeze
