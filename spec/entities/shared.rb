@@ -10,12 +10,6 @@ shared_examples_for 'an entity' do
       }.to raise_error ArgumentError
     end
 
-    it 'fails if not enough attributes are provided' do
-      expect {
-        described_class.new(test_attr => test_value)
-      }.to raise_error ORMivore::BadAttributesError
-    end
-
     it 'fails if unknown attributes are specified' do
        expect {
         described_class.new(attrs.merge(foo: 'Foo'))
@@ -56,6 +50,19 @@ shared_examples_for 'an entity' do
         o = described_class.construct(attrs, 123, nil)
         o.changes.should be_empty
       end
+    end
+  end
+
+  describe '#validate' do
+    it 'fails if not enough attributes are provided' do
+      entity = described_class.new(test_attr => test_value)
+      expect {
+        entity.validate
+      }.to raise_error ORMivore::BadAttributesError
+    end
+
+    it 'succeeds when all mandatory attributes are specified' do
+      described_class.new(attrs).validate
     end
   end
 

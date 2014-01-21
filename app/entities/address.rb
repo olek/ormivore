@@ -15,10 +15,9 @@ module App
 
     optional :street_2, :region_code, :account_id
 
-    private
-
     def validate
-      raise "Invalid type #{type}" unless %w(shipping billing).include?(type.to_s)
+      super
+      raise BadAttributesError, "Invalid type #{type}" unless %w(shipping billing).include?(type.to_s)
     end
   end
 end

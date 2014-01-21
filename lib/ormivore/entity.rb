@@ -18,7 +18,7 @@ module ORMivore
         base_attributes = coerced_attrs
         dirty_attributes = {}.freeze
 
-        validate_presence_of_proper_attributes(base_attributes, dirty_attributes)
+        validate_absence_of_unknown_attributes(base_attributes, dirty_attributes)
 
         obj = allocate
 
@@ -30,23 +30,12 @@ module ORMivore
         obj
       end
 
-      def validate_presence_of_proper_attributes(base, dirty)
-        # doing complicated way first because it is much more memory efficient
-        # but it does not allow for good error messages, so if something is
-        # wrong, need to proceed to inefficient validation that produces nice
-        # messages
-        missing = 0
-        known_counts = attributes_list.each_with_object([0, 0]) { |attr, acc|
-          acc[0] += 1 if base[attr]
-          acc[1] += 1 if dirty[attr]
-          missing +=1 unless optional_attributes_list.include?(attr) || base[attr] || dirty[attr]
-        }
+      def validate_absence_of_unknown_attributes(base, dirty)
+        unknown_attrs = {}
+        (base.keys - attributes_list).each { |k| unknown_attrs[k] = base[k] }
+        (dirty.keys - attributes_list).each { |k| unknown_attrs[k] = dirty[k] }
 
-        if missing > 0 || [base.length, dirty.length] != known_counts
-          expensive_validate_presence_of_proper_attributes(
-            base.merge(dirty)
-          )
-        end
+        raise BadAttributesError, "Unknown attributes #{unknown_attrs.inspect}" unless unknown_attrs.empty?
       end
 
       def coerce(attrs)
@@ -94,15 +83,6 @@ module ORMivore
 
       # TODO figure out how to differenciate private methods that are part of
       # ORMivore API from those that are NOT
-      def expensive_validate_presence_of_proper_attributes(attrs)
-        attributes_list.each do |attr|
-          unless attrs.delete(attr) != nil || optional_attributes_list.include?(attr)
-            raise BadAttributesError, "Missing attribute '#{attr}'"
-          end
-        end
-
-        raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
-      end
 
       def validate_attributes_declaration
         attributes_declaration.each do |name, type|
@@ -167,16 +147,38 @@ module ORMivore
       }
     end
 
+    def validate
+      base = @base_attributes
+      dirty = @dirty_attributes
+
+      # doing complicated way first because it is much more memory efficient
+      # but it does not allow for good error messages, so if something is
+      # wrong, need to proceed to inefficient validation that produces nice
+      # messages
+      missing = 0
+      known_counts = self.class.attributes_list.each_with_object([0, 0]) { |attr, acc|
+        acc[0] += 1 if base[attr]
+        acc[1] += 1 if dirty[attr]
+        missing +=1 unless self.class.optional_attributes_list.include?(attr) || base[attr] || dirty[attr]
+      }
+
+      if missing > 0 || [base.length, dirty.length] != known_counts
+        expensive_validate_presence_of_proper_attributes(
+          base.merge(dirty)
+        )
+      end
+    end
+
     protected
 
-    # to be used only by #change
+    # to be used only by #apply
     def expand_changes(attrs)
       attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }
       attrs.delete_if { |k, v| v == @base_attributes[k] }
       @dirty_attributes = @dirty_attributes.merge(attrs).freeze # melt and freeze, huh
       @all_attributes = nil # it is not valid anymore
 
-      self.class.validate_presence_of_proper_attributes(@base_attributes, @dirty_attributes)
+      self.class.validate_absence_of_unknown_attributes(@base_attributes, @dirty_attributes)
     end
 
     private
@@ -193,7 +195,17 @@ module ORMivore
       @base_attributes = {}.freeze
       @dirty_attributes = coerced_attrs
 
-      self.class.validate_presence_of_proper_attributes(@base_attributes, @dirty_attributes)
+      self.class.validate_absence_of_unknown_attributes(@base_attributes, @dirty_attributes)
+    end
+
+    def expensive_validate_presence_of_proper_attributes(attrs)
+      self.class.attributes_list.each do |attr|
+        unless attrs.delete(attr) != nil || self.class.optional_attributes_list.include?(attr)
+          raise BadAttributesError, "Missing attribute '#{attr}'"
+        end
+      end
+
+      raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
   end
 end

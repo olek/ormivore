@@ -11,10 +11,9 @@ module App
       status: Symbol
     )
 
-    private
-
     def validate
-      raise "Invalid status #{status}" unless STATUSES.include?(status)
+      super
+      raise BadAttributesError, "Invalid status #{status}" unless STATUSES.include?(status)
     end
   end
 end

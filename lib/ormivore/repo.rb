@@ -61,6 +61,8 @@ module ORMivore
     end
 
     def persist(entity)
+      entity.validate
+
       if entity.id
         if entity.changed?
           count = port.update_one(entity.id, entity.changes)
