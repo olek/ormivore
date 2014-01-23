@@ -1,5 +1,7 @@
 module ORMivore
   module Entity
+    NULL = Object.new.freeze
+
     module ClassMethods
       ALLOWED_ATTRIBUTE_TYPES = Coercions.constants.map { |sym| Coercions.const_get(sym) }.freeze
 
@@ -8,46 +10,6 @@ module ORMivore
 
       def attributes_list
         attributes_declaration.keys
-      end
-
-      def construct(attrs, id, repo)
-        id = coerce_id(id)
-
-        coerced_attrs = attrs.symbolize_keys.tap { |h| coerce(h) }.freeze
-
-        base_attributes = coerced_attrs
-        dirty_attributes = {}.freeze
-
-        validate_absence_of_unknown_attributes(base_attributes, dirty_attributes)
-
-        obj = allocate
-
-        obj.instance_variable_set(:@id, id)
-        obj.instance_variable_set(:@repo, repo)
-        obj.instance_variable_set(:@base_attributes, base_attributes)
-        obj.instance_variable_set(:@dirty_attributes, dirty_attributes)
-
-        obj
-      end
-
-      def validate_absence_of_unknown_attributes(base, dirty)
-        unknown_attrs = {}
-        (base.keys - attributes_list).each { |k| unknown_attrs[k] = base[k] }
-        (dirty.keys - attributes_list).each { |k| unknown_attrs[k] = dirty[k] }
-
-        raise BadAttributesError, "Unknown attributes #{unknown_attrs.inspect}" unless unknown_attrs.empty?
-      end
-
-      def coerce(attrs)
-        attrs.each do |name, attr_value|
-          declared_type = attributes_declaration[name]
-          if declared_type && !attr_value.is_a?(declared_type)
-            attrs[name] =
-              declared_type.coerce(attr_value)
-          end
-        end
-      rescue ArgumentError => e
-        raise ORMivore::BadArgumentError.new(e)
       end
 
       private
@@ -61,7 +23,7 @@ module ORMivore
         attributes_list.map(&:to_s).each do |attr|
           module_eval(<<-EOS)
             def #{attr}
-              @dirty_attributes[:#{attr}] || @base_attributes[:#{attr}]
+              attribute(:#{attr})
             end
           EOS
           self::Builder.module_eval(<<-EOS)
@@ -90,12 +52,6 @@ module ORMivore
             raise ORMivore::BadArgumentError, "Invalid attribute type #{type.inspect}"
           end
         end
-      end
-
-      def coerce_id(value)
-        value ? Integer(value) : nil
-      rescue ArgumentError
-        raise ORMivore::BadArgumentError, "Not a valid id: #{value.inspect}"
       end
     end
 
@@ -129,78 +85,70 @@ module ORMivore
 
     attr_reader :id, :repo
 
+    def initialize(options = {})
+      @parent = options[:parent]
+      @repo = options[:repo]
+      @id = options[:id]
+      attrs = options.fetch(:attributes, {})
+
+      raise BadArgumentError, 'Either parent or repo must be provided' unless @parent || @repo
+
+      if @parent
+        raise BadArgumentError, 'Repo should only be provided for root entities' if @repo
+        raise BadArgumentError, 'id should only be provided for root entities' if @id
+        raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
+
+        @id, @repo = @parent.id, @parent.repo
+      else
+        raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || attrs.empty?
+        coerce_id
+      end
+
+      self.local_attributes = attrs
+
+      validate_absence_of_unknown_attributes
+    end
+
     def attributes
-      all_attributes
+      collect_from_root({}) { |e, acc|
+        acc.merge(e.local_attributes)
+      }
+    end
+
+    def attribute(name)
+      name = name.to_sym
+
+      node = find_nearest_node { |e|
+        !!e.local_attributes[name]
+      }
+
+      attr = node.local_attributes[name]
+      attr == NULL ? nil : attr
     end
 
     def changes
-      @dirty_attributes
+      collect_from_root({}) { |e, acc|
+        if e.root?
+          acc
+        else
+          acc.merge(e.local_attributes)
+        end
+      }
     end
 
     def changed?
-      !changes.empty?
+      !!parent
     end
 
     def apply(attrs)
-      self.dup.tap { |other|
-        other.expand_changes(attrs)
-      }
+      attrs = coerce(attrs)
+      attrs.delete_if { |k, v| v == attribute(k) }
+
+      attrs.empty? ? self : self.class.new(attributes: attrs, parent: self)
     end
 
     def validate
-      base = @base_attributes
-      dirty = @dirty_attributes
-
-      # doing complicated way first because it is much more memory efficient
-      # but it does not allow for good error messages, so if something is
-      # wrong, need to proceed to inefficient validation that produces nice
-      # messages
-      missing = 0
-      known_counts = self.class.attributes_list.each_with_object([0, 0]) { |attr, acc|
-        acc[0] += 1 if base[attr]
-        acc[1] += 1 if dirty[attr]
-        missing +=1 unless self.class.optional_attributes_list.include?(attr) || base[attr] || dirty[attr]
-      }
-
-      if missing > 0 || [base.length, dirty.length] != known_counts
-        expensive_validate_presence_of_proper_attributes(
-          base.merge(dirty)
-        )
-      end
-    end
-
-    protected
-
-    # to be used only by #apply
-    def expand_changes(attrs)
-      attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }
-      attrs.delete_if { |k, v| v == @base_attributes[k] }
-      @dirty_attributes = @dirty_attributes.merge(attrs).freeze # melt and freeze, huh
-      @all_attributes = nil # it is not valid anymore
-
-      self.class.validate_absence_of_unknown_attributes(@base_attributes, @dirty_attributes)
-    end
-
-    private
-
-    def all_attributes
-      # memory / performance tradeoff can be played with here by keeping
-      # all_attributes around or generating it each time
-      @all_attributes = @base_attributes.merge(@dirty_attributes)
-    end
-
-    def initialize(attrs, repo = nil)
-      @repo = repo
-
-      coerced_attrs = attrs.symbolize_keys.tap { |h| self.class.coerce(h) }.freeze
-
-      @base_attributes = {}.freeze
-      @dirty_attributes = coerced_attrs
-
-      self.class.validate_absence_of_unknown_attributes(@base_attributes, @dirty_attributes)
-    end
-
-    def expensive_validate_presence_of_proper_attributes(attrs)
+      attrs = attributes
       self.class.attributes_list.each do |attr|
         unless attrs.delete(attr) != nil || self.class.optional_attributes_list.include?(attr)
           raise BadAttributesError, "Missing attribute '#{attr}'"
@@ -208,6 +156,68 @@ module ORMivore
       end
 
       raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
+    end
+
+    protected
+
+    attr_reader :local_attributes, :parent
+
+    def root?
+      !parent
+    end
+
+    def collect_from_root(acc, &block)
+      if parent
+        yield(self, parent.collect_from_root(acc, &block))
+      else
+        yield(self, acc)
+      end
+    end
+
+    def find_nearest_node(&block)
+      if yield(self)
+        self
+      else
+        if parent
+          parent.find_nearest_node(&block)
+        else
+          self
+        end
+      end
+    end
+
+    private
+
+    def validate_absence_of_unknown_attributes
+      unknown_attrs = (local_attributes.keys - self.class.attributes_list).each_with_object({}) { |k, acc|
+        acc[k] = local_attributes[k]
+      }
+
+      raise BadAttributesError, "Unknown attributes #{unknown_attrs.inspect}" unless unknown_attrs.empty?
+    end
+
+    def local_attributes=(attrs)
+      attrs = coerce(attrs)
+
+      @local_attributes = attrs.freeze
+    rescue ArgumentError => e
+      raise ORMivore::BadArgumentError.new(e)
+    end
+
+    def coerce(attrs)
+      attrs.symbolize_keys.each do |name, attr_value|
+        declared_type = self.class.attributes_declaration[name]
+        if declared_type && !attr_value.is_a?(declared_type)
+          attrs[name] =
+            declared_type.coerce(attr_value)
+        end
+      end
+    end
+
+    def coerce_id
+      @id = Integer(@id) if @id
+    rescue ArgumentError
+      raise ORMivore::BadArgumentError, "Not a valid id: #{@id.inspect}"
     end
   end
 end

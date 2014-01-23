@@ -9,5 +9,6 @@ describe App::Account do
     end
 
     let(:test_attr) { :firstname }
+    let(:other_test_attr) { :lastname }
   end
 end

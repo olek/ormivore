@@ -13,5 +13,6 @@ describe App::Address do
     end
 
     let(:test_attr) { :street_1 }
+    let(:other_test_attr) { :city }
   end
 end
