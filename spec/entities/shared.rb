@@ -1,57 +1,52 @@
 shared_examples_for 'an entity' do
-  subject { described_class.new(attributes: attrs, id: 123, repo: repo) }
+  subject { described_class.new(attributes: attrs, id: 123) }
 
   let(:test_value) { 'Foo' }
-  let(:repo) { 'Pretend repo' }
 
   describe '#initialize' do
-    it 'fails if no options are specified' do
-       expect {
-        described_class.new
-      }.to raise_error ORMivore::BadArgumentError
+    it 'succeeds if no options are specified' do
+      described_class.new
     end
 
-    it 'fails if empty options are specified' do
-       expect {
-        described_class.new({})
-      }.to raise_error ORMivore::BadArgumentError
+    it 'succeeds if empty options are specified' do
+      described_class.new({})
     end
 
-    it 'succeeds when no attributes nor id are provided' do
-      described_class.new(repo: repo)
+    it 'succeeds when only repo is provided' do
+      described_class.new(repo: 'Pretend repo')
     end
 
     it 'fails if unknown attributes are specified' do
        expect {
-        described_class.new(attributes: attrs.merge(foo: 'Foo'), id: 123, repo: repo)
+        described_class.new(attributes: attrs.merge(foo: 'Foo'), id: 123)
       }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'allows specifying id' do
-      o = described_class.new(id: 123, repo: repo)
+      o = described_class.new(id: 123)
       o.id.should == 123
     end
 
     it 'allows string id that is convertable to integer' do
-      o = described_class.new(id: '123', repo: repo)
+      o = described_class.new(id: '123')
       o.id.should == 123
     end
 
     it 'refuses non-integer id' do
       expect {
-        described_class.new(id: '123a', repo: repo)
+        described_class.new(id: '123a')
       }.to raise_error ORMivore::BadArgumentError
     end
 
     context 'when all mandatory attributes are specified' do
       it 'succeeds' do
-        o = described_class.new(attributess: attrs, repo: repo)
+        o = described_class.new(attributess: attrs)
       end
 
       context 'when some of them are keyed by strings (not symbols)' do
         it 'succeeds' do
           attrs.except!(test_attr).merge!(test_attr.to_s => test_value)
-          o = described_class.new(attributess: attrs, repo: repo)
+          o = described_class.new(attributess: attrs)
         end
       end
     end
@@ -59,14 +54,14 @@ shared_examples_for 'an entity' do
 
   describe '#validate' do
     it 'fails if not enough attributes are provided' do
-      entity = described_class.new(attributes: { test_attr => test_value }, id: 123, repo: repo)
+      entity = described_class.new(attributes: { test_attr => test_value }, id: 123)
       expect {
         entity.validate
       }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'succeeds when all mandatory attributes are specified' do
-      described_class.new(attributes: attrs, id: 123, repo: repo).validate
+      described_class.new(attributes: attrs, id: 123).validate
     end
   end
 
@@ -76,7 +71,7 @@ shared_examples_for 'an entity' do
     end
 
     it 'combines attributes from this and parent properties' do
-      o = described_class.new(attributes: attrs, id: 123, repo: repo).apply(test_attr => 'dirty')
+      o = described_class.new(attributes: attrs, id: 123).apply(test_attr => 'dirty')
       o.attributes.should == attrs.merge(test_attr => 'dirty')
     end
   end
@@ -103,7 +98,7 @@ shared_examples_for 'an entity' do
     end
 
     it 'return dirty value of attribute if available' do
-      o = described_class.new(attributes: attrs, id: 123, repo: repo).apply(test_attr => 'dirty')
+      o = described_class.new(attributes: attrs, id: 123).apply(test_attr => 'dirty')
       o.changes.should == { test_attr => 'dirty' }
       o.public_send(test_attr).should == 'dirty'
     end
@@ -134,7 +129,7 @@ shared_examples_for 'an entity' do
 
   describe '#changes' do
     it 'returns empty hash on new entity' do
-      described_class.new(repo: repo).changes.should be_empty
+      described_class.new.changes.should be_empty
     end
 
     it 'returns no attributes on "persisted" entity' do
@@ -143,6 +138,24 @@ shared_examples_for 'an entity' do
 
     it 'returns incremental changes added by applying attributes' do
       subject.apply(test_attr => 'dirty').changes.should == { test_attr => 'dirty' }
+    end
+  end
+
+  describe '#attach_repo' do
+    it 'attaches repo to entity that lacks it' do
+      described_class.new.attach_repo(:foo).repo.should == :foo
+    end
+
+    it 'attaches repo to parent of the entity too' do
+      parent = described_class.new
+      parent.apply(test_attr => test_value).attach_repo(:foo)
+      parent.repo.should == :foo
+    end
+
+    it 'raises error if entity already has repo' do
+      expect {
+        described_class.new(repo: :foo).attach_repo(:bar)
+      }.to raise_error ORMivore::InvalidStateError
     end
   end
 end

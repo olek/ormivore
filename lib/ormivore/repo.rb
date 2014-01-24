@@ -19,7 +19,7 @@ module ORMivore
     end
 
     def create
-      entity_class.new({}, self)
+      entity_class.new(attributes: {}, repo: self)
     end
 
     def find_by_id(id, options = {})

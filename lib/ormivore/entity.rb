@@ -91,14 +91,14 @@ module ORMivore
       @id = options[:id]
       attrs = options.fetch(:attributes, {})
 
-      raise BadArgumentError, 'Either parent or repo must be provided' unless @parent || @repo
-
       if @parent
-        raise BadArgumentError, 'Repo should only be provided for root entities' if @repo
         raise BadArgumentError, 'id should only be provided for root entities' if @id
         raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
 
-        @id, @repo = @parent.id, @parent.repo
+        @id = @parent.id
+
+        raise InvalidStateError, "Can not initialise repo different from paren't repo" if @repo && parent.repo
+        @repo ||= @parent.repo
       else
         raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || attrs.empty?
         coerce_id
@@ -140,6 +140,14 @@ module ORMivore
       !!parent
     end
 
+    def attach_repo(r)
+      collect_from_root(nil) do |e|
+        e.repo = r
+      end
+
+      self
+    end
+
     def apply(attrs)
       attrs = coerce(attrs)
       attrs.delete_if { |k, v| v == attribute(k) }
@@ -160,7 +168,13 @@ module ORMivore
 
     protected
 
-    attr_reader :local_attributes, :parent
+    attr_reader :parent # Read only access
+    attr_reader :local_attributes # allows changing the hash
+
+    def repo=(repo)
+      raise InvalidStateError, "Can not attach repo second time" if @repo
+      @repo = repo
+    end
 
     def root?
       !parent
@@ -205,13 +219,14 @@ module ORMivore
     end
 
     def coerce(attrs)
-      attrs.symbolize_keys.each do |name, attr_value|
-        declared_type = self.class.attributes_declaration[name]
-        if declared_type && !attr_value.is_a?(declared_type)
-          attrs[name] =
-            declared_type.coerce(attr_value)
+      attrs.symbolize_keys.tap { |attrs_copy|
+        attrs_copy.each do |name, attr_value|
+          declared_type = self.class.attributes_declaration[name]
+          if declared_type && !attr_value.is_a?(declared_type)
+            attrs_copy[name] = declared_type.coerce(attr_value)
+          end
         end
-      end
+      }
     end
 
     def coerce_id
