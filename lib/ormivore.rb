@@ -1,5 +1,6 @@
 require 'ormivore/errors'
 require 'ormivore/entity/coercions'
+require 'ormivore/entity/dsl'
 require 'ormivore/entity'
 require 'ormivore/entity/memoize'
 require 'ormivore/entity/wrapper'

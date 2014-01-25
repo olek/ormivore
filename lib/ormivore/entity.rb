@@ -2,63 +2,14 @@ module ORMivore
   module Entity
     NULL = Object.new.freeze
 
-    module ClassMethods
-      ALLOWED_ATTRIBUTE_TYPES = Coercions.constants.map { |sym| Coercions.const_get(sym) }.freeze
-
-      attr_reader :attributes_declaration
-      attr_reader :optional_attributes_list
-
-      def attributes_list
-        attributes_declaration.keys
-      end
-
-      private
-
-      def attributes(declaration)
-        @attributes_declaration = declaration.symbolize_keys.freeze
-        validate_attributes_declaration
-        # @attributes_list = methods.map(&:to_sym)
-        @optional_attributes_list ||= []
-
-        attributes_list.map(&:to_s).each do |attr|
-          module_eval(<<-EOS)
-            def #{attr}
-              attribute(:#{attr})
-            end
-          EOS
-          self::Builder.module_eval(<<-EOS)
-            def #{attr}
-              attributes[:#{attr}]
-            end
-            def #{attr}=(value)
-              attributes[:#{attr}] = value
-            end
-          EOS
-        end
-      end
-
-      def optional(*methods)
-        @optional_attributes_list = methods.map(&:to_sym)
-      end
-
-      # now, really private methods, not part of API
-
-      # TODO figure out how to differenciate private methods that are part of
-      # ORMivore API from those that are NOT
-
-      def validate_attributes_declaration
-        attributes_declaration.each do |name, type|
-          unless ALLOWED_ATTRIBUTE_TYPES.include?(type)
-            raise ORMivore::BadArgumentError, "Invalid attribute type #{type.inspect}"
-          end
-        end
-      end
-    end
-
     def self.included(base)
       base.send(:include, Coercions) # how naughty of us
-      base.extend(ClassMethods) # not so naughty, but still...
+      base.extend(DSL) # not so naughty, but still...
 
+      define_builder_class(base)
+    end
+
+    def self.define_builder_class(base)
       base.module_eval(<<-EOS)
         class Builder
           def initialize
@@ -143,6 +94,9 @@ module ORMivore
     end
 
     def attach_repo(r)
+      # teaching old dog new tricks here is not great, but it is lesser of 2
+      # evils - it woud be really bad to have 2 entities in same time line to
+      # have different repos
       collect_from_root(nil) do |e|
         e.repo = r
       end

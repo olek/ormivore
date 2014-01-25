@@ -59,6 +59,8 @@ module ORMivore
           Kernel.String(value)
         end
       end
+
+      ALLOWED_ATTRIBUTE_TYPES = self.constants.map { |sym| self.const_get(sym) }.freeze
     end
   end
 end
