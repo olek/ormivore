@@ -99,9 +99,11 @@ module ORMivore
 
         raise InvalidStateError, "Can not initialise repo different from paren't repo" if @repo && parent.repo
         @repo ||= @parent.repo
+        @cache = @parent.cache # cache is shared between all entity versions
       else
         raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || attrs.empty?
         coerce_id
+        @cache = {}
       end
 
       self.local_attributes = attrs
@@ -166,10 +168,25 @@ module ORMivore
       raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
 
+    def cache_with_name(cache_name)
+      cache_name = cache_name.to_sym
+      already_cached = cache[cache_name]
+
+      if already_cached
+        already_cached
+      else
+        cache[cache_name] = yield
+      end
+    end
+
+    def inspect
+      "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect} parent=#{parent.inspect}>"
+    end
+
     protected
 
     attr_reader :parent # Read only access
-    attr_reader :local_attributes # allows changing the hash
+    attr_reader :local_attributes, :cache # allows changing the hash
 
     def repo=(repo)
       raise InvalidStateError, "Can not attach repo second time" if @repo
