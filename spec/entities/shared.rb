@@ -78,7 +78,19 @@ shared_examples_for 'an entity' do
 
   describe '#attribute' do
     it 'returns nil for not found attribute' do
-      subject.attribute(:foo).should be_nil
+      attrs.except!(test_attr)
+      subject.attribute(test_attr).should be_nil
+    end
+
+    it 'fails for unknown attribute' do
+      expect {
+        subject.attribute(:foo)
+      }.to raise_error ORMivore::BadArgumentError
+    end
+
+    it 'returns nil for attribute that was reset to nil' do
+      o = subject.apply(test_attr => nil)
+      o.attribute(test_attr).should be_nil
     end
 
     it 'returns attribute from this entity if found' do

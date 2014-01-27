@@ -1,6 +1,10 @@
 module ORMivore
   module Entity
-    NULL = Object.new.freeze
+    NULL = Object.new.tap { |o|
+      def o.to_s
+        "ORMivore::Entity::NULL"
+      end
+    }.freeze
 
     def self.included(base)
       base.send(:include, Coercions) # how naughty of us
@@ -40,6 +44,7 @@ module ORMivore
       @parent = options[:parent]
       @repo = options[:repo]
       @id = options[:id]
+      @local_association_changes = options[:association_changes]
       attrs = options.fetch(:attributes, {})
 
       if @parent
@@ -51,8 +56,10 @@ module ORMivore
         raise InvalidStateError, "Can not initialise repo different from paren't repo" if @repo && parent.repo
         @repo ||= @parent.repo
         @cache = @parent.cache # cache is shared between all entity versions
+        @local_association_changes = @local_association_changes.symbolize_keys if @local_association_changes # copy
       else
         raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || attrs.empty?
+        raise BadArgumentError, 'Association changes should only be provided for non-root entities' if @local_association_changes
         coerce_id
         @cache = {}
       end
@@ -60,14 +67,21 @@ module ORMivore
       self.local_attributes = attrs
 
       validate_absence_of_unknown_attributes
+      validate_association_changes if @local_association_changes
     end
 
+    # TODO local memoize?
     def attributes
       collect_from_root({}) { |e, acc|
         acc.merge(e.local_attributes)
+      }.tap { |o|
+        o.each { |k, v|
+          o[k] = nil if v == NULL
+        }
       }
     end
 
+    # TODO local memoize?
     def attribute(name)
       name = name.to_sym
 
@@ -76,16 +90,30 @@ module ORMivore
       }
 
       attr = node.local_attributes[name]
+      raise BadArgumentError, "Unknown attribute #{name}" unless attr || self.class.attributes_list.include?(name)
+
       attr == NULL ? nil : attr
     end
 
+    # TODO local memoize?
     def changes
       collect_from_root({}) { |e, acc|
-        if e.root?
-          acc
-        else
-          acc.merge(e.local_attributes)
+        unless e.root?
+          acc.merge!(e.local_attributes)
         end
+
+        acc
+      }
+    end
+
+    # TODO local memoize?
+    def association_changes
+      collect_from_root([]) { |e, acc|
+        unless e.root?
+          acc << e.local_association_changes
+        end
+
+        acc
       }
     end
 
@@ -109,6 +137,10 @@ module ORMivore
       attrs.delete_if { |k, v| v == attribute(k) }
 
       attrs.empty? ? self : self.class.new(attributes: attrs, parent: self)
+    end
+
+    def change_association(name, action, entities)
+      self.class.new(association_changes: { name: name, action: action, entities: entities }, parent: self)
     end
 
     def validate
@@ -140,7 +172,7 @@ module ORMivore
     protected
 
     attr_reader :parent # Read only access
-    attr_reader :local_attributes, :cache # allows changing the hash
+    attr_reader :local_attributes, :local_association_changes, :cache # allows changing the hash
 
     def repo=(repo)
       raise InvalidStateError, "Can not attach repo second time" if @repo
@@ -181,6 +213,21 @@ module ORMivore
       raise BadAttributesError, "Unknown attributes #{unknown_attrs.inspect}" unless unknown_attrs.empty?
     end
 
+    def validate_association_changes
+      name = local_association_changes[:name]
+      action = local_association_changes[:action]
+      entities = local_association_changes[:entities]
+      entities = local_association_changes[:entities] = [*entities]
+
+      raise BadAttributesError, "Unknown association name '#{name}'" unless associations.description.keys.include? name
+      raise BadAttributesError, "Unknown action '#{name}'" unless [:set, :add, :remove].include? action
+      if action == :set
+        raise BadAttributesError, "Too many entities for #{action} '#{name}'" unless entities.length < 2
+      else
+        raise BadAttributesError, "Missing entities #{action} '#{name}'" if entities.empty?
+      end
+    end
+
     def local_attributes=(attrs)
       attrs = coerce(attrs)
 
@@ -194,7 +241,11 @@ module ORMivore
         attrs_copy.each do |name, attr_value|
           declared_type = self.class.attributes_declaration[name]
           if declared_type && !attr_value.is_a?(declared_type)
-            attrs_copy[name] = declared_type.coerce(attr_value)
+            if attr_value.nil? || attr_value == NULL
+              attrs_copy[name] = NULL
+            else
+              attrs_copy[name] = declared_type.coerce(attr_value)
+            end
           end
         end
       }

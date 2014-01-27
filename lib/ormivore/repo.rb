@@ -18,8 +18,8 @@ module ORMivore
       @family.add(self, @entity_class) if @family
     end
 
-    def create
-      entity_class.new(attributes: {}, repo: self)
+    def create(attrs = {})
+      entity_class.new(attributes: {}, repo: self).apply(attrs)
     end
 
     def find_by_id(id, options = {})
