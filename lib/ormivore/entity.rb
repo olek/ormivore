@@ -219,7 +219,7 @@ module ORMivore
       entities = local_association_changes[:entities]
       entities = local_association_changes[:entities] = [*entities]
 
-      raise BadAttributesError, "Unknown association name '#{name}'" unless associations.description.keys.include? name
+      raise BadAttributesError, "Unknown association name '#{name}'" unless associations.names.include? name
       raise BadAttributesError, "Unknown action '#{name}'" unless [:set, :add, :remove].include? action
       if action == :set
         raise BadAttributesError, "Too many entities for #{action} '#{name}'" unless entities.length < 2
