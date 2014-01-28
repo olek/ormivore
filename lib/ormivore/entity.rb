@@ -165,6 +165,10 @@ module ORMivore
       end
     end
 
+    def associations
+      @associations ||= self.class.associations_class.new(self)
+    end
+
     def inspect
       "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect} parent=#{parent.inspect}>"
     end

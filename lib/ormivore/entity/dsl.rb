@@ -3,6 +3,7 @@ module ORMivore
     module DSL
       attr_reader :attributes_declaration
       attr_reader :optional_attributes_list
+      attr_reader :associations_class
 
       def attributes_list
         attributes_declaration.keys
@@ -35,6 +36,27 @@ module ORMivore
       def optional(*methods)
         @optional_attributes_list = methods.map(&:to_sym)
       end
+
+      def associations(associations_class)
+        raise BadArgumentError, "No association class provided" unless associations_class
+        raise BadArgumentError, "Wrong association class provided: #{associations_class}" unless associations_class.is_a?(AssociationsDSL)
+
+        @associations_class = associations_class
+      end
+
+      def responsibility(name, responsibility_class)
+        raise BadArgumentError, "No responsibility name provided" unless name
+        raise BadArgumentError, "No responsibility class provided" unless responsibility_class
+
+        raise BadArgumentError, "Can not redefine responsibility '#{name}'" if method_defined?(name)
+
+        define_method(name) do
+          var = "@#{name}"
+          (rtn = instance_variable_get(var)) ? rtn : instance_variable_set(var, responsibility_class.new(self))
+        end
+      end
+
+      alias_method :role, :responsibility
 
       # really private methods, not part of API/DSL at all
 
