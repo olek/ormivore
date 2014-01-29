@@ -65,21 +65,9 @@ module ORMivore
     end
 
     def persist(entity)
-      entity.validate
-
-      if entity.id
-        if entity.changed?
-          count = port.update_one(entity.id, entity.changes)
-          raise ORMivore::StorageError, 'No records updated' if count.zero?
-          raise ORMivore::StorageError, 'WTF' if count > 1
-
-          entity_class.new(attributes: entity.attributes, id: entity.id, repo: self)
-        else
-          entity
-        end
-      else
-        attrs_to_entity(port.create(entity.changes))
-      end
+      persist_entity(entity).tap {
+        persist_entity_associations(entity)
+      }
     end
 
     def delete(entity)
@@ -99,6 +87,27 @@ module ORMivore
     private
 
     attr_reader :port
+
+    def persist_entity(entity)
+      entity.validate
+
+      if entity.id
+        if entity.changed?
+          count = port.update_one(entity.id, entity.changes)
+          raise ORMivore::StorageError, 'No records updated' if count.zero?
+          raise ORMivore::StorageError, 'WTF' if count > 1
+
+          entity_class.new(attributes: entity.attributes, id: entity.id, repo: self)
+        else
+          entity
+        end
+      else
+        attrs_to_entity(port.create(entity.changes))
+      end
+    end
+
+    def persist_entity_associations(entity)
+    end
 
     def attrs_to_entity(attrs)
       if attrs

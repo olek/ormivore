@@ -44,7 +44,7 @@ module ORMivore
       @parent = options[:parent]
       @repo = options[:repo]
       @id = options[:id]
-      @local_association_changes = options[:association_changes]
+      @local_associations = options.fetch(:association_changes, [])
       attrs = options.fetch(:attributes, {})
 
       if @parent
@@ -56,10 +56,10 @@ module ORMivore
         raise InvalidStateError, "Can not initialise repo different from paren't repo" if @repo && parent.repo
         @repo ||= @parent.repo
         @cache = @parent.cache # cache is shared between all entity versions
-        @local_association_changes = @local_association_changes.symbolize_keys if @local_association_changes # copy
+        @local_associations = @local_associations.map(&:symbolize_keys) # also copy
       else
         raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || attrs.empty?
-        raise BadArgumentError, 'Association changes should only be provided for non-root entities' if @local_association_changes
+        raise BadArgumentError, 'Association changes should only be provided for non-root entities' unless @local_associations.empty?
         coerce_id
         @cache = {}
       end
@@ -67,7 +67,7 @@ module ORMivore
       self.local_attributes = attrs
 
       validate_absence_of_unknown_attributes
-      validate_association_changes if @local_association_changes
+      validate_association_changes unless @local_associations.empty?
     end
 
     # TODO local memoize?
@@ -110,7 +110,7 @@ module ORMivore
     def association_changes
       collect_from_root([]) { |e, acc|
         unless e.root?
-          acc << e.local_association_changes
+          acc.concat(e.local_associations)
         end
 
         acc
@@ -132,15 +132,20 @@ module ORMivore
       self
     end
 
-    def apply(attrs)
-      attrs = coerce(attrs)
-      attrs.delete_if { |k, v| v == attribute(k) }
+    def apply(attrs, associations = [])
+      # TODO apply should be short and sweet. Move this madness to constructor. Then find way to extract it.
+      # Maybe make default constructor work only for 'empty entity' scenario, and create private?
+      # factory method for other scenarios
+      attrs = prune_applied_attributes(attrs)
+      associations = prune_applied_associations(associations, attrs)
+      set_foreign_key_for_direct_link_associations(associations, attrs)
+      # TODO still need to reset association when fk for it changes
 
-      attrs.empty? ? self : self.class.new(attributes: attrs, parent: self)
-    end
-
-    def change_association(name, action, entities)
-      self.class.new(association_changes: { name: name, action: action, entities: entities }, parent: self)
+      if attrs.empty? && associations.empty?
+        self
+      else
+        self.class.new(attributes: attrs, association_changes: associations, parent: self)
+      end
     end
 
     def validate
@@ -170,13 +175,13 @@ module ORMivore
     end
 
     def inspect
-      "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect} parent=#{parent.inspect}>"
+      "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect}, associations=#{local_associations.inspect}, parent=#{parent.inspect}>"
     end
 
     protected
 
     attr_reader :parent # Read only access
-    attr_reader :local_attributes, :local_association_changes, :cache # allows changing the hash
+    attr_reader :local_attributes, :local_associations, :cache # allows changing the hash
 
     def repo=(repo)
       raise InvalidStateError, "Can not attach repo second time" if @repo
@@ -218,12 +223,18 @@ module ORMivore
     end
 
     def validate_association_changes
-      name = local_association_changes[:name]
-      action = local_association_changes[:action]
-      entities = local_association_changes[:entities]
-      entities = local_association_changes[:entities] = [*entities]
+      local_associations.each do |association_changes|
+        validate_single_association_changes(association_changes)
+      end
+    end
 
-      raise BadAttributesError, "Unknown association name '#{name}'" unless associations.names.include? name
+    def validate_single_association_changes(association_changes)
+      name = association_changes[:name]
+      action = association_changes[:action]
+      entities = association_changes[:entities]
+      entities = association_changes[:entities] = [*entities]
+
+      raise BadAttributesError, "Unknown association name '#{name}'" unless self.class.associations_class.names.include? name
       raise BadAttributesError, "Unknown action '#{name}'" unless [:set, :add, :remove].include? action
       if action == :set
         raise BadAttributesError, "Too many entities for #{action} '#{name}'" unless entities.length < 2
@@ -259,6 +270,59 @@ module ORMivore
       @id = Integer(@id) if @id
     rescue ArgumentError
       raise ORMivore::BadArgumentError, "Not a valid id: #{@id.inspect}"
+    end
+
+    def prune_applied_attributes(attrs)
+      attrs = coerce(attrs)
+      attrs.delete_if { |k, v| v == attribute(k) }
+
+      attrs
+    end
+
+    def prune_applied_associations(associations, attrs)
+      associations = associations.map(&:symbolize_keys) # copy
+      associations.delete_if do |association|
+        data = self.class.associations_class.descriptions[association[:name]]
+        raise BadArgumentError, "Unknown association '#{association[:name]}'" unless data
+        return true if noop_direct_link_association?(associations, data)
+
+        association_already_present?(association)
+      end
+
+      associations
+    end
+
+    def set_foreign_key_for_direct_link_associations(associations, attrs)
+      associations.each do |association|
+        data = self.class.associations_class.descriptions[association[:name]]
+
+        # TODO should work with one_to_one(direct) in the future too
+        next if data[:type] != :many_to_one
+
+        entity = association[entities].first
+        fk = data[:foreign_key]
+        if attrs[fk]
+          # TODO validation in setter? Questionable...
+          raise BadArgumentError,
+            "Setting both foreign key attribute '#{fk}'and corresponding association '#{data[:name]}'is not allowed"
+        end
+
+        # NOTE assuming entity has id already
+        attrs[fk] = entity.id
+      end
+    end
+
+    def association_already_present?(association)
+      association_changes.include?(association)
+    end
+
+    def noop_direct_link_association?(association, data)
+      # TODO should work with one_to_one(direct) in the future too
+      return false if data[:type] != :many_to_one
+
+      entity = association[entities].first
+      fk = data[:foreign_key]
+      attribute(fk) == entity.id
     end
   end
 end
