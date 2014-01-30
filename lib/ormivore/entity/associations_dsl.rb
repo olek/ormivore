@@ -75,8 +75,8 @@ module ORMivore
         raise BadArgumentError, "Association #{name} is already defined" if association_names.include?(name)
         raise BadArgumentError, "Association #{name} can not have nil entity class" unless entity_class
 
-        foreign_key = options.fetch(:fk)
-        cache_name = "#{self.name.demodulize}.#{name}"
+        foreign_key = options.fetch(:fk).to_sym
+        cache_name = "#{self.name.demodulize}.#{name}".to_sym
 
         association_descriptions[name] = {
           type: type,
@@ -84,7 +84,7 @@ module ORMivore
           foreign_key: foreign_key,
           cache_name: cache_name
         }.tap { |h|
-          h[:through] = options.fetch(:through) if type == :many_to_many
+          h[:through] = options.fetch(:through).to_sym if type == :many_to_many
         }
       end
 

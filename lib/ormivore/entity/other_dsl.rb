@@ -1,10 +1,25 @@
 module ORMivore
   module Entity
     module OtherDSL
-      def new_with_parent(parent, options)
+      def new_with_change_processor(parent, change_processor)
         allocate.tap { |o|
-          o.initialize_with_parent(parent, options)
+          o.initialize_with_change_processor(parent, change_processor)
         }
+      end
+
+      def coerce(attrs)
+        attrs.each do |name, attr_value|
+          declared_type = attributes_declaration[name]
+          if declared_type && !attr_value.is_a?(declared_type)
+            if attr_value.nil? || attr_value == NULL
+              attrs[name] = NULL
+            else
+              attrs[name] = declared_type.coerce(attr_value)
+            end
+          end
+        end
+      rescue ArgumentError => e
+        raise ORMivore::BadArgumentError.new(e)
       end
 
       private
