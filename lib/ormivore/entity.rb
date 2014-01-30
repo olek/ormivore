@@ -8,7 +8,11 @@ module ORMivore
 
     def self.included(base)
       base.send(:include, Coercions) # how naughty of us
-      base.extend(DSL) # not so naughty, but still...
+
+      # not so naughty, but still...
+      base.extend(AttributesDSL)
+      base.extend(AssociationsDSL)
+      base.extend(OtherDSL)
 
       define_builder_class(base)
     end
@@ -176,10 +180,6 @@ module ORMivore
       end
     end
 
-    def associations
-      @associations ||= self.class.associations_class.new(self)
-    end
-
     def inspect
       "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect}, associations=#{local_associations.inspect}, parent=#{parent.inspect}>"
     end
@@ -244,7 +244,7 @@ module ORMivore
       entities = associations[:entities]
       entities = associations[:entities] = [*entities]
 
-      raise BadAttributesError, "Unknown association name '#{name}'" unless self.class.associations_class.names.include? name
+      raise BadAttributesError, "Unknown association name '#{name}'" unless self.class.association_names.include? name
       raise BadAttributesError, "Unknown action '#{name}'" unless [:set, :add, :remove].include? action
       if action == :set
         raise BadAttributesError, "Too many entities for #{action} '#{name}'" unless entities.length < 2
@@ -282,7 +282,7 @@ module ORMivore
 
     def prune_applied_associations
       @local_associations.delete_if do |association|
-        data = self.class.associations_class.descriptions[association[:name]]
+        data = self.class.association_descriptions[association[:name]]
         raise BadArgumentError, "Unknown association '#{association[:name]}'" unless data
         return true if noop_direct_link_association?(association, data)
 
@@ -292,7 +292,7 @@ module ORMivore
 
     def set_foreign_key_for_direct_link_associations
       local_associations.each do |association|
-        data = self.class.associations_class.descriptions[association[:name]]
+        data = self.class.association_descriptions[association[:name]]
 
         # TODO should work with one_to_one(direct) in the future too
         next if data[:type] != :many_to_one
