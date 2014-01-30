@@ -49,45 +49,44 @@ module ORMivore
     end
 
     def initialize(options = {})
-      # TODO this constructor is crazy. Any way to simplify/split?
-      @parent = options[:parent]
-      repo = options[:repo]
+      @repo = [options[:repo]] # Ugly workaround to avoid freezing repo.
       @id = options[:id]
-      @local_attributes = coerce(options.fetch(:attributes, {})) # also copy
-      @local_associations = options.fetch(:associations, []).map(&:symbolize_keys) # also copy
+      @local_attributes = coerce(options.fetch(:attributes, {}).symbolize_keys)
+      @local_associations = []
+      @cache = {}
 
-      if @parent
-        raise BadArgumentError, 'id should only be provided for root entities' if @id
-        raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
+      raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || @local_attributes.empty?
+      coerce_id
 
-        @id = @parent.id
+      validate_absence_of_unknown_attributes
 
-        raise InvalidStateError, "Can not initialise repo different from paren't repo" if repo && @parent.repo
-        repo ||= @parent.repo
-        @cache = @parent.cache # cache is shared between all entity versions
-        @local_associations = @local_associations.map(&:symbolize_keys) # also copy
-      else
-        raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || @local_attributes.empty?
-        raise BadArgumentError, 'Association changes should only be provided for non-root entities' unless @local_associations.empty?
-        coerce_id
-        @cache = {}
-      end
+      freeze
+    end
+
+    def initialize_with_parent(parent, options)
+      @parent = parent
+      raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
+      repo = options[:repo]
+      raise InvalidStateError, "Can not initialise repo different from paren't repo" if repo && @parent.repo
+
+      @local_attributes = coerce(options.fetch(:attributes, {}).symbolize_keys)
+      @local_associations = options.fetch(:associations, []).map(&:symbolize_keys)
+
+      @id = @parent.id
+      repo ||= @parent.repo
+      @cache = @parent.cache # cache is shared between all entity versions
 
       validate_absence_of_unknown_attributes
       validate_association_changes unless @local_associations.empty?
 
-      if @parent
-        prune_applied_attributes
-        prune_applied_associations
-        set_foreign_key_for_direct_link_associations
-        # TODO still need to reset association when fk for it changes
-      end
+      prune_applied_attributes
+      prune_applied_associations
+      set_foreign_key_for_direct_link_associations
+      # TODO still need to reset association when fk for it changes
 
       @repo = [repo] # Ugly workaround to avoid freezing repo.
-      @local_attributes.freeze
-      @local_associations.freeze
 
-      self.freeze
+      freeze
     end
 
     # TODO local memoize?
@@ -153,7 +152,7 @@ module ORMivore
     end
 
     def apply(attrs, association = nil)
-      applied = self.class.new(attributes: attrs, associations: [association].compact, parent: self)
+      applied = self.class.new_with_parent(self, attributes: attrs, associations: [association].compact)
 
       applied.noop? ? self : applied
     end
@@ -224,6 +223,13 @@ module ORMivore
 
     private
 
+    def freeze
+      super
+
+      @local_attributes.freeze
+      @local_associations.freeze
+    end
+
     def validate_absence_of_unknown_attributes
       unknown_attrs = (local_attributes.keys - self.class.attributes_list).each_with_object({}) { |k, acc|
         acc[k] = local_attributes[k]
@@ -254,18 +260,16 @@ module ORMivore
     end
 
     def coerce(attrs)
-      attrs.symbolize_keys.tap { |attrs_copy|
-        attrs_copy.each do |name, attr_value|
-          declared_type = self.class.attributes_declaration[name]
-          if declared_type && !attr_value.is_a?(declared_type)
-            if attr_value.nil? || attr_value == NULL
-              attrs_copy[name] = NULL
-            else
-              attrs_copy[name] = declared_type.coerce(attr_value)
-            end
+      attrs.each do |name, attr_value|
+        declared_type = self.class.attributes_declaration[name]
+        if declared_type && !attr_value.is_a?(declared_type)
+          if attr_value.nil? || attr_value == NULL
+            attrs[name] = NULL
+          else
+            attrs[name] = declared_type.coerce(attr_value)
           end
         end
-      }
+      end
     rescue ArgumentError => e
       raise ORMivore::BadArgumentError.new(e)
     end

@@ -18,15 +18,15 @@ module ORMivore
         finder_name = "find_by_id"
 
         define_method(name) do
-          unchanged = self.cache_with_name(data[:cache_name]) {
-            self.repo.family[entity_class].public_send(finder_name, self.attribute(data[:foreign_key]))
-          }
+          changed = self.association_changes.select { |o| o[:name] == name }.last
 
-          self.association_changes.
-            select { |o| o[:name] == name }.
-            inject(unchanged) { |pick, changes|
-              changes[:entities].first
+          if changed
+            changed[:entities].first
+          else
+            self.cache_with_name(data[:cache_name]) {
+              self.repo.family[entity_class].public_send(finder_name, self.attribute(data[:foreign_key]))
             }
+          end
         end
       end
 

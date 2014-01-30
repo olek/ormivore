@@ -1,6 +1,12 @@
 module ORMivore
   module Entity
     module OtherDSL
+      def new_with_parent(parent, options)
+        allocate.tap { |o|
+          o.initialize_with_parent(parent, options)
+        }
+      end
+
       private
 
       def responsibility(name, responsibility_class)
