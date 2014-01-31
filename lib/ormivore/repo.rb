@@ -34,7 +34,7 @@ module ORMivore
       if quiet
         return nil
       else
-        raise e, "#{entity_class.name} with id #{id} was not found"
+        raise e, "#{entity_class.name} with id #{id.inspect} was not found"
       end
     end
 
@@ -112,11 +112,28 @@ module ORMivore
     def attrs_to_entity(attrs)
       if attrs
         attrs = attrs.dup
-        entity_id = attrs.delete(:id)
         attrs.reject! {|k,v| v.nil? }
-        entity_class.new(attributes: attrs, id: entity_id, repo: self)
+        entity_id = attrs.delete(:id)
+        direct_link_associations = extract_direct_link_associations(attrs)
+
+        new_entity_options = { repo: self }
+        new_entity_options[:attributes] = attrs unless attrs.empty?
+        new_entity_options[:associations] = direct_link_associations unless direct_link_associations.empty?
+        new_entity_options[:id] = entity_id if entity_id
+
+        entity_class.new(new_entity_options)
       else
         nil
+      end
+    end
+
+    def extract_direct_link_associations(attrs)
+      entity_class.association_descriptions.select { |n, d| d[:type] == :many_to_one }.each_with_object({}) do |(name, description), acc|
+        foreign_key = description[:foreign_key]
+        foreign_key_value = entity_class.coerce_id(attrs.delete(foreign_key))
+        if foreign_key_value
+          acc[name] = Entity::Placeholder.new(family[description[:entity_class]], foreign_key_value)
+        end
       end
     end
 

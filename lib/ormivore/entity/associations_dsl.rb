@@ -23,7 +23,7 @@ module ORMivore
           if changed
             changed[:entities].first
           else
-            self.cache_with_name(data[:cache_name]) {
+            self.cache_association(name) {
               self.repo.family[entity_class].public_send(finder_name, self.attribute(data[:foreign_key]))
             }
           end
@@ -37,7 +37,7 @@ module ORMivore
         finder_name = "find_all_by_#{data[:foreign_key]}"
 
         define_method(name) do
-          unchanged = self.cache_with_name(data[:cache_name]) {
+          unchanged = self.cache_association(name) {
             self.repo.family[entity_class].public_send(finder_name, self.id)
           }
 
@@ -52,7 +52,7 @@ module ORMivore
         finder_name = "find_by_ids"
 
         define_method(name) do
-          unchanged = self.cache_with_name(data[:cache_name]) {
+          unchanged = self.cache_association(name) {
             join_entities = public_send(data[:through])
             if join_entities.empty?
               []
@@ -76,13 +76,11 @@ module ORMivore
         raise BadArgumentError, "Association #{name} can not have nil entity class" unless entity_class
 
         foreign_key = options.fetch(:fk).to_sym
-        cache_name = "#{self.name.demodulize}.#{name}".to_sym
 
         association_descriptions[name] = {
           type: type,
           entity_class: entity_class,
-          foreign_key: foreign_key,
-          cache_name: cache_name
+          foreign_key: foreign_key
         }.tap { |h|
           h[:through] = options.fetch(:through).to_sym if type == :many_to_many
         }

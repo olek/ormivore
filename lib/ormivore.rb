@@ -1,5 +1,7 @@
 require 'ormivore/errors'
+require 'ormivore/lazy_cache'
 require 'ormivore/entity/coercions'
+require 'ormivore/entity/placeholder'
 require 'ormivore/entity/attributes_dsl'
 require 'ormivore/entity'
 require 'ormivore/entity/memoize'

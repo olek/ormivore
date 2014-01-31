@@ -19,7 +19,7 @@ module ORMivore
         cache_name = "#{self.name.demodulize}.#{method_name}".to_sym
 
         define_method(method_name) do
-          entity.cache_with_name(cache_name) {
+          entity.memoize(cache_name) {
             original_method.bind(self).call
           }
         end
