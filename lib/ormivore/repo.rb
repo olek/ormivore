@@ -27,7 +27,7 @@ module ORMivore
 
       attrs_to_entity(port.find_by_id(
           id,
-          [:id].concat(entity_class.attributes_list)
+          columns_to_fetch
         )
       )
     rescue RecordNotFound => e
@@ -50,7 +50,7 @@ module ORMivore
 
       entities_attrs = port.find_by_ids(
         ids,
-        [:id].concat(entity_class.attributes_list)
+        columns_to_fetch
       )
 
       objects.each_with_object({}) { |o, entities_map|
@@ -135,6 +135,11 @@ module ORMivore
           acc[name] = Entity::Placeholder.new(family[description[:entity_class]], foreign_key_value)
         end
       end
+    end
+
+    def columns_to_fetch
+      [:id].concat(entity_class.attributes_list).concat(entity_class.foreign_keys)
+      [:id].concat(entity_class.foreign_keys).concat(entity_class.attributes_list)
     end
 
 =begin

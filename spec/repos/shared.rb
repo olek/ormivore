@@ -10,7 +10,8 @@ shared_examples_for 'a repo' do
   let(:attributes_list) { [:id, :foo] }
 
   let(:entity_class) {
-    double('entity_class', new: new_entity, name: 'FakeEntity', attributes_list: [:foo], association_descriptions: {})
+    double('entity_class', new: new_entity, name: 'FakeEntity',
+           attributes_list: [:foo], association_descriptions: {}, foreign_keys: [])
   }
 
   let(:port) {

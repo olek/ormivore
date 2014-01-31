@@ -199,9 +199,15 @@ module ORMivore
     end
 
     def cache_association(name)
-      associations_cache.get(name) {
+      raise BadArgumentError, "Block needed for cache_association" unless block_given?
+      associations_cache.cache(name) {
         yield
       }
+    end
+
+    def cached_association(name, options = {})
+      raise BadArgumentError, "No block needed for cached_association, maybe you meant cache_association?" if block_given?
+      associations_cache.get(name, options)
     end
 
     def memoize(name)

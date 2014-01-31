@@ -1,6 +1,8 @@
 module ORMivore
   module Entity
     class Placeholder
+      attr_reader :id
+
       def initialize(repo, id)
         @repo = repo or fail
         @id = id or fail

@@ -9,6 +9,12 @@ module ORMivore
         @association_descriptions ||= {}
       end
 
+      def foreign_keys
+        association_descriptions.map { |k, data|
+          data[:foreign_key] if data[:type] == :many_to_one
+        }.compact
+      end
+
       private
 
       def many_to_one(name, entity_class, options)
@@ -26,6 +32,16 @@ module ORMivore
             self.cache_association(name) {
               self.repo.family[entity_class].public_send(finder_name, self.attribute(data[:foreign_key]))
             }
+          end
+        end
+
+        define_method("#{name}_id") do
+          changed = self.association_changes.select { |o| o[:name] == name }.last
+
+          if changed
+            changed[:entities].first.id
+          else
+            self.cached_association(name, dereference: false).id
           end
         end
       end

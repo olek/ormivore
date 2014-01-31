@@ -17,8 +17,6 @@ module ORMivore
 
         prune_applied_attributes
         prune_applied_associations
-        set_foreign_key_for_direct_link_associations
-        # TODO still need to reset association when fk for it changes
 
         self
       end
@@ -62,26 +60,6 @@ module ORMivore
         end
       end
 
-      def set_foreign_key_for_direct_link_associations
-        associations.each do |association|
-          data = parent.class.association_descriptions[association[:name]]
-
-          # TODO should work with one_to_one(direct) in the future too
-          next if data[:type] != :many_to_one
-
-          entity = association[:entities].first
-          fk = data[:foreign_key]
-          if attributes[fk]
-            # TODO validation in setter? Questionable...
-            raise BadArgumentError,
-              "Setting both foreign key attribute '#{fk}'and corresponding association '#{data[:name]}'is not allowed"
-          end
-
-          # NOTE assuming entity has id already
-          attributes[fk] = entity.id
-        end
-      end
-
       def association_already_present?(association)
         parent.association_changes.include?(association)
       end
@@ -91,8 +69,7 @@ module ORMivore
         return false if data[:type] != :many_to_one
 
         entity = association[:entities].first
-        fk = data[:foreign_key]
-        parent.attribute(fk) == entity.id
+        parent.public_send("#{association[:name]}_id") == entity.id
       end
     end
   end

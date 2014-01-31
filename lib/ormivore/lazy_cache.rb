@@ -1,37 +1,42 @@
 module ORMivore
   class LazyCache
     def initialize
-      @cache = {}
+      @storage = {}
       freeze
     end
 
     def set(cache_name, value)
       # value may be placeholder
       cache_name = cache_name.to_sym
-      already_cached = cache[cache_name]
+      already_cached = storage[cache_name]
 
       if already_cached
         raise InvalidStateError, "Can not set value for already cached entry"
       else
-        cache[cache_name] = value
+        storage[cache_name] = value
       end
     end
 
-    def get(cache_name)
+    def cache(cache_name)
       cache_name = cache_name.to_sym
-      already_cached = cache[cache_name]
+      already_cached = storage[cache_name]
 
-      if already_cached
-        dereference_placeholder(already_cached, cache_name)
-      else
-        # get should not be used with placeholders
-        cache[cache_name] = dereference_placeholder(yield, cache_name)
-      end
+      value =
+        if already_cached
+          already_cached
+        else
+          storage[cache_name] = yield
+        end
+
+      dereference_placeholder(value, cache_name)
     end
 
-    def dereference_placeholder(value, cache_name)
-      if value.respond_to?(:dereference_placeholder)
-        cache[cache_name] = value.dereference_placeholder
+    def get(cache_name, options = {})
+      cache_name = cache_name.to_sym
+      value = storage[cache_name]
+
+      if value && options.fetch(:dereference, true)
+        dereference_placeholder(value, cache_name)
       else
         value
       end
@@ -39,6 +44,14 @@ module ORMivore
 
     private
 
-    attr_reader :cache
+    attr_reader :storage
+
+    def dereference_placeholder(value, cache_name)
+      if value.respond_to?(:dereference_placeholder)
+        storage[cache_name] = value.dereference_placeholder
+      else
+        value
+      end
+    end
   end
 end
