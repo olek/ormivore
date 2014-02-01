@@ -53,11 +53,19 @@ module ORMivore
         finder_name = "find_all_by_#{data[:foreign_key]}"
 
         define_method(name) do
-          unchanged = self.cache_association(name) {
-            self.repo.family[entity_class].public_send(finder_name, self.id)
-          }
+          changes = self.association_changes.select { |o| o[:name] == name }
+          last_set_with_index = changes.zip(0...changes.length).select { |(o, _)| o[:action] == :set }.last
+          changes = changes[last_set_with_index.last..-1] if last_set_with_index
 
-          AssociationsDSL.apply_changes(self, name, unchanged)
+          if last_set_with_index
+            unchanged = []
+          else
+            unchanged = self.cache_association(name) {
+              self.repo.family[entity_class].public_send(finder_name, self.id)
+            }
+          end
+
+          AssociationsDSL.apply_changes(changes, unchanged)
         end
       end
 
@@ -68,19 +76,27 @@ module ORMivore
         finder_name = "find_by_ids"
 
         define_method(name) do
-          unchanged = self.cache_association(name) {
-            join_entities = public_send(data[:through])
-            if join_entities.empty?
-              []
-            else
-              self.repo.family[entity_class].
-                public_send(finder_name,
-                  join_entities.map { |link| link.attribute(data[:foreign_key]) }.sort
-                ).values
-            end
-          }
+          changes = self.association_changes.select { |o| o[:name] == name }
+          last_set_with_index = changes.zip(0...changes.length).select { |(o, _)| o[:action] == :set }.last
+          changes = changes[last_set_with_index.last..-1] if last_set_with_index
 
-          AssociationsDSL.apply_changes(self, name, unchanged)
+          if last_set_with_index
+            unchanged = []
+          else
+            unchanged = self.cache_association(name) {
+              join_entities = public_send(data[:through])
+              if join_entities.empty?
+                []
+              else
+                self.repo.family[entity_class].
+                  public_send(finder_name,
+                    join_entities.map { |link| link.attribute(data[:foreign_key]) }.sort
+                  ).values
+              end
+            }
+          end
+
+          AssociationsDSL.apply_changes(changes, unchanged)
         end
       end
 
@@ -102,19 +118,19 @@ module ORMivore
         }
       end
 
-      def self.apply_changes(entity, name, unchanged)
-        entity.association_changes.
-          select { |o| o[:name] == name }.
-          inject(unchanged) { |last, changes|
-            case changes[:action]
-            when :add
-              last + changes[:entities]
-            when :remove
-              last - changes[:entities]
-            else
-              fail
-            end
-          }
+      def self.apply_changes(changes, initial)
+        changes.inject(initial) { |last, change|
+          case change[:action]
+          when :add
+            last + change[:entities]
+          when :remove
+            last - change[:entities]
+          when :set
+            change[:entities]
+          else
+            fail
+          end
+        }
       end
     end
   end

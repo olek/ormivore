@@ -46,23 +46,29 @@ module ORMivore
           raise BadAttributesError,
             "#{type} association change requires array" unless value.respond_to?(:[]) && value.respond_to?(:length)
           raise BadAttributesError,
-            "#{type} association change requires array with operator and at least one entity" unless value.length > 1
+            "#{type} association change requires array with at least one element" unless value.length > 0
+          if %w(+ -).include?(value[0].to_s)
+            action =
+              case value[0].to_sym
+              when :+
+                :add
+              when :-
+                :remove
+              end
+            entities = value[1..-1]
+          else
+            action = :set
+            entities = value
+          end
+
           raise BadAttributesError,
-            "#{type} association change requires array with operator" unless %w(+ -).include?(value[0].to_s)
+            "#{type} association change requires array with at least one entity" if entities.empty?
           raise BadAttributesError,
-            "#{type} association change requires array with entities after operator" unless value[1..-1].all? {
+            "#{type} association change requires array with entities" unless entities.all? {
               |o| o.is_a?(Entity)
             }
 
-          action =
-            case value[0].to_sym
-            when :+
-              :add
-            when :-
-              :remove
-            end
-
-          { name: name, action: action, entities: value[1..-1] }
+          { name: name, action: action, entities: entities }
         end
       end
 
