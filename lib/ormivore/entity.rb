@@ -181,8 +181,8 @@ module ORMivore
       self
     end
 
-    def apply(attrs, association = nil)
-      applied = self.class.new_with_change_processor(self, ChangeProcessor.new(self, attrs, [association].compact).call)
+    def apply(attrs)
+      applied = self.class.new_with_change_processor(self, ChangeProcessor.new(self, attrs).call)
 
       applied.noop? ? self : applied
     end

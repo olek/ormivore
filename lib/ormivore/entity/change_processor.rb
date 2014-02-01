@@ -1,22 +1,25 @@
 module ORMivore
   module Entity
     class ChangeProcessor
-      def initialize(parent, attributes, associations)
+      def initialize(parent, attributes)
+        attributes = attributes.symbolize_keys # copy
+
         @parent = parent
+        an = parent.class.association_names
         @unprocessed_attributes = attributes
-        @unprocessed_associations = associations
+        @unprocessed_associations = attributes.each_with_object({}) { |(k, _), acc|
+          acc[k] = attributes.delete(k) if an.include?(k)
+        }
       end
 
       attr_reader :attributes, :associations
 
       def call
         @attributes = parent.class.coerce(@unprocessed_attributes.symbolize_keys)
-        @associations = @unprocessed_associations.map(&:symbolize_keys)
+        @associations = convert_associations(@unprocessed_associations)
 
-        validate_association_changes unless associations.empty?
-
-        prune_applied_attributes
-        prune_applied_associations
+        prune_attributes
+        prune_associations
 
         self
       end
@@ -25,38 +28,54 @@ module ORMivore
 
       attr_reader :parent
 
-      def validate_association_changes
-        associations.each do |associations|
-          validate_single_association_changes(associations)
+      def convert_associations(assoc)
+        assoc.each_with_object([]) do |(name, value), acc|
+          acc << convert_association(name, value)
         end
       end
 
-      def validate_single_association_changes(associations)
-        name = associations[:name]
-        action = associations[:action]
-        entities = associations[:entities]
-        entities = associations[:entities] = [*entities]
+      def convert_association(name, value)
+        raise BadAttributesError, "Unknown association name '#{name}'" unless parent.class.association_names.include?(name)
 
-        raise BadAttributesError, "Unknown association name '#{name}'" unless parent.class.association_names.include? name
-        raise BadAttributesError, "Unknown action '#{name}'" unless [:set, :add, :remove].include? action
-        if action == :set
-          raise BadAttributesError, "Too many entities for #{action} '#{name}'" unless entities.length < 2
+        data = parent.class.association_descriptions[name]
+        case type = data[:type]
+        when :many_to_one
+          raise BadAttributesError, "#{type} association change requires single entity" unless value.is_a?(Entity)
+          { name: name, action: :set, entities: [value] }
         else
-          raise BadAttributesError, "Missing entities #{action} '#{name}'" if entities.empty?
+          raise BadAttributesError,
+            "#{type} association change requires array" unless value.respond_to?(:[]) && value.respond_to?(:length)
+          raise BadAttributesError,
+            "#{type} association change requires array with operator and at least one entity" unless value.length > 1
+          raise BadAttributesError,
+            "#{type} association change requires array with operator" unless %w(+ -).include?(value[0].to_s)
+          raise BadAttributesError,
+            "#{type} association change requires array with entities after operator" unless value[1..-1].all? {
+              |o| o.is_a?(Entity)
+            }
+
+          action =
+            case value[0].to_sym
+            when :+
+              :add
+            when :-
+              :remove
+            end
+
+          { name: name, action: action, entities: value[1..-1] }
         end
       end
 
-      def prune_applied_attributes
+      def prune_attributes
         attributes.delete_if { |k, v| v == parent.attribute(k) }
       end
 
-      def prune_applied_associations
+      def prune_associations
         associations.delete_if do |association|
           data = parent.class.association_descriptions[association[:name]]
           raise BadArgumentError, "Unknown association '#{association[:name]}'" unless data
-          return true if noop_direct_link_association?(association, data)
-
-          association_already_present?(association)
+          noop_direct_link_association?(association, data) ||
+            association_already_present?(association)
         end
       end
 
