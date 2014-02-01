@@ -1,6 +1,6 @@
 shared_examples_for 'a repo' do
   let(:entity) {
-    double('entity', id: nil, changes: { foo: 'bar' }, validate: nil)
+    double('entity', id: nil, changes: { foo: 'bar' }, association_changes: {}, validate: nil)
   }
 
   let(:new_entity) {

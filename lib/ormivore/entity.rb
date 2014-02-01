@@ -226,6 +226,17 @@ module ORMivore
         "applied_associations=#{applied_associations.inspect}, parent=#{parent.inspect}>"
     end
 
+    # customizing to_yaml output that otherwise is a bit too long
+    def encode_with(encoder)
+      encoder['id'] = @id
+      encoder['local_attributes'] = @local_attributes
+      encoder['applied_associations'] = @applied_associations
+      encoder['changes'] = changes
+      encoder['association_changes'] = association_changes
+      encoder['associations_cache'] = @associations_cache
+      encoder['memoize_cache'] = @memoize_cache
+    end
+
     protected
 
     attr_reader :parent # Read only access

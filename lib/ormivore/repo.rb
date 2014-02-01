@@ -91,9 +91,12 @@ module ORMivore
     def persist_entity(entity)
       entity.validate
 
+      changes = entity.changes.merge(foreign_key_changes(entity))
+
+
       if entity.id
         if entity.changed?
-          count = port.update_one(entity.id, entity.changes)
+          count = port.update_one(entity.id, changes)
           raise ORMivore::StorageError, 'No records updated' if count.zero?
           raise ORMivore::StorageError, 'WTF' if count > 1
 
@@ -102,8 +105,17 @@ module ORMivore
           entity
         end
       else
-        attrs_to_entity(port.create(entity.changes))
+        attrs_to_entity(port.create(changes))
       end
+    end
+
+    def foreign_key_changes(entity)
+      ad = entity_class.association_descriptions
+      entity.association_changes.
+        select { |o| ad[o[:name]][:type] == :many_to_one }.
+        each_with_object({}) { |o, acc|
+          acc[ad[o[:name]][:foreign_key]] = o[:entities].first.id
+        }
     end
 
     def persist_entity_associations(entity)
