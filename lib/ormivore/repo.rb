@@ -66,10 +66,19 @@ module ORMivore
 
     def persist(entity)
       raise InvalidStateError, "Dismissed entities can not be persisted" if entity.dismissed?
-      persist_entity(entity).tap {
-        persist_entity_associations(entity)
-        entity.dismiss
-      }
+      rtn = persist_entity(entity)
+      if persist_entity_associations(entity) && rtn.equal?(entity)
+        # FIXME those associations are stale, new entities may have been persisted
+        # if we had identity map, we could just refresh them
+        #associations = entity.loaded_associations
+        #associations.each do |k, v|
+        #  associations[k] = v.sort_by(&:id) if v.respond_to?(:length)
+        #end
+        rtn = entity_class.new(repo: self, id: entity.id, attributes: entity.attributes) #, associations: associations)
+      end
+      entity.dismiss
+
+      rtn
     end
 
     def delete(entity)
@@ -138,6 +147,8 @@ module ORMivore
           e = association_repo.persist(e)
         end
       end
+
+      !alterations_hash.empty?
     end
 
     def collect_association_alterations(entity)

@@ -12,6 +12,11 @@ module ORMivore
       def dereference_placeholder
         @repo.find_by_id(@id)
       end
+
+      # pretending to be an entity
+      def inspect(options = {})
+        "#<#{self.class.name} id=#{id}>"
+      end
     end
   end
 end

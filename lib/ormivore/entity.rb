@@ -168,6 +168,24 @@ module ORMivore
       }
     end
 
+    def lazy_associations
+      self.class.association_names.each_with_object({}) { |name, acc|
+        ca = cached_association(name, dereference: false)
+        if ca
+          acc[name] =
+            if ca.respond_to?(:dereference_placeholder)
+              if association_changes.any? { |o| o[:name] == name }
+                public_send(name)
+              else
+                ca
+              end
+            else
+              public_send(name)
+            end
+        end
+      }
+    end
+
     def association(name)
       name = name.to_sym
       raise BadArgumentError, "No association '#{name} registered." unless self.class.association_names.include?(name)
@@ -270,9 +288,21 @@ module ORMivore
       same?(other)
     end
 
-    def inspect
-      "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect}, " +
-        "applied_associations=#{applied_associations.inspect}, parent=#{parent.inspect}>"
+    def inspect(options = {})
+      verbose = options.fetch(:verbose, true)
+
+      "#<#{self.class.name}".tap { |s|
+          s << ' dismissed' if dismissed?
+          s << " root" if root?
+          s << " id=#{id}" if id
+          if verbose
+            s << " attributes=#{attributes.inspect}" unless attributes.empty?
+            s << " lazy_associations=#{inspect_entities_map(lazy_associations)}" unless lazy_associations.empty?
+            s << " applied_associations=#{inspect_applied_associations(applied_associations)}" unless applied_associations.empty?
+          else
+            s << (":0x%08x" % (object_id * 2)) unless root? || id
+          end
+      } << '>'
     end
 
     # customizing to_yaml output that otherwise is a bit too long
@@ -347,6 +377,30 @@ module ORMivore
       }
 
       raise BadAttributesError, "Unknown attributes #{unknown_attrs.inspect}" unless unknown_attrs.empty?
+    end
+
+    # FIXME all those inspects here smell... find better place for them
+    def inspect_entities(entities)
+      return 'NIL' unless entities
+      if entities.respond_to?(:length)
+        entities.map { |e|
+          e.inspect(verbose: false)
+        }.join(', ').prepend('[') << ']'
+      else
+        entities.inspect(verbose: false)
+      end
+    end
+
+    def inspect_entities_map(map)
+      map.map { |k, v|
+        "#{k.inspect}=>#{inspect_entities(v)}"
+      }.join(', ').prepend('{') << '}'
+    end
+
+    def inspect_applied_associations(aa)
+      aa.map { |o| o.values_at(:name, :action, :entities) }.map { |(_, action, entities)|
+        "<#{action} #{inspect_entities(entities)}>"
+      }.join(', ').prepend('[') << ']'
     end
   end
 end
