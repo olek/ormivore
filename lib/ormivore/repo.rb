@@ -93,32 +93,67 @@ module ORMivore
 
       changes = entity.changes.merge(foreign_key_changes(entity))
 
-
-      if entity.id
-        if entity.changed?
+      if changes.empty?
+        entity
+      else
+        if entity.id
           count = port.update_one(entity.id, changes)
           raise ORMivore::StorageError, 'No records updated' if count.zero?
           raise ORMivore::StorageError, 'WTF' if count > 1
 
           entity_class.new(attributes: entity.attributes, id: entity.id, repo: self)
         else
-          entity
+          attrs_to_entity(port.create(changes))
         end
-      else
-        attrs_to_entity(port.create(changes))
       end
     end
 
     def foreign_key_changes(entity)
       ad = entity_class.association_descriptions
       entity.association_changes.
-        select { |o| ad[o[:name]][:type] == :many_to_one }.
+        select { |o| [:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }.
         each_with_object({}) { |o, acc|
           acc[ad[o[:name]][:foreign_key]] = o[:entities].first.id
         }
     end
 
     def persist_entity_associations(entity)
+      alterations_hash = collect_association_alterations(entity)
+      alterations_hash.each do |name, (add, remove, e_class, foreign_key, inverse_of)|
+        association_repo = family[e_class]
+        remove.each do |e|
+          association_repo.delete(e)
+        end
+        add.each do |e|
+          # inverse_of must be specified if inverse relation exists, othervise plain fk attribute is acceptible substitute
+          if inverse_of
+            e = e.apply(inverse_of => entity)
+          else
+            e = e.apply(foreign_key => entity.id)
+          end
+          e = association_repo.persist(e)
+        end
+      end
+    end
+
+    def collect_association_alterations(entity)
+      ad = entity_class.association_descriptions
+      entity.association_changes.
+        select { |o| ad[o[:name]][:type] == :one_to_many }.
+        each_with_object({}) { |o, acc|
+          add_remove_pair = acc[o[:name]] ||= [[], [], ad[o[:name]][:entity_class], ad[o[:name]][:foreign_key], ad[o[:name]][:inverse_of]]
+          entities = o[:entities]
+          case o[:action]
+          when :add
+            add_remove_pair[0].concat(entities)
+            add_remove_pair[1].delete_if { |e| entities.include?(e) }
+          when :remove
+            entities.each do |e|
+              add_remove_pair[0].delete(e)
+              add_remove_pair[1] << e if e.persisted?
+            end
+          end
+        }
     end
 
     def attrs_to_entity(attrs)

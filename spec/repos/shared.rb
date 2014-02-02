@@ -116,7 +116,7 @@ shared_examples_for 'a repo' do
 
       it 'delegates changes to port.update_one' do
         entity.stub(:attributes).and_return(a: 'b')
-        entity.should_receive(:changed?).and_return(true)
+        # entity.should_receive(:changed?).and_return(true)
         entity.should_receive(:changes).and_return(foo: 'changed')
         port.should_receive(:update_one).with(123, foo: 'changed').and_return(1)
         subject.persist(entity)
@@ -124,13 +124,13 @@ shared_examples_for 'a repo' do
 
       it 'creates new entity with all attributes' do
         entity.should_receive(:attributes).and_return(a: 'b')
-        entity.should_receive(:changed?).and_return(true)
+        # entity.should_receive(:changed?).and_return(true)
         entity_class.should_receive(:new).with(attributes: {a: 'b'}, id: entity.id, repo: subject).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 
       it 'raises error if record was not updated' do
-        entity.should_receive(:changed?).and_return(true)
+        # entity.should_receive(:changed?).and_return(true)
         port.should_receive(:update_one).with(123, foo: 'bar').and_return(0)
         expect {
           subject.persist(entity)
@@ -138,7 +138,7 @@ shared_examples_for 'a repo' do
       end
 
       it 'raises error if more than one record was updated' do
-        entity.should_receive(:changed?).and_return(true)
+        # entity.should_receive(:changed?).and_return(true)
         port.should_receive(:update_one).with(123, foo: 'bar').and_return(2)
         expect {
           subject.persist(entity)

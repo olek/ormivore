@@ -30,7 +30,7 @@ module ORMivore
 
       def convert_associations(assoc)
         assoc.each_with_object([]) do |(name, value), acc|
-          acc << convert_association(name, value)
+          acc.concat(convert_association(name, value))
         end
       end
 
@@ -41,7 +41,7 @@ module ORMivore
         case type = data[:type]
         when :many_to_one
           raise BadAttributesError, "#{type} association change requires single entity" unless value.is_a?(Entity)
-          { name: name, action: :set, entities: [value] }
+          [{ name: name, action: :set, entities: [value] }]
         else
           raise BadAttributesError,
             "#{type} association change requires array" unless value.respond_to?(:[]) && value.respond_to?(:length)
@@ -68,7 +68,20 @@ module ORMivore
               |o| o.is_a?(Entity)
             }
 
-          { name: name, action: action, entities: entities }
+          if action == :set
+            # convert set into add/remove commands asking parent for current state of association.
+            # TODO public_send here is not awesome. Introduce method on entity like .attribute(name) but for association
+            current_entities = parent.public_send(name)
+            remove_enttities = current_entities - entities
+            add_enttities = entities - current_entities
+
+            [
+              { name: name, action: :remove, entities: remove_enttities },
+              { name: name, action: :add, entities: add_enttities }
+            ]
+          else
+            [{ name: name, action: action, entities: entities }]
+          end
         end
       end
 
@@ -90,8 +103,8 @@ module ORMivore
       end
 
       def noop_direct_link_association?(association, data)
-        # TODO should work with one_to_one(direct) in the future too
-        return false if data[:type] != :many_to_one
+        # TODO check for direction of one_to_one, and extract this question to be reusable (at least 3 places have it)
+        return false unless [:many_to_one, :one_to_one].include?(data[:type])
 
         entity = association[:entities].first
         parent.public_send("#{association[:name]}_id") == entity.id

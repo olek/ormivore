@@ -170,6 +170,10 @@ module ORMivore
       !!parent
     end
 
+    def persisted?
+      !!id
+    end
+
     def attach_repo(r)
       # teaching old dog new tricks here is not great, but it is lesser of 2
       # evils - it woud be really bad to have 2 entities in same time line to

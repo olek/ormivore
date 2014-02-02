@@ -11,7 +11,7 @@ module ORMivore
 
       def foreign_keys
         association_descriptions.map { |k, data|
-          data[:foreign_key] if data[:type] == :many_to_one
+          data[:foreign_key] if [:many_to_one, :one_to_one].include?(data[:type])
         }.compact
       end
 
@@ -41,10 +41,12 @@ module ORMivore
           if changed
             changed[:entities].first.id
           else
-            self.cached_association(name, dereference: false).id
+            self.cached_association(name, dereference: false).try(:id)
           end
         end
       end
+
+      alias_method :one_to_one, :many_to_one
 
       def one_to_many(name, entity_class, options)
         data = add_association_description(:one_to_many, name, entity_class, options)
@@ -115,6 +117,7 @@ module ORMivore
           foreign_key: foreign_key
         }.tap { |h|
           h[:through] = options.fetch(:through).to_sym if type == :many_to_many
+          h[:inverse_of] = options[:inverse_of].to_sym if options[:inverse_of]
         }
       end
 
