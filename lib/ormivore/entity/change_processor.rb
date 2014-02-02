@@ -17,6 +17,8 @@ module ORMivore
       def call
         @attributes = parent.class.coerce(@unprocessed_attributes.symbolize_keys)
         @associations = convert_associations(@unprocessed_associations)
+        convert_set_associations_to_add_remove_pairs
+        trigger_through_association_changes
 
         prune_attributes
         prune_associations
@@ -30,7 +32,7 @@ module ORMivore
 
       def convert_associations(assoc)
         assoc.each_with_object([]) do |(name, value), acc|
-          acc.concat(convert_association(name, value))
+          acc << convert_association(name, value)
         end
       end
 
@@ -41,7 +43,7 @@ module ORMivore
         case type = data[:type]
         when :many_to_one
           raise BadAttributesError, "#{type} association change requires single entity" unless value.is_a?(Entity)
-          [{ name: name, action: :set, entities: [value] }]
+          { name: name, action: :set, entities: [value] }
         else
           raise BadAttributesError,
             "#{type} association change requires array" unless value.respond_to?(:[]) && value.respond_to?(:length)
@@ -68,21 +70,51 @@ module ORMivore
               |o| o.is_a?(Entity)
             }
 
-          if action == :set
-            # convert set into add/remove commands asking parent for current state of association.
-            # TODO public_send here is not awesome. Introduce method on entity like .attribute(name) but for association
+          { name: name, action: action, entities: entities }
+        end
+      end
+
+      def convert_set_associations_to_add_remove_pairs
+        # convert set into add/remove commands asking parent for current state of association.
+        # TODO public_send here is not awesome. Introduce method on entity like .attribute(name) but for association
+        ad = parent.class.association_descriptions
+        replacements = associations.
+          select { |o| o[:action] == :set }.
+          select { |o| ![:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }.
+          map { |o| o.values_at(:name, :action, :entities) }.
+          each_with_object([]) do |(name, _, entities), acc|
             current_entities = parent.public_send(name)
             remove_enttities = current_entities - entities
             add_enttities = entities - current_entities
 
-            [
-              { name: name, action: :remove, entities: remove_enttities },
-              { name: name, action: :add, entities: add_enttities }
-            ]
-          else
-            [{ name: name, action: action, entities: entities }]
+            acc << { name: name, action: :remove, entities: remove_enttities }
+            acc << { name: name, action: :add, entities: add_enttities }
           end
-        end
+
+        associations.delete_if { |o| o[:action] == :set && ![:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }
+        associations.concat(replacements)
+      end
+
+      def trigger_through_association_changes
+        # not implemented yet
+        return
+        ad = parent.class.association_descriptions
+        extras = associations.
+          select { |(o)| o[:action] == :set }.
+          map { |o| o.values_at(:name, :action, :entities) }.
+          each_with_object([]) do |(name, action, entities), acc|
+            data = ad[name]
+            through = data[:through]
+            if through
+              through_entities = entities.each_with_object([]) { |e, entities_acc|
+                if e.persisted?
+                  entities_acc << e
+                end
+              }
+              acc << { name: through, action: action, entities: through_entities }
+            end
+          end
+        associations.concat(extras)
       end
 
       def prune_attributes

@@ -398,9 +398,11 @@ module ORMivore
     end
 
     def inspect_applied_associations(aa)
-      aa.map { |o| o.values_at(:name, :action, :entities) }.map { |(_, action, entities)|
-        "<#{action} #{inspect_entities(entities)}>"
-      }.join(', ').prepend('[') << ']'
+      aa.
+        map { |o| o.values_at(:name, :action, :entities) }.
+        map { |(_, action, entities)|
+          "<#{action} #{inspect_entities(entities)}>"
+        }.join(', ').prepend('[') << ']'
     end
   end
 end
