@@ -65,16 +65,20 @@ module ORMivore
     end
 
     def persist(entity)
+      raise InvalidStateError, "Dismissed entities can not be persisted" if entity.dismissed?
       persist_entity(entity).tap {
         persist_entity_associations(entity)
+        entity.dismiss
       }
     end
 
     def delete(entity)
+      raise InvalidStateError, "Dismissed entities can not be deleted" if entity.dismissed?
       if entity.id
         count = port.delete_one(entity.id)
         raise ORMivore::StorageError, 'No records deleted' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
+        entity.dismiss
 
         true
       else

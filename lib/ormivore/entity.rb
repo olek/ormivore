@@ -78,8 +78,13 @@ module ORMivore
       @repo[0]
     end
 
+    def dismissed?
+      @dismissed[0]
+    end
+
     # constructor for root
     def initialize(options = {})
+      @dismissed = [false]
       @repo = [options[:repo]] # Ugly workaround to avoid freezing repo.
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys)
@@ -103,6 +108,7 @@ module ORMivore
     end
 
     def initialize_with_change_processor(parent, change_processor)
+      @dismissed = [false]
       @parent = parent
       raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
 
@@ -192,14 +198,25 @@ module ORMivore
       # teaching old dog new tricks here is not great, but it is lesser of 2
       # evils - it woud be really bad to have 2 entities in same time line to
       # have different repos
-      collect_from_root(nil) do |e|
-        e.repo = r
-      end
+
+      parent.attach_repo(r) if parent
+      self.repo = r
+
+      self
+    end
+
+    def dismiss
+      # another 'functional' sin - dismissing ad object is definitely going to
+      # change its behavior, but being able to continue using old versions of
+      # already persisted object seems to be even worse
+      parent.dismiss if parent
+      @dismissed[0] = true
 
       self
     end
 
     def apply(attrs)
+      raise InvalidStateError, "Dismissed entities can not be modified any longer" if dismissed?
       applied = self.class.new_with_change_processor(self, ChangeProcessor.new(self, attrs).call)
 
       applied.noop? ? self : applied
