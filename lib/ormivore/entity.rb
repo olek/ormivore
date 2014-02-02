@@ -87,9 +87,9 @@ module ORMivore
       @associations_cache = LazyCache.new
       @memoize_cache = {}
 
-      associations = options[:associations]
-      if associations
-        associations.each do |name, value|
+      eager_fetch_associations = options[:associations]
+      if eager_fetch_associations
+        eager_fetch_associations.each do |name, value|
           @associations_cache.set(name, value)
         end
       end
@@ -153,6 +153,20 @@ module ORMivore
 
         acc
       }
+    end
+
+    # NOTE public_sends here maybe a bit questionable. Think!
+    def associations
+      self.class.association_names.each_with_object({}) { |name, acc|
+        acc[name] = public_send(name)
+      }
+    end
+
+    def association(name)
+      name = name.to_sym
+      raise BadArgumentError, "No association '#{name} registered." unless self.class.association_names.include?(name)
+
+      public_send(name)
     end
 
     # TODO local memoize?
@@ -225,6 +239,20 @@ module ORMivore
       end
     end
 
+    def ==(other)
+      # allows subclasses to be considered identical as long as they are from same repo
+      return false unless other.kind_of?(Entity)
+
+      repo == other.repo && same?(other)
+    end
+
+    def eql?(other)
+      # allows entities from different repos to be considered identical as long as they are of the same class
+      return false unless other.class == self.class
+
+      same?(other)
+    end
+
     def inspect
       "#<#{self.class.name} id=#{id}, attributes=#{local_attributes.inspect}, " +
         "applied_associations=#{applied_associations.inspect}, parent=#{parent.inspect}>"
@@ -281,6 +309,13 @@ module ORMivore
     end
 
     private
+
+    def same?(other)
+      return id == other.id if persisted?
+      return false if other.persisted?
+      return attributes == other.attributes &&
+        associations == other.associations
+    end
 
     def freeze
       super

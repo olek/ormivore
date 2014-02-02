@@ -119,7 +119,7 @@ shared_examples_for 'an entity' do
   describe '#apply' do
     it 'creates copy of this entity when changes present' do
       proto = subject.apply(test_attr => 'dirty')
-      proto.should_not == subject
+      proto.should_not be(subject)
       proto.attributes.should == subject.attributes.merge(test_attr => 'dirty')
     end
 
