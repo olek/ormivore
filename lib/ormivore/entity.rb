@@ -138,14 +138,14 @@ module ORMivore
 
     # TODO local memoize?
     def attribute(name)
-      name = name.to_sym
+      name = name.to_sym if name
 
       node = find_nearest_node { |e|
         !!e.local_attributes[name]
       }
 
       attr = node.local_attributes[name]
-      raise BadArgumentError, "Unknown attribute #{name}" unless attr || self.class.attributes_list.include?(name)
+      raise BadArgumentError, "Unknown attribute '#{name}'" unless attr || self.class.attributes_list.include?(name)
 
       attr == NULL ? nil : attr
     end
@@ -187,8 +187,8 @@ module ORMivore
     end
 
     def association(name)
-      name = name.to_sym
-      raise BadArgumentError, "No association '#{name} registered." unless self.class.association_names.include?(name)
+      name = name.to_sym if name
+      raise BadArgumentError, "No association '#{name}' registered." unless self.class.association_names.include?(name)
 
       public_send(name)
     end

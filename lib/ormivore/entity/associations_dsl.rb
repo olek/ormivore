@@ -52,7 +52,6 @@ module ORMivore
         data = add_association_description(:one_to_many, name, entity_class, options)
 
         name = name.to_sym
-        finder_name = "find_all_by_#{data[:foreign_key]}"
 
         define_method(name) do
           changes = self.association_changes.select { |o| o[:name] == name }
@@ -63,6 +62,13 @@ module ORMivore
             unchanged = []
           else
             unchanged = self.cache_association(name) {
+              foreign_key =
+                if data[:inverse_of]
+                  data[:entity_class].association_descriptions[data[:inverse_of]][:foreign_key]
+                else
+                  data[:foreign_key] or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
+                end
+              finder_name = "find_all_by_#{foreign_key}"
               self.repo.family[entity_class].public_send(finder_name, self.id)
             }
           end
@@ -86,14 +92,13 @@ module ORMivore
             unchanged = []
           else
             unchanged = self.cache_association(name) {
-              join_entities = public_send(data[:through])
+              # TODO this roundabout dance about getting association as in DB is ugly
+              public_send(data[:through]) # initiate query
+              join_entities = cached_association(data[:through]) # pull value as it is in DB without changes applied
               if join_entities.empty?
                 []
               else
-                self.repo.family[entity_class].
-                  public_send(finder_name,
-                    join_entities.map { |link| link.attribute(data[:foreign_key]) }.sort
-                  ).values
+                join_entities.map { |link| link.association(data[:source]) }.sort_by(&:id)
               end
             }
           end
@@ -109,15 +114,14 @@ module ORMivore
         raise BadArgumentError, "Association #{name} is already defined" if association_names.include?(name)
         raise BadArgumentError, "Association #{name} can not have nil entity class" unless entity_class
 
-        foreign_key = options.fetch(:fk).to_sym
-
         association_descriptions[name] = {
           type: type,
-          entity_class: entity_class,
-          foreign_key: foreign_key
+          entity_class: entity_class
         }.tap { |h|
           h[:through] = options.fetch(:through).to_sym if type == :many_to_many
           h[:inverse_of] = options[:inverse_of].to_sym if options[:inverse_of]
+          h[:foreign_key] = options[:fk].to_sym if options[:fk]
+          h[:source] = options[:source].to_sym if options[:source]
         }
       end
 

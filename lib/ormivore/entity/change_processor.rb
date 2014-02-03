@@ -96,20 +96,27 @@ module ORMivore
       end
 
       def trigger_through_association_changes
-        # not implemented yet
-        return
         ad = parent.class.association_descriptions
         extras = associations.
-          select { |(o)| o[:action] == :set }.
           map { |o| o.values_at(:name, :action, :entities) }.
           each_with_object([]) do |(name, action, entities), acc|
             data = ad[name]
             through = data[:through]
             if through
+              source = data[:source]
+              through_data = ad[through]
               through_entities = entities.each_with_object([]) { |e, entities_acc|
-                if e.persisted?
-                  entities_acc << e
-                end
+                # NOTE what if parent or e are not persisted?
+                through_entity =
+                  if action == :add
+                    parent.repo.family[through_data[:entity_class]].create(
+                      through_data[:inverse_of] => parent, source => e)
+                  else
+                    parent.association(through).detect { |o|
+                      o.association(through_data[:inverse_of]) == parent && o.association(source) == e
+                    }
+                  end
+                entities_acc << through_entity
               }
               acc << { name: through, action: action, entities: through_entities }
             end
