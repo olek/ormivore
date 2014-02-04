@@ -8,11 +8,12 @@ module ORMivore
         raise BadArgumentError, "No responsibility name provided" unless name
         raise BadArgumentError, "No responsibility class provided" unless responsibility_class
 
+        name = name.to_sym
+
         raise BadArgumentError, "Can not redefine responsibility '#{name}'" if method_defined?(name)
 
         define_method(name) do
-          var = "@#{name}"
-          (rtn = instance_variable_get(var)) ? rtn : instance_variable_set(var, responsibility_class.new(self))
+          responsibilities[name] ||= responsibility_class.new(self)
         end
       end
 

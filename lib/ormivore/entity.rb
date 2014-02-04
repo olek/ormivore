@@ -91,6 +91,7 @@ module ORMivore
       @applied_associations = []
       @associations_cache = LazyCache.new
       @memoize_cache = {}
+      @responsibilities = {}
 
       eager_fetch_associations = options[:associations]
       if eager_fetch_associations
@@ -118,6 +119,7 @@ module ORMivore
       @id = @parent.id
       @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
       @memoize_cache = {}
+      @responsibilities = {}
       @repo = [@parent.repo] # Ugly workaround to avoid freezing repo.
 
       validate_absence_of_unknown_attributes
@@ -274,18 +276,23 @@ module ORMivore
       end
     end
 
-    def ==(other)
-      # allows subclasses to be considered identical as long as they are from same repo
-      return false unless other.kind_of?(Entity)
-
-      repo == other.repo && same?(other)
-    end
-
     def eql?(other)
-      # allows entities from different repos to be considered identical as long as they are of the same class
       return false unless other.class == self.class
 
-      same?(other)
+      return id == other.id if persisted?
+      return false if other.persisted?
+      return attributes == other.attributes &&
+        associations == other.associations &&
+        repo == other.repo
+    end
+
+    alias == eql?
+
+    def hash
+      return id.hash if persisted?
+      return attributes.hash ^
+        associations.hash ^
+        repo.hash
     end
 
     def inspect(options = {})
@@ -357,12 +364,7 @@ module ORMivore
 
     private
 
-    def same?(other)
-      return id == other.id if persisted?
-      return false if other.persisted?
-      return attributes == other.attributes &&
-        associations == other.associations
-    end
+    attr_reader :responsibilities
 
     def freeze
       super

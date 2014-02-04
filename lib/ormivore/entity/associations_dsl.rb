@@ -81,7 +81,6 @@ module ORMivore
         data = add_association_description(:many_to_many, name, entity_class, options)
 
         name = name.to_sym
-        finder_name = "find_by_ids"
 
         define_method(name) do
           changes = self.association_changes.select { |o| o[:name] == name }

@@ -18,10 +18,14 @@ module ORMivore
         @attributes = parent.class.coerce(@unprocessed_attributes.symbolize_keys)
         @associations = convert_associations(@unprocessed_associations)
         convert_set_associations_to_add_remove_pairs
-        trigger_through_association_changes
 
         prune_attributes
         prune_associations
+
+        associations.concat(
+          generate_through_association_changes +
+          generate_reverse_through_association_changes
+        )
 
         self
       end
@@ -87,17 +91,17 @@ module ORMivore
             remove_enttities = current_entities - entities
             add_enttities = entities - current_entities
 
-            acc << { name: name, action: :remove, entities: remove_enttities }
-            acc << { name: name, action: :add, entities: add_enttities }
+            acc << { name: name, action: :remove, entities: remove_enttities } unless remove_enttities.empty?
+            acc << { name: name, action: :add, entities: add_enttities } unless add_enttities.empty?
           end
 
         associations.delete_if { |o| o[:action] == :set && ![:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }
         associations.concat(replacements)
       end
 
-      def trigger_through_association_changes
+      def generate_reverse_through_association_changes
         ad = parent.class.association_descriptions
-        extras = associations.
+        associations.
           map { |o| o.values_at(:name, :action, :entities) }.
           each_with_object([]) do |(name, action, entities), acc|
             data = ad[name]
@@ -121,7 +125,38 @@ module ORMivore
               acc << { name: through, action: action, entities: through_entities }
             end
           end
-        associations.concat(extras)
+      end
+
+      # TODO this should be permanently cached somewhere
+      def reverse_through_associations_lookup
+        ad = parent.class.association_descriptions
+        ad.each_with_object({}) { |(name, data), acc|
+          data = ad[name]
+          through = data[:through]
+          if through
+            acc[through] ||= []
+            acc[through] << [name, data]
+          end
+        }
+      end
+
+      def generate_through_association_changes
+        through_lookup = reverse_through_associations_lookup
+
+        associations.
+          map { |o| o.values_at(:name, :action, :entities) }.
+          each_with_object([]) do |(name, action, entities), acc|
+            join_data = through_lookup[name]
+            if join_data && !join_data.empty?
+              join_data.each do |(target_association, target_association_data)|
+                source = target_association_data[:source]
+                target_entities = entities.map(&source).compact
+                unless target_entities.empty?
+                  acc << { name: target_association, action: action, entities: target_entities }
+                end
+              end
+            end
+          end
       end
 
       def prune_attributes
