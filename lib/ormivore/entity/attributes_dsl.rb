@@ -1,11 +1,16 @@
 module ORMivore
   module Entity
     module AttributesDSL
-      attr_reader :attributes_declaration
-      attr_reader :optional_attributes_list
+      def attributes_declaration
+        @attributes_declaration ||= {}.freeze
+      end
 
       def attributes_list
         attributes_declaration.keys
+      end
+
+      def optional_attributes_list
+        @optional_attributes_list ||= []
       end
 
       private
@@ -13,7 +18,6 @@ module ORMivore
       def attributes(declaration)
         @attributes_declaration = declaration.symbolize_keys.freeze
         AttributesDSL.validate_attributes_declaration(attributes_declaration)
-        @optional_attributes_list ||= []
 
         attributes_list.map(&:to_s).each do |attr|
           module_eval(<<-EOS)
