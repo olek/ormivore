@@ -206,6 +206,15 @@ module ORMivore
       }
     end
 
+    # TODO Ugh. There must be a simpler way to get foreign keys of an entity
+    def foreign_keys
+      self.class.foreign_key_association_descriptions.
+        each_with_object({}) { |(association_name, _), acc|
+          fk_name = "#{association_name}_id".to_sym
+          acc[fk_name] = self.public_send(fk_name)
+        }
+    end
+
     def changed?
       !!parent
     end

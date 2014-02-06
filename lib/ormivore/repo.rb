@@ -65,7 +65,8 @@ module ORMivore
     end
 
     def persist(entity)
-      raise InvalidStateError, "Dismissed entities can not be persisted" if entity.dismissed?
+      validate_entity_argument(entity)
+
       rtn = persist_entity(entity)
       if persist_entity_associations(entity) && rtn.equal?(entity)
         # FIXME those associations are stale, new entities may have been persisted
@@ -74,15 +75,17 @@ module ORMivore
         #associations.each do |k, v|
         #  associations[k] = v.sort_by(&:id) if v.respond_to?(:length)
         #end
-        rtn = entity_class.new(repo: self, id: entity.id, attributes: entity.attributes) #, associations: associations)
+
+        rtn = burn_phoenix(entity)
       end
-      entity.dismiss
+      entity.dismiss unless rtn.equal?(entity)
 
       rtn
     end
 
     def delete(entity)
-      raise InvalidStateError, "Dismissed entities can not be deleted" if entity.dismissed?
+      validate_entity_argument(entity)
+
       if entity.id
         count = port.delete_one(entity.id)
         raise ORMivore::StorageError, 'No records deleted' if count.zero?
@@ -101,6 +104,14 @@ module ORMivore
 
     attr_reader :port
 
+    def validate_entity_argument(entity)
+      # in case you are wondering, trying to stay friendly to unit tests
+      if entity.is_a?(Entity) && entity.class != entity_class
+        raise BadArgumentError, "Entity #{entity} is not right for repo #{self}"
+      end
+      raise InvalidStateError, "Dismissed entities are not allowed to affect database" if entity.dismissed?
+    end
+
     def persist_entity(entity)
       entity.validate
 
@@ -114,7 +125,7 @@ module ORMivore
           raise ORMivore::StorageError, 'No records updated' if count.zero?
           raise ORMivore::StorageError, 'WTF' if count > 1
 
-          entity_class.new(attributes: entity.attributes, id: entity.id, repo: self)
+          burn_phoenix(entity)
         else
           attrs_to_entity(port.create(changes))
         end
@@ -199,9 +210,23 @@ module ORMivore
       end
     end
 
+    def burn_phoenix(entity)
+      attrs_to_entity(entity_to_attrs(entity))
+    end
+
+    def entity_to_attrs(entity)
+      { id: entity.id }.
+        merge!(entity.foreign_keys).
+        merge!(entity.attributes)
+    end
+
     def columns_to_fetch
-      [:id].concat(entity_class.attributes_list).concat(entity_class.foreign_keys)
-      [:id].concat(entity_class.foreign_keys).concat(entity_class.attributes_list)
+      [:id].concat(entity_foreign_keys).concat(entity_class.attributes_list)
+    end
+
+    # TODO cache this
+    def entity_foreign_keys
+      entity_class.foreign_key_association_descriptions.map { |k, v| v[:foreign_key] }
     end
 
 =begin

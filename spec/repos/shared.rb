@@ -1,6 +1,7 @@
 shared_examples_for 'a repo' do
   let(:entity) {
-    double('entity', id: nil, changes: { foo: 'bar' }, association_changes: {}, validate: nil, dismissed?: false, dismiss: nil)
+    double('entity', id: nil, changes: { foo: 'bar' }, association_changes: {}, foreign_keys: {},
+      validate: nil, dismissed?: false, dismiss: nil)
   }
 
   let(:new_entity) {
@@ -11,7 +12,7 @@ shared_examples_for 'a repo' do
 
   let(:entity_class) {
     double('entity_class', new: new_entity, name: 'FakeEntity',
-           attributes_list: [:foo], association_descriptions: {}, foreign_keys: [])
+           attributes_list: [:foo], association_descriptions: {}, foreign_key_association_descriptions: {})
   }
 
   let(:port) {

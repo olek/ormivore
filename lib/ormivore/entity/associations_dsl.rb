@@ -9,10 +9,10 @@ module ORMivore
         @association_descriptions ||= {}
       end
 
-      def foreign_keys
-        association_descriptions.map { |k, data|
-          data[:foreign_key] if [:many_to_one, :one_to_one].include?(data[:type])
-        }.compact
+      def foreign_key_association_descriptions
+        @fkad ||= association_descriptions.each_with_object({}) { |(k, data), acc|
+          acc[k] = data if [:many_to_one, :one_to_one].include?(data[:type])
+        }
       end
 
       private
