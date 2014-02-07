@@ -37,7 +37,7 @@ module ORMivore
       end
     end
 
-    def find_by_ids(ids, attributes_to_load)
+    def find_all_by_id(ids, attributes_to_load)
       # TODO optimize loading of multiple entities from redis
       ids.map { |id| find_by_id(id, attributes_to_load, quiet: true) }.compact
     end

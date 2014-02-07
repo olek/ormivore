@@ -108,6 +108,7 @@ module ORMivore
       freeze
     end
 
+    # constructor for 'change' nodes
     def initialize_with_change_processor(parent, change_processor)
       @dismissed = [false]
       @parent = parent
@@ -160,13 +161,6 @@ module ORMivore
         end
 
         acc
-      }
-    end
-
-    # NOTE public_sends here maybe a bit questionable. Think!
-    def associations
-      self.class.association_names.each_with_object({}) { |name, acc|
-        acc[name] = public_send(name)
       }
     end
 
@@ -254,12 +248,10 @@ module ORMivore
     def validate
       attrs = attributes
       self.class.attributes_list.each do |attr|
-        unless attrs.delete(attr) != nil || self.class.optional_attributes_list.include?(attr)
+        if attrs[attr].nil? && !self.class.optional_attributes_list.include?(attr)
           raise BadAttributesError, "Missing attribute '#{attr}'"
         end
       end
-
-      raise BadAttributesError, "Unknown attributes #{attrs.inspect}" unless attrs.empty?
     end
 
     def cache_association(name)
@@ -291,7 +283,7 @@ module ORMivore
       return id == other.id if persisted?
       return false if other.persisted?
       return attributes == other.attributes &&
-        associations == other.associations &&
+        foreign_keys == other.foreign_keys &&
         repo == other.repo
     end
 
@@ -300,7 +292,7 @@ module ORMivore
     def hash
       return id.hash if persisted?
       return attributes.hash ^
-        associations.hash ^
+        foreign_keys.hash ^
         repo.hash
     end
 

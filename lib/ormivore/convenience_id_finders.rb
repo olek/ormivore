@@ -13,7 +13,7 @@ module ORMivore
       end
     end
 
-    def find_by_ids(ids, attributes_to_load)
+    def find_all_by_id(ids, attributes_to_load)
       find(
         { id: ids },
         attributes_to_load

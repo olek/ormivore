@@ -33,7 +33,7 @@ shared_examples_for 'an integrated repo' do
     end
   end
 
-  describe '#find_by_ids' do
+  describe '#find_all_by_id_as_hash' do
     context 'when all entities can be found' do
       it 'loads entities' do
         entity_attrs_1 = existing_entity_attrs
@@ -41,7 +41,7 @@ shared_examples_for 'an integrated repo' do
         entity_id_1 = entity_attrs_1[:id]
         entity_id_2 = entity_attrs_2[:id]
 
-        entities_map = subject.find_by_ids([entity_id_1, entity_id_2])
+        entities_map = subject.find_all_by_id_as_hash([entity_id_1, entity_id_2])
         entity1 = entities_map[entity_id_1]
         entity2 = entities_map[entity_id_2]
 
@@ -55,20 +55,20 @@ shared_examples_for 'an integrated repo' do
     context 'when entity can not be found' do
       it 'raises error if entity is not found' do
         expect {
-          subject.find_by_ids([123])
+          subject.find_all_by_id_as_hash([123])
         }.to raise_error ORMivore::RecordNotFound
       end
 
       context 'in quiet mode' do
-        it 'returns empty array if no entities are found' do
-          subject.find_by_ids([123], quiet: true).should be_empty
+        it 'returns empty hash if no entities are found' do
+          subject.find_all_by_id_as_hash([123], quiet: true).should be_empty
         end
 
         it 'returns only found entities if not all entities are found' do
           entity_attrs_1 = existing_entity_attrs
           entity_id_1 = entity_attrs_1[:id]
 
-          entities_map = subject.find_by_ids([entity_id_1, 124], quiet: true)
+          entities_map = subject.find_all_by_id_as_hash([entity_id_1, 124], quiet: true)
 
           entities_map.should have(1).entity
           entity1 = entities_map[entity_id_1]

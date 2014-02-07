@@ -12,10 +12,10 @@ shared_examples_for 'a basic port' do
     end
   end
 
-  describe '#find_by_ids' do
+  describe '#find_all_by_id' do
     it 'delegates to adapter' do
-      adapter.should_receive(:find_by_ids).with(:foo, :list).and_return(:bar)
-      subject.find_by_ids(:foo, :list).should == :bar
+      adapter.should_receive(:find_all_by_id).with(:foo, :list).and_return(:bar)
+      subject.find_all_by_id(:foo, :list).should == :bar
     end
   end
 

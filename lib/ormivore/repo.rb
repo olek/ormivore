@@ -39,7 +39,7 @@ module ORMivore
       end
     end
 
-    def find_by_ids(objects, options = {})
+    def find_all_by_id_as_hash(objects, options = {})
       quiet = options.fetch(:quiet, false)
 
       ids =
@@ -49,7 +49,7 @@ module ORMivore
           objects
         end
 
-      entities_attrs = port.find_by_ids(
+      entities_attrs = port.find_all_by_id(
         ids,
         all_known_columns
       )
@@ -63,6 +63,10 @@ module ORMivore
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
       }
+    end
+
+    def find_all_by_id(objects, options = {})
+      find_all_by_id_as_hash(objects, options).values
     end
 
     def persist(entity)
