@@ -200,6 +200,15 @@ module ORMivore
       }
     end
 
+    def foreign_key_changes
+      ad = self.class.foreign_key_association_descriptions
+      association_changes.
+        select { |o| ad.has_key?(o[:name]) }.
+        each_with_object({}) { |o, acc|
+          acc[ad[o[:name]][:foreign_key]] = o[:entities].first.id
+        }
+    end
+
     # TODO Ugh. There must be a simpler way to get foreign keys of an entity
     def foreign_keys
       self.class.foreign_key_association_descriptions.

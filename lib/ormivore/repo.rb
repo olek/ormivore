@@ -110,7 +110,7 @@ module ORMivore
     attr_reader :port
 
     def validate_entity_argument(entity)
-      # in case you are wondering, trying to stay friendly to unit tests
+      # in case you are wondering, just trying to stay friendly to mocks in unit tests
       if entity.is_a?(Entity) && entity.class != entity_class
         raise BadArgumentError, "Entity #{entity} is not right for repo #{self}"
       end
@@ -120,7 +120,7 @@ module ORMivore
     def persist_entity(entity)
       entity.validate
 
-      changes = entity.changes.merge(foreign_key_changes(entity))
+      changes = entity.changes.merge(entity.foreign_key_changes)
 
       if changes.empty?
         entity
@@ -135,15 +135,6 @@ module ORMivore
           load_entity(port.create(changes))
         end
       end
-    end
-
-    def foreign_key_changes(entity)
-      ad = entity_class.association_descriptions
-      entity.association_changes.
-        select { |o| [:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }.
-        each_with_object({}) { |o, acc|
-          acc[ad[o[:name]][:foreign_key]] = o[:entities].first.id
-        }
     end
 
     def persist_entity_associations(entity)
@@ -167,6 +158,7 @@ module ORMivore
       !alterations_hash.empty?
     end
 
+    # NOTE this seems to belong to new AssociationChanges class, with entity.inspect_applied_associations
     def collect_association_alterations(entity)
       ad = entity_class.association_descriptions
       entity.association_changes.
@@ -206,7 +198,7 @@ module ORMivore
     end
 
     def extract_direct_link_associations(attrs)
-      entity_class.association_descriptions.select { |n, d| d[:type] == :many_to_one }.each_with_object({}) do |(name, description), acc|
+      entity_class.foreign_key_association_descriptions.each_with_object({}) do |(name, description), acc|
         foreign_key = description[:foreign_key]
         foreign_key_value = entity_class.coerce_id(attrs.delete(foreign_key))
         if foreign_key_value
@@ -216,29 +208,17 @@ module ORMivore
     end
 
     def burn_phoenix(entity)
-      load_entity(entity_to_attrs(entity))
+      load_entity(entity_to_hash(entity))
     end
 
-    def entity_to_attrs(entity)
+    def entity_to_hash(entity)
       { id: entity.id }.
         merge!(entity.foreign_keys).
         merge!(entity.attributes)
     end
 
     def all_known_columns
-      [:id].concat(entity_foreign_keys).concat(entity_class.attributes_list)
+      [:id].concat(entity_class.foreign_keys).concat(entity_class.attributes_list)
     end
-
-    # TODO cache this
-    def entity_foreign_keys
-      entity_class.foreign_key_association_descriptions.map { |k, v| v[:foreign_key] }
-    end
-
-=begin
-    def validate_conditions(conditions)
-      extra = conditions.keys - attributes.keys
-      raise BadConditionsError, extra.join("\n") unless extra.empty?
-    end
-=end
   end
 end

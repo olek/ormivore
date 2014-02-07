@@ -15,6 +15,10 @@ module ORMivore
         }
       end
 
+      def foreign_keys
+        @fks ||= foreign_key_association_descriptions.map { |k, v| v[:foreign_key] }
+      end
+
       private
 
       def many_to_one(name, entity_class, options)
