@@ -45,14 +45,12 @@ module ORMivore
 
         data = parent.class.association_descriptions[name]
         case type = data[:type]
-        when :many_to_one
+        when :many_to_one, :one_to_one
           raise BadAttributesError, "#{type} association change requires single entity" unless value.is_a?(Entity)
           { name: name, action: :set, entities: [value] }
         else
           raise BadAttributesError,
             "#{type} association change requires array" unless value.respond_to?(:[]) && value.respond_to?(:length)
-          raise BadAttributesError,
-            "#{type} association change requires array with at least one element" unless value.length > 0
           if %w(+ -).include?(value[0].to_s)
             action =
               case value[0].to_sym
@@ -68,7 +66,7 @@ module ORMivore
           end
 
           raise BadAttributesError,
-            "#{type} association change requires array with at least one entity" if entities.empty?
+            "#{type} association change requires array with at least one entity" if entities.empty? && action != :set
           raise BadAttributesError,
             "#{type} association change requires array with entities" unless entities.all? {
               |o| o.is_a?(Entity)

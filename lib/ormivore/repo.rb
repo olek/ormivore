@@ -9,6 +9,7 @@ module ORMivore
 
     def self.included(base)
       base.extend(ClassMethods)
+      base.extend(RepoDSL)
     end
 
     def initialize(port, options = {})
@@ -25,9 +26,9 @@ module ORMivore
     def find_by_id(id, options = {})
       quiet = options.fetch(:quiet, false)
 
-      attrs_to_entity(port.find_by_id(
+      load_entity(port.find_by_id(
           id,
-          columns_to_fetch
+          all_known_columns
         )
       )
     rescue RecordNotFound => e
@@ -50,14 +51,14 @@ module ORMivore
 
       entities_attrs = port.find_by_ids(
         ids,
-        columns_to_fetch
+        all_known_columns
       )
 
       objects.each_with_object({}) { |o, entities_map|
         id = block_given? ? yield(o) : o
         entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
-          entities_map[o] = attrs_to_entity(entity_attrs)
+          entities_map[o] = load_entity(entity_attrs)
         elsif !quiet
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
@@ -127,7 +128,7 @@ module ORMivore
 
           burn_phoenix(entity)
         else
-          attrs_to_entity(port.create(changes))
+          load_entity(port.create(changes))
         end
       end
     end
@@ -182,7 +183,7 @@ module ORMivore
         }
     end
 
-    def attrs_to_entity(attrs)
+    def load_entity(attrs)
       if attrs
         attrs = attrs.dup
         attrs.reject! {|k,v| v.nil? }
@@ -211,7 +212,7 @@ module ORMivore
     end
 
     def burn_phoenix(entity)
-      attrs_to_entity(entity_to_attrs(entity))
+      load_entity(entity_to_attrs(entity))
     end
 
     def entity_to_attrs(entity)
@@ -220,7 +221,7 @@ module ORMivore
         merge!(entity.attributes)
     end
 
-    def columns_to_fetch
+    def all_known_columns
       [:id].concat(entity_foreign_keys).concat(entity_class.attributes_list)
     end
 

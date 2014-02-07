@@ -147,7 +147,7 @@ module ORMivore
       }
 
       attr = node.local_attributes[name]
-      raise BadArgumentError, "Unknown attribute '#{name}'" unless attr || self.class.attributes_list.include?(name)
+      raise BadArgumentError, "Unknown attribute '#{name}' on entity '#{self.class}'" unless attr || self.class.attributes_list.include?(name)
 
       attr == NULL ? nil : attr
     end
