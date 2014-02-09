@@ -1,10 +1,6 @@
 module ORMivore
   module Repo
     module ClassMethods
-      attr_reader :default_entity_class
-
-      private
-      attr_writer :default_entity_class
     end
 
     def self.included(base)
@@ -14,7 +10,7 @@ module ORMivore
 
     def initialize(port, options = {})
       @port = port
-      @entity_class = options.fetch(:entity_class, self.class.default_entity_class)
+      @entity_class = options.fetch(:entity_class)
       @family = options.fetch(:family, nil)
       @family.add(self, @entity_class) if @family
     end

@@ -1,7 +1,21 @@
-shared_examples_for 'an entity' do
-  subject { described_class.new(attributes: attrs, id: 123) }
+require 'spec_helper'
 
+describe 'an entity' do
   let(:test_value) { 'Foo' }
+
+  let(:attrs) do
+    { attr_1: test_value, attr_2: test_value }
+  end
+
+  let(:described_class) {
+    ORMivore::AnonymousFactory::create_entity do
+      attributes do
+        string :attr_1, :attr_2
+      end
+    end
+  }
+
+  subject { described_class.new(attributes: attrs, id: 123) }
 
   describe '#initialize' do
     it 'succeeds if no options are specified' do
@@ -45,7 +59,7 @@ shared_examples_for 'an entity' do
 
       context 'when some of them are keyed by strings (not symbols)' do
         it 'succeeds' do
-          attrs.except!(test_attr).merge!(test_attr.to_s => test_value)
+          attrs.except!(:attr_1).merge!('attr_1' => test_value)
           o = described_class.new(attributess: attrs)
         end
       end
@@ -54,7 +68,7 @@ shared_examples_for 'an entity' do
 
   describe '#validate' do
     it 'fails if not enough attributes are provided' do
-      entity = described_class.new(attributes: { test_attr => test_value }, id: 123)
+      entity = described_class.new(attributes: { attr_1: test_value }, id: 123)
       expect {
         entity.validate
       }.to raise_error ORMivore::BadAttributesError
@@ -71,15 +85,15 @@ shared_examples_for 'an entity' do
     end
 
     it 'combines attributes from this and parent properties' do
-      o = described_class.new(attributes: attrs, id: 123).apply(test_attr => 'dirty')
-      o.attributes.should == attrs.merge(test_attr => 'dirty')
+      o = described_class.new(attributes: attrs, id: 123).apply(attr_1: 'dirty')
+      o.attributes.should == attrs.merge(attr_1: 'dirty')
     end
   end
 
   describe '#attribute' do
     it 'returns nil for not found attribute' do
-      attrs.except!(test_attr)
-      subject.attribute(test_attr).should be_nil
+      attrs.except!(:attr_1)
+      subject.attribute(:attr_1).should be_nil
     end
 
     it 'fails for unknown attribute' do
@@ -89,38 +103,38 @@ shared_examples_for 'an entity' do
     end
 
     it 'returns nil for attribute that was reset to nil' do
-      o = subject.apply(test_attr => nil)
-      o.attribute(test_attr).should be_nil
+      o = subject.apply(attr_1: nil)
+      o.attribute(:attr_1).should be_nil
     end
 
     it 'returns attribute from this entity if found' do
-      o = subject.apply(test_attr => 'dirty')
-      o.attribute(test_attr).should == 'dirty'
+      o = subject.apply(attr_1: 'dirty')
+      o.attribute(:attr_1).should == 'dirty'
     end
 
     it 'returns attribute from parent entity if found' do
-      o = subject.apply(test_attr => 'dirty')
-      o.attribute(other_test_attr).should == test_value
+      o = subject.apply(attr_1: 'dirty')
+      o.attribute(:attr_2).should == test_value
     end
   end
 
   describe 'attribute methods' do
     it 'return value of attribute' do
-      subject.public_send(test_attr).should == test_value
+      subject.public_send(:attr_1).should == test_value
     end
 
     it 'return dirty value of attribute if available' do
-      o = described_class.new(attributes: attrs, id: 123).apply(test_attr => 'dirty')
-      o.changes.should == { test_attr => 'dirty' }
-      o.public_send(test_attr).should == 'dirty'
+      o = described_class.new(attributes: attrs, id: 123).apply(attr_1: 'dirty')
+      o.changes.should == { attr_1: 'dirty' }
+      o.public_send(:attr_1).should == 'dirty'
     end
   end
 
   describe '#apply' do
     it 'creates copy of this entity when changes present' do
-      proto = subject.apply(test_attr => 'dirty')
+      proto = subject.apply(attr_1: 'dirty')
       proto.should_not be(subject)
-      proto.attributes.should == subject.attributes.merge(test_attr => 'dirty')
+      proto.attributes.should == subject.attributes.merge(attr_1: 'dirty')
     end
 
     it 'returns self if no changes applied' do
@@ -129,13 +143,13 @@ shared_examples_for 'an entity' do
     end
 
     it 'returns self if attributes are changing to same values' do
-      proto = subject.apply(test_attr => test_value)
+      proto = subject.apply(attr_1: test_value)
       proto.should == subject
     end
 
     it 'adds changes to the copy it makes' do
-      proto = subject.apply(test_attr => 'dirty')
-      proto.attributes.should == attrs.merge(test_attr => 'dirty')
+      proto = subject.apply(attr_1: 'dirty')
+      proto.attributes.should == attrs.merge(attr_1: 'dirty')
     end
   end
 
@@ -149,7 +163,7 @@ shared_examples_for 'an entity' do
     end
 
     it 'returns incremental changes added by applying attributes' do
-      subject.apply(test_attr => 'dirty').changes.should == { test_attr => 'dirty' }
+      subject.apply(attr_1: 'dirty').changes.should == { attr_1: 'dirty' }
     end
   end
 
@@ -160,7 +174,7 @@ shared_examples_for 'an entity' do
 
     it 'attaches repo to parent of the entity too' do
       parent = described_class.new
-      parent.apply(test_attr => test_value).attach_repo(:foo)
+      parent.apply(attr_1: test_value).attach_repo(:foo)
       parent.repo.should == :foo
     end
 

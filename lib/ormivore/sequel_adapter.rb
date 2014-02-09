@@ -3,11 +3,9 @@ module ORMivore
     include ConvenienceIdFinders
 
     module ClassMethods
-      attr_reader :default_converter_class
       attr_reader :table_name
 
       private
-      attr_writer :default_converter_class
       attr_writer :table_name
 
       def expand_on_create(&block)
@@ -20,7 +18,7 @@ module ORMivore
     end
 
     def initialize(options = {})
-      @converter = options[:converter] || self.class.default_converter_class.new
+      @converter = options[:converter] || NoopConverter.new
       @sequel = (options[:sequel] || ORMivore::Connections.sequel) or fail "Sequel connection is not provided/available"
     end
 

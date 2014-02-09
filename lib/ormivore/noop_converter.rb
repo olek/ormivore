@@ -1,4 +1,4 @@
-module App
+module ORMivore
   class NoopConverter
     def attributes_list_to_storage(list)
       list

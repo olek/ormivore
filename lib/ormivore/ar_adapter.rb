@@ -3,7 +3,6 @@ module ORMivore
     include ConvenienceIdFinders
 
     module ClassMethods
-      attr_reader :default_converter_class
       attr_reader :table_name
 
       def ar_class
@@ -12,7 +11,6 @@ module ORMivore
       end
 
       private
-      attr_writer :default_converter_class
       attr_writer :table_name
 
       def expand_on_create(&block)
@@ -44,7 +42,7 @@ module ORMivore
     end
 
     def initialize(options = {})
-      @converter = options[:converter] || self.class.default_converter_class.new
+      @converter = options[:converter] || NoopConverter.new
     end
 
     def find(conditions, attributes_to_load, options = {})

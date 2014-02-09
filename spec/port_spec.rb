@@ -1,13 +1,62 @@
-require_relative 'shared_basic'
+require 'spec_helper'
 
-shared_examples_for 'an expanded port' do
+describe 'a basic port' do
   let(:adapter) {
     double('adapter')
   }
 
+  let(:described_class) {
+    ORMivore::AnonymousFactory::create_port
+  }
+
   subject { described_class.new(adapter) }
 
-  include_examples 'a basic port'
+  describe '#find_by_id' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:find_by_id).with(:foo, :list).and_return(:bar)
+      subject.find_by_id(:foo, :list).should == :bar
+    end
+  end
+
+  describe '#find_all_by_id' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:find_all_by_id).with(:foo, :list).and_return(:bar)
+      subject.find_all_by_id(:foo, :list).should == :bar
+    end
+  end
+
+  describe '#create' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:create).with(:foo).and_return(:bar)
+      subject.create(:foo).should == :bar
+    end
+  end
+
+  describe '#update_one' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:update_one).with(:foo, a: 'b').and_return(:bar)
+      subject.update_one(:foo, a: 'b').should == :bar
+    end
+  end
+
+  describe '#delete_one' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:delete_one).with(:foo).and_return(:bar)
+      subject.delete_one(:foo).should == :bar
+    end
+  end
+end
+
+describe 'an expanded port' do
+  let(:adapter) {
+    double('adapter')
+  }
+
+  let(:described_class) {
+    ORMivore::AnonymousFactory::create_port
+  }
+
+  subject { described_class.new(adapter) }
 
   describe '#find' do
     it 'delegates to adapter' do

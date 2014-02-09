@@ -1,14 +1,19 @@
+require 'spec_helper'
+require_relative './adapters/memory_helpers'
+require_relative './adapters/ar_helpers'
+require_relative './adapters/sequel_helpers'
+require_relative './adapters/redis_helpers'
+
 shared_examples_for 'an integrated repo' do
   let(:test_value) { 'Foo' }
   let(:other_test_value) { 'Bar' }
 
   def existing_entity_attrs
-    FactoryGirl.create(
-      factory_name, factory_attrs.merge(adapter: adapter, test_attr => test_value)
-    ).attributes.symbolize_keys
+    FactoryGirl.create(:account, adapter: adapter, test_attr => test_value).
+      attributes.symbolize_keys
   end
 
-  subject { described_class.new(port) }
+  subject { described_class.new(port, entity_class: entity_class) }
 
   describe '#find_by_id' do
     context 'when entity can be found' do
@@ -122,5 +127,117 @@ shared_examples_for 'an integrated repo' do
         saved_entity.changes.should be_empty
       end
     end
+  end
+end
+
+describe 'an entity and its ecosystem' do
+  let(:attrs) do
+    v = test_value
+    { firstname: v, lastname: v, email: v }
+  end
+
+  let(:test_attr) { :firstname }
+
+  let(:entity_class) {
+    ORMivore::AnonymousFactory::create_entity do
+      attributes do
+        string :firstname, :lastname, :email
+      end
+    end
+  }
+
+  let(:described_class) {
+    ORMivore::AnonymousFactory::create_repo
+  }
+
+  let(:port) {
+    ORMivore::AnonymousFactory::create_port.new(adapter)
+  }
+
+  #let(:sql_storage_converter) {
+  #  Class.new do
+  #    self::STATUS_MAP = Hash.new { |h, k|
+  #      raise ArgumentError, "Status #{k.inspect} not known"
+  #    }.update(
+  #      active: 1,
+  #      inactive: 2,
+  #      deleted: 3
+  #    ).freeze
+
+  #    self::REVERSE_STATUS_MAP = Hash.new { |h, k|
+  #      raise ArgumentError, "Status #{k.inspect} not known"
+  #    }.update(
+  #      Hash[self::STATUS_MAP.to_a.map(&:reverse)]
+  #    ).freeze
+
+  #    def attributes_list_to_storage(list)
+  #      list
+  #    end
+
+  #    def from_storage(attrs)
+  #      attrs.dup.tap { |copy|
+  #        copy[:status] = self.class::REVERSE_STATUS_MAP[copy[:status]] if copy[:status]
+  #      }
+  #    end
+
+  #    def to_storage(attrs)
+  #      attrs.dup.tap { |copy|
+  #        copy[:status] = self.class::STATUS_MAP[copy[:status]] if copy[:status]
+  #      }
+  #    end
+  #  end
+  #}
+
+  context 'with StorageMemoryAdapter' do
+    include MemoryHelpers
+
+    let(:adapter) { ORMivore::AnonymousFactory::create_memory_adapter.new }
+
+    it_behaves_like 'an integrated repo'
+  end
+
+  context 'with StorageArAdapter', :ar_db do
+    include ArHelpers
+
+    let(:entity_table) { 'accounts' }
+    let(:adapter) {
+      ORMivore::AnonymousFactory::create_ar_adapter(
+        'accounts').new
+    }
+
+    it_behaves_like 'an integrated repo'
+  end
+
+  context 'with StorageSequelAdapter', :sequel_db do
+    include SequelHelpers
+
+    let(:entity_table) { 'accounts' }
+    let(:adapter) {
+      ORMivore::AnonymousFactory::create_sequel_adapter(
+        'accounts').new
+    }
+
+    it_behaves_like 'an integrated repo'
+  end
+
+  context 'with StoragePreparedSequelAdapter', :sequel_db do
+    include SequelHelpers
+
+    let(:entity_table) { 'accounts' }
+    let(:adapter) {
+      ORMivore::AnonymousFactory::create_prepared_sequel_adapter(
+        'accounts').new
+    }
+
+    it_behaves_like 'an integrated repo'
+  end
+
+  context 'with StorageRedisAdapter', :redis_db do
+    include RedisHelpers
+
+    let(:prefix) { 'accounts' }
+    let(:adapter) { ORMivore::AnonymousFactory::create_redis_adapter('accounts').new }
+
+    it_behaves_like 'an integrated repo'
   end
 end

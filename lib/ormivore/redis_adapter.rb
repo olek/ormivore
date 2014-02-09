@@ -3,11 +3,9 @@ require 'redis'
 module ORMivore
   module RedisAdapter
     module ClassMethods
-      attr_reader :default_converter_class
       attr_reader :prefix
 
       private
-      attr_writer :default_converter_class
       attr_writer :prefix
     end
 
@@ -16,7 +14,7 @@ module ORMivore
     end
 
     def initialize(options = {})
-      @converter = options[:converter] || self.class.default_converter_class.new
+      @converter = options[:converter] || NoopConverter.new
       @redis = (options[:redis] || ORMivore::Connections.redis) or fail "Redis connection is not provided/available"
     end
 

@@ -3,10 +3,6 @@ module ORMivore
     include ConvenienceIdFinders
 
     module ClassMethods
-      attr_reader :default_converter_class
-
-      private
-      attr_writer :default_converter_class
     end
 
     def self.included(base)
@@ -14,7 +10,7 @@ module ORMivore
     end
 
     def initialize(options = {})
-      @converter = options[:converter] || self.class.default_converter_class.new
+      @converter = options[:converter] || NoopConverter.new
     end
 
     def find(conditions, attributes_to_load, options = {})

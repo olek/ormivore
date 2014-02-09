@@ -1,4 +1,6 @@
-shared_examples_for 'a repo' do
+require 'spec_helper'
+
+describe 'a repo' do
   let(:entity) {
     double('entity', id: nil, changes: { foo: 'bar' }, association_changes: {},
       foreign_keys: {}, foreign_key_changes: {},
@@ -19,6 +21,10 @@ shared_examples_for 'a repo' do
 
   let(:port) {
     double('port')
+  }
+
+  let(:described_class) {
+    ORMivore::AnonymousFactory::create_repo
   }
 
   subject { described_class.new(port, entity_class: entity_class) }
