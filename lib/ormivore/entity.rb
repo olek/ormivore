@@ -84,15 +84,20 @@ module ORMivore
 
     # constructor for root
     def initialize(options = {})
-      @dismissed = [false]
-      @repo = [options[:repo]] # Ugly workaround to avoid freezing repo.
+      # immutable
       @id = options[:id]
-      @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys)
-      @applied_associations = []
+      @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
+      @applied_associations = [].freeze
+
+      # mutable by necessity, ugly workaround to avoid freezing references
+      @dismissed = [false]
+      @repo = [options[:repo]]
+
+      # mutable by design (caches)
       @associations_cache = LazyCache.new
       @memoize_cache = {}
-      @responsibilities = {}
-
+      @responsibilities_cache = {}
+ 
       eager_fetch_associations = options[:associations]
       if eager_fetch_associations
         eager_fetch_associations.each do |name, value|
@@ -110,18 +115,22 @@ module ORMivore
 
     # constructor for 'change' nodes
     def initialize_with_change_processor(parent, change_processor)
-      @dismissed = [false]
+      # immutable
       @parent = parent
       raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
-
-      @local_attributes = change_processor.attributes
-      @applied_associations = change_processor.associations
-
       @id = @parent.id
+
+      @local_attributes = change_processor.attributes.freeze
+      @applied_associations = change_processor.associations.freeze
+
+      # mutable by necessity, ugly workaround to avoid freezing references
+      @dismissed = [false]
+      @repo = [@parent.repo]
+
+      # mutable by design (caches)
       @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
       @memoize_cache = {}
-      @responsibilities = {}
-      @repo = [@parent.repo] # Ugly workaround to avoid freezing repo.
+      @responsibilities_cache = {}
 
       validate_absence_of_unknown_attributes
 
@@ -374,7 +383,7 @@ module ORMivore
 
     private
 
-    attr_reader :responsibilities
+    attr_reader :responsibilities_cache
 
     def freeze
       super

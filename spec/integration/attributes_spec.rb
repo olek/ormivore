@@ -1,8 +1,8 @@
 require 'spec_helper'
-require_relative './adapters/memory_helpers'
-require_relative './adapters/ar_helpers'
-require_relative './adapters/sequel_helpers'
-require_relative './adapters/redis_helpers'
+require_relative '../adapters/memory_helpers'
+require_relative '../adapters/ar_helpers'
+require_relative '../adapters/sequel_helpers'
+require_relative '../adapters/redis_helpers'
 
 shared_examples_for 'an integrated repo' do
   let(:test_value) { 'Foo' }
