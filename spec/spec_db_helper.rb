@@ -52,13 +52,32 @@ if true
   end
 end
 
-ActiveRecord::Base.connection.execute("DROP TABLE IF EXISTS 'accounts'")
-
-ActiveRecord::Base.connection.create_table(:accounts) do |t|
+ActiveRecord::Base.connection.create_table(:accounts, force: true) do |t|
     t.string   "firstname",           limit: 100,       null: false
     t.string   "lastname",            limit: 100
     t.string   "email",               limit: 100
     t.integer  "status"
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+end
+
+ActiveRecord::Base.connection.create_table(:posts, force: true) do |t|
+    t.string   "title",               limit: 100,       null: false
+    t.string   "content",             limit: 1000
+    t.integer  "account_id"
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+end
+
+ActiveRecord::Base.connection.create_table(:tags, force: true) do |t|
+    t.string   "name",                limit: 100,       null: false
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+end
+
+ActiveRecord::Base.connection.create_table(:taggings, force: true) do |t|
+    t.integer  "post_id",             null: false
+    t.integer  "tag_id",              null: false
     t.datetime "created_at",          null: false
     t.datetime "updated_at",          null: false
 end

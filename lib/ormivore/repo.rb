@@ -8,9 +8,13 @@ module ORMivore
       base.extend(RepoDSL)
     end
 
-    def initialize(port, options = {})
+    def initialize(entity_class, port, options = {})
+      raise BadArgumentError unless entity_class
+      raise BadArgumentError unless port
+
       @port = port
-      @entity_class = options.fetch(:entity_class)
+      #@entity_class = options.fetch(:entity_class)
+      @entity_class = entity_class
       @family = options.fetch(:family, nil)
       @family.add(self, @entity_class) if @family
     end

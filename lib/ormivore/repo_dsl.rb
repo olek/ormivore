@@ -20,7 +20,9 @@ module ORMivore
       options.delete(:named)
       options.merge!(limit: 1) if type == :first
 
-      define_method("find_#{type}_#{finder_name}") do |*args|
+      infix = type == :first ? '' : "#{type}_"
+
+      define_method("find_#{infix}#{finder_name}") do |*args|
         raise BadArgumentError, "Invalid number of arguments" unless args.length == keys.length
         conditions = Hash[keys.zip(args)]
 

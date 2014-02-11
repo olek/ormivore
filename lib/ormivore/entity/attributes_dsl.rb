@@ -86,9 +86,25 @@ module ORMivore
           common(args, 'integer', Coercions::Integer)
         end
 
+        def boolean(*args)
+          common(args, 'boolean', Coercions::Boolean)
+        end
+
+        def time(*args)
+          common(args, 'time', Coercions::Time)
+        end
+
+        def big_decimal(*args)
+          common(args, 'big_decimal', Coercions::BigDecimal)
+        end
+
+        def float(*args)
+          common(args, 'float', Coercions::Float)
+        end
+
         private
 
-        def common(args, type_name, coercion)
+        def common(args, type, coercion)
           raise BadArgumentError,
             "No attribute name(s) provided for type '#{type}' in entity '#{entity_class}'" if args.empty?
           args.each do |name|

@@ -27,7 +27,7 @@ describe 'a repo' do
     ORMivore::AnonymousFactory::create_repo
   }
 
-  subject { described_class.new(port, entity_class: entity_class) }
+  subject { described_class.new(entity_class, port) }
 
   describe '#find_by_id' do
     it 'delegates to port' do

@@ -5,6 +5,12 @@ require_relative '../adapters/sequel_helpers'
 require_relative '../adapters/redis_helpers'
 
 shared_examples_for 'an integrated repo' do
+  let(:attrs) do
+    v = test_value
+    { firstname: v, lastname: v, email: v }
+  end
+
+  let(:test_attr) { :firstname }
   let(:test_value) { 'Foo' }
   let(:other_test_value) { 'Bar' }
 
@@ -13,7 +19,23 @@ shared_examples_for 'an integrated repo' do
       attributes.symbolize_keys
   end
 
-  subject { described_class.new(port, entity_class: entity_class) }
+  let(:entity_class) {
+    ORMivore::AnonymousFactory::create_entity do
+      attributes do
+        string :firstname, :lastname, :email
+      end
+    end
+  }
+
+  let(:port) {
+    ORMivore::AnonymousFactory::create_port.new(adapter)
+  }
+
+  let(:repo) {
+    ORMivore::AnonymousFactory::create_repo
+  }
+
+  subject { repo.new(entity_class, port) }
 
   describe '#find_by_id' do
     context 'when entity can be found' do
@@ -131,29 +153,6 @@ shared_examples_for 'an integrated repo' do
 end
 
 describe 'an entity and its ecosystem' do
-  let(:attrs) do
-    v = test_value
-    { firstname: v, lastname: v, email: v }
-  end
-
-  let(:test_attr) { :firstname }
-
-  let(:entity_class) {
-    ORMivore::AnonymousFactory::create_entity do
-      attributes do
-        string :firstname, :lastname, :email
-      end
-    end
-  }
-
-  let(:described_class) {
-    ORMivore::AnonymousFactory::create_repo
-  }
-
-  let(:port) {
-    ORMivore::AnonymousFactory::create_port.new(adapter)
-  }
-
   #let(:sql_storage_converter) {
   #  Class.new do
   #    self::STATUS_MAP = Hash.new { |h, k|

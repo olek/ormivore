@@ -22,10 +22,9 @@ module ORMivore
       private
 
       def many_to_one(name, entity_class, options)
-        data = add_association_description(:many_to_one, name, entity_class, options)
+        add_association_description(:many_to_one, name, entity_class, options)
 
         name = name.to_sym
-        finder_name = "find_by_id"
 
         define_method(name) do
           changed = self.association_changes.select { |o| o[:name] == name }.last
@@ -34,7 +33,7 @@ module ORMivore
             changed[:entities].first
           else
             self.cache_association(name) {
-              self.repo.family[entity_class].public_send(finder_name, self.attribute(data[:foreign_key]))
+              self.cached_association(name, dereference: true)
             }
           end
         end

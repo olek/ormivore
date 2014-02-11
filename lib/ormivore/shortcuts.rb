@@ -9,7 +9,14 @@ module ORMivore
       define_prepared_sequel_adapter = options.fetch(:prepared_sequel_adapter, false)
       define_redis_adapter = options.fetch(:redis_adapter, false)
 
-      namespace = container_module.const_set(name, Module.new)
+      storage_key = options[:storage_key]
+
+      if (define_ar_adapter || define_sequel_adapter || define_prepared_sequel_adapter ||
+          define_prepared_sequel_adapter || define_redis_adapter) && !storage_key
+        raise BadArgumentError, "Unable to create adapter without storage_key"
+      end
+
+      namespace = container_module.const_set(name.to_s.camelize, Module.new)
 
       if define_repo
         namespace.module_eval <<-EOC
@@ -31,7 +38,6 @@ module ORMivore
         namespace.module_eval <<-EOC
           class StorageMemoryAdapter
             include ORMivore::MemoryAdapter
-            self.default_converter_class = NoopConverter
           end
         EOC
       end
@@ -40,7 +46,7 @@ module ORMivore
         namespace.module_eval <<-EOC
           class StorageArAdapter
             include ORMivore::ArAdapter
-            self.default_converter_class = NoopConverter
+            self.table_name = '#{storage_key}'
           end
         EOC
       end
@@ -49,7 +55,7 @@ module ORMivore
         namespace.module_eval <<-EOC
           class StorageSequelAdapter
             include ORMivore::SequelAdapter
-            self.default_converter_class = NoopConverter
+            self.table_name = '#{storage_key}'
           end
         EOC
       end
@@ -58,7 +64,7 @@ module ORMivore
         namespace.module_eval <<-EOC
           class PreparedSequelAdapter
             include ORMivore::PreparedSequelAdapter
-            self.default_converter_class = NoopConverter
+            self.table_name = '#{storage_key}'
           end
         EOC
       end
@@ -67,7 +73,7 @@ module ORMivore
         namespace.module_eval <<-EOC
           class RedisAdapter
             include ORMivore::RedisAdapter
-            self.default_converter_class = NoopConverter
+            self.prefix = '#{storage_key}'
           end
         EOC
       end
