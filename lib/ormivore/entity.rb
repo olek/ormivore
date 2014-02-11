@@ -97,7 +97,7 @@ module ORMivore
       @associations_cache = LazyCache.new
       @memoize_cache = {}
       @responsibilities_cache = {}
- 
+
       eager_fetch_associations = options[:associations]
       if eager_fetch_associations
         eager_fetch_associations.each do |name, value|
@@ -221,9 +221,10 @@ module ORMivore
     # TODO Ugh. There must be a simpler way to get foreign keys of an entity
     def foreign_keys
       self.class.foreign_key_association_descriptions.
-        each_with_object({}) { |(association_name, _), acc|
-          fk_name = "#{association_name}_id".to_sym
-          acc[fk_name] = self.public_send(fk_name)
+        each_with_object({}) { |(association_name, data), acc|
+          fk_accessor = "#{association_name}_id".to_sym
+          fk_name = data[:foreign_key]
+          acc[fk_name] = self.public_send(fk_accessor)
         }
     end
 

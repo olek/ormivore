@@ -9,6 +9,14 @@ module ORMivore
         }
       end
 
+      def create_repo_family(&block)
+        Class.new {
+          include ORMivore::RepoFamily
+        }.tap { |cl|
+          cl.instance_eval(&block) if block_given?
+        }
+      end
+
       def create_repo(&block)
         Class.new {
           include ORMivore::Repo

@@ -6,17 +6,20 @@ require 'adapters/sequel_helpers'
 require 'adapters/redis_helpers'
 
 shared_examples_for 'a working system' do
+  let(:family) { ORMivore::AnonymousFactory::create_repo_family.new }
+
   let(:account_port) { Spec::Account::StoragePort.new(account_adapter) }
   # TODO entity_class should be just a first param for constructor right?
-  let(:account_repo) { Spec::Account::Repo.new(Spec::Account::Entity, account_port) }
+  let(:account_repo) { Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family) }
 
   let(:post_port) { Spec::Post::StoragePort.new(post_adapter) }
   # TODO entity_class should be just a first param for constructor right?
-  let(:post_repo) { Spec::Post::Repo.new(Spec::Post::Entity, post_port) }
+  let(:post_repo) { Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family) }
 
   describe '#author' do
     context 'when post is new' do
-      let(:subject) { post_repo.create }
+      let(:subject) { post_repo.create(title: 'foo') }
+      let(:author) { account_repo.create(firstname: 'foo') }
 
       it 'returns nil' do
         subject.author.should be nil
@@ -24,25 +27,27 @@ shared_examples_for 'a working system' do
 
       context 'when author is changed to non-persisted account' do
         it 'returns assigned author' do
-          pending 'not working yet'
-          author = account_repo.create
           subject.apply(author: author).author.should be(author)
+        end
+
+        it 'remembers assigned author after persisting' do
+          pending 'not working yet'
+          post_repo.persist(subject.apply(author: author)).
+            author.should be(author)
         end
       end
 
       context 'when author is changed to persisted account' do
         it 'returns assigned author' do
-          author = account_repo.create(firstname: 'foo')
-          author = account_repo.persist(author)
-          subject.apply(author: author).author.should be(author)
+          other_author = account_repo.persist(author)
+          subject.apply(author: other_author).author.should be(other_author)
         end
       end
     end
 
     context 'when post is persisted without account' do
-      let(:subject) {
-        post_repo.persist(post_repo.create(title: 'foo'))
-      }
+      let(:subject) { post_repo.persist(post_repo.create(title: 'foo')) }
+      let(:author) { account_repo.create(firstname: 'foo') }
 
       it 'returns nil' do
         subject.author.should be nil
@@ -50,17 +55,60 @@ shared_examples_for 'a working system' do
 
       context 'when author is changed to non-persisted account' do
         it 'returns assigned author' do
-          pending 'not working yet'
-          author = account_repo.create
           subject.apply(author: author).author.should be(author)
+        end
+
+        it 'remembers assigned author after persisting' do
+          pending 'not working yet'
+          post_repo.persist(subject.apply(author: author)).
+            author.should be(author)
         end
       end
 
       context 'when author is changed to persisted account' do
         it 'returns assigned author' do
-          author = account_repo.create(firstname: 'foo')
-          author = account_repo.persist(author)
-          subject.apply(author: author).author.should be(author)
+          other_author = account_repo.persist(author)
+          subject.apply(author: other_author).author.should be(other_author)
+        end
+      end
+    end
+
+    context 'when post is already persisted with account' do
+      let(:author) { account_repo.persist(account_repo.create(firstname: 'foo')) }
+
+      let(:subject) { post_repo.persist(post_repo.create(title: 'foo', author: author)) }
+
+      it 'returns previously assigned and persisted author' do
+        # NOTE with identity map it should be 'be' identity check, not equivalence
+        subject.author.should eq author
+      end
+
+      context 'when author is changed to non-persisted account' do
+        it 'returns assigned author' do
+          other_author = account_repo.create
+          subject.apply(author: other_author).author.should be(other_author)
+        end
+
+        it 'remembers assigned author after persisting' do
+          pending 'not working yet'
+          other_author = account_repo.create(firstname: 'foo')
+          post_repo.persist(subject.apply(author: other_author)).
+            author.should eq(other_author)
+        end
+      end
+
+      context 'when author is changed to persisted account' do
+        it 'returns assigned author' do
+          other_author = account_repo.create(firstname: 'bar')
+          other_author = account_repo.persist(other_author)
+          subject.apply(author: other_author).author.should be(other_author)
+        end
+
+        it 'remembers assigned author after persisting' do
+          other_author = account_repo.create(firstname: 'bar')
+          other_author = account_repo.persist(other_author)
+          post_repo.persist(subject.apply(author: other_author)).
+            author.should eq(other_author)
         end
       end
     end

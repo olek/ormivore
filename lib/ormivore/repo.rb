@@ -13,14 +13,19 @@ module ORMivore
       raise BadArgumentError unless port
 
       @port = port
-      #@entity_class = options.fetch(:entity_class)
       @entity_class = entity_class
       @family = options.fetch(:family, nil)
       @family.add(self, @entity_class) if @family
     end
 
-    def create(attrs = {})
-      entity_class.new(attributes: {}, repo: self).apply(attrs)
+    def create(attrs = nil)
+      entity = entity_class.new(attributes: {}, repo: self)
+
+      if attrs
+        entity.apply(attrs)
+      else
+        entity
+      end
     end
 
     def find_by_id(id, options = {})

@@ -179,7 +179,11 @@ module ORMivore
         return false unless [:many_to_one, :one_to_one].include?(data[:type])
 
         entity = association[:entities].first
-        parent.public_send("#{association[:name]}_id") == entity.id
+        if entity.persisted?
+          parent.public_send("#{association[:name]}_id") == entity.id
+        else
+          false
+        end
       end
     end
   end
