@@ -108,7 +108,7 @@ module ORMivore
               source = data[:source]
               through_data = ad[through]
               through_entities = entities.each_with_object([]) { |e, entities_acc|
-                # NOTE what if parent or e are not persisted?
+                # NOTE what if parent or e are ephemeral?
                 through_entity =
                   if action == :add
                     parent.repo.family[through_data[:entity_class]].create(
@@ -171,7 +171,8 @@ module ORMivore
       end
 
       def association_already_present?(association)
-        parent.association_changes.include?(association)
+        # can not use include? here because it is using == equality
+        parent.association_changes.any? { |assoc| assoc.eql?(association) }
       end
 
       def noop_direct_link_association?(association, data)
@@ -179,10 +180,15 @@ module ORMivore
         return false unless [:many_to_one, :one_to_one].include?(data[:type])
 
         entity = association[:entities].first
-        if entity.persisted?
-          parent.public_send("#{association[:name]}_id") == entity.id
+        if parent.association_cached?(association[:name])
+          current_entity = parent.public_send(association[:name])
+          current_entity.eql?(entity)
         else
-          false
+          if entity.durable?
+            parent.public_send("#{association[:name]}_id") == entity.id
+          else
+            false
+          end
         end
       end
     end

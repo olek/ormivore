@@ -232,8 +232,16 @@ module ORMivore
       !!parent
     end
 
-    def persisted?
-      !!id
+    def ephemeral?
+      !id
+    end
+
+    def durable?
+      !(ephemeral? || changed?)
+    end
+
+    def revised?
+      !ephemeral? && changed?
     end
 
     def attach_repo(r)
@@ -285,6 +293,16 @@ module ORMivore
       associations_cache.get(name, options)
     end
 
+    def association_cached?(name)
+      value = cached_association(name, dereference: false)
+
+      if self.class.foreign_key_association_descriptions[name]
+        value.nil? || !value.respond_to?(:dereference_placeholder)
+      else
+        !!value
+      end
+    end
+
     def memoize(name)
       name = name.to_sym
       already_cached = memoize_cache[name]
@@ -296,21 +314,29 @@ module ORMivore
       end
     end
 
-    def eql?(other)
+    def ==(other)
       return false unless other.class == self.class
 
-      return id == other.id if persisted?
-      return false if other.persisted?
+      return id == other.id unless ephemeral?
+      return false unless other.ephemeral?
       return attributes == other.attributes &&
         foreign_keys == other.foreign_keys &&
         repo == other.repo
     end
 
-    alias == eql?
+    # more strict than ==, because durable entities with same id but different attributes are not considered equal
+    def eql?(other)
+      return false unless other.class == self.class
+
+      return id == other.id &&
+        attributes == other.attributes &&
+        foreign_keys == other.foreign_keys &&
+        repo == other.repo
+    end
 
     def hash
-      return id.hash if persisted?
-      return attributes.hash ^
+      return id.hash ^
+        attributes.hash ^
         foreign_keys.hash ^
         repo.hash
     end
@@ -320,7 +346,7 @@ module ORMivore
 
       "#<#{self.class.name}".tap { |s|
           s << ' dismissed' if dismissed?
-          s << " root" if root?
+          s <<  (root? ? ' root' : ' derived')
           s << " id=#{id}" if id
           if verbose
             s << " attributes=#{attributes.inspect}" unless attributes.empty?

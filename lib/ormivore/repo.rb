@@ -178,7 +178,7 @@ module ORMivore
           when :remove
             entities.each do |e|
               add_remove_pair[0].delete(e)
-              add_remove_pair[1] << e if e.persisted?
+              add_remove_pair[1] << e unless e.ephemeral?
             end
           end
         }
