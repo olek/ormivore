@@ -71,8 +71,7 @@ module ORMivore
                 else
                   data[:foreign_key] or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
                 end
-              finder_name = "find_all_by_#{foreign_key}"
-              self.repo.family[entity_class].public_send(finder_name, self.id)
+              self.repo.family[entity_class].send('find_all_by_attribute', foreign_key, self.id)
             }
           end
 

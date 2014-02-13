@@ -114,6 +114,15 @@ module ORMivore
 
     attr_reader :port
 
+    # this is 'package' or 'friendly' API, to be used only by ORMivore itself
+    def find_all_by_attribute(name, value)
+      entities_attrs = port.find(
+        { name => value },
+        all_known_columns
+      )
+      entities_attrs.map { |ea| load_entity(ea) }
+    end
+
     def validate_entity_argument(entity)
       # in case you are wondering, just trying to stay friendly to mocks in unit tests
       if entity.is_a?(Entity) && entity.class != entity_class
