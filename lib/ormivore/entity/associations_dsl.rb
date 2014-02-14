@@ -58,22 +58,21 @@ module ORMivore
 
         define_method(name) do
           changes = self.association_changes.select { |o| o[:name] == name }
-          last_set_with_index = changes.zip(0...changes.length).select { |(o, _)| o[:action] == :set }.last
-          changes = changes[last_set_with_index.last..-1] if last_set_with_index
 
-          if last_set_with_index
-            unchanged = []
-          else
-            unchanged = self.cache_association(name) {
-              foreign_key =
-                if data[:inverse_of]
-                  data[:entity_class].association_descriptions[data[:inverse_of]][:foreign_key]
-                else
-                  data[:foreign_key] or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
-                end
-              self.repo.family[entity_class].send('find_all_by_attribute', foreign_key, self.id)
-            }
-          end
+          unchanged = 
+            if ephemeral?
+              []
+            else
+              self.cache_association(name) {
+                foreign_key =
+                  if data[:inverse_of]
+                    data[:entity_class].association_descriptions[data[:inverse_of]][:foreign_key]
+                  else
+                    data[:foreign_key] or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
+                  end
+                self.repo.family[entity_class].send('find_all_by_attribute', foreign_key, self.id)
+              }
+            end
 
           AssociationsDSL.apply_changes(changes, unchanged)
         end

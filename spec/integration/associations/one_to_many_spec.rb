@@ -10,8 +10,8 @@ shared_examples_for 'a one-to-many association' do
   let(:post_repo) { Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family) }
 
   context 'for ephemeral account' do
-    let!(:subject) { account_repo.create(firstname: 'foo') }
-    let!(:article) { post_repo.create(title: 'foo') }
+    let(:subject) { account_repo.create(firstname: 'foo') }
+    let(:post) { post_repo.create(title: 'foo') }
 
     it 'returns empty array' do
       subject.articles.should be_empty
@@ -19,27 +19,43 @@ shared_examples_for 'a one-to-many association' do
 
     context 'when article is set to ephemeral post' do
       it 'returns assigned article' do
-        subject.apply(articles: [article]).articles.tap { |o|
-          o.should eq([article])
-          o.first.should be(article)
+        subject.apply(articles: [post]).articles.tap { |o|
+          o.should eq([post])
+          o.first.should be(post)
         }
       end
 
-      it 'remembers assigned author after persisting' do
+      it 'remembers assigned article after persisting' do
         pending 'not working yet'
 
-        post_repo.persist(subject.apply(author: author)).
-          author.should be(author)
         account_repo.persist(
-          subject.apply(articles: [article])
-        ).articles.should eq([article])
+          subject.apply(articles: [post])
+        ).articles.tap { |o|
+          o.should eq([post])
+          o.first.should be(post)
+        }
       end
     end
 
     context 'when article is set to durable post' do
+      let(:post) { post_repo.persist(super()) }
+
       it 'returns assigned article' do
-        other_article = post_repo.persist(article)
-        subject.apply(articles: [other_article]).articles.should eq([other_article])
+        subject.apply(articles: [post]).tap { |o|
+          o.articles.should eq([post])
+          o.articles.first.should be(post)
+        }
+      end
+
+      it 'remembers assigned article after persisting' do
+        pending 'not working yet'
+
+        account_repo.persist(
+          subject.apply(articles: [post])
+        ).articles.tap { |o|
+          o.should eq([post])
+          o.first.should be(post)
+        }
       end
     end
   end
