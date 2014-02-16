@@ -95,10 +95,11 @@ module ORMivore
               # TODO this roundabout dance about getting association as in DB is ugly
               public_send(data[:through]) # initiate query
               join_entities = cached_association(data[:through]) # pull value as it is in DB without changes applied
-              if join_entities.empty?
-                []
-              else
+
+              if join_entities
                 join_entities.map { |link| link.association(data[:source]) }.sort_by(&:id)
+              else
+                []
               end
             }
           end
@@ -122,7 +123,17 @@ module ORMivore
           h[:inverse_of] = options[:inverse_of].to_sym if options[:inverse_of]
           h[:foreign_key] = options[:fk].to_sym if options[:fk]
           h[:source] = options[:source].to_sym if options[:source]
+
+          validate_association_description(name, h)
         }
+      end
+
+      def validate_association_description(name, data)
+        # TODO expand this validation to cover many, many more cases...
+        if data[:type] == :many_to_many
+          raise BadArgumentError, "No 'through' association defined on association '#{name}'" unless data[:through]
+          raise BadArgumentError, "No 'source' association defined on association '#{name}'" unless data[:source]
+        end
       end
 
       def self.apply_changes(changes, initial)
