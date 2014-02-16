@@ -172,10 +172,10 @@ describe 'an entity' do
       described_class.new.attach_repo(:foo).repo.should == :foo
     end
 
-    it 'attaches repo to parent of the entity too' do
+    it 'leaves repo of the parent alone as nil' do
       parent = described_class.new
       parent.apply(attr_1: test_value).attach_repo(:foo)
-      parent.repo.should == :foo
+      parent.repo.should == nil
     end
 
     it 'raises error if entity already has repo' do

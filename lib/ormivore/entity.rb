@@ -13,6 +13,12 @@ module ORMivore
         }
       end
 
+      def new_with_attached_repo(parent, repo)
+        allocate.tap { |o|
+          o.initialize_with_attached_repo(parent, repo)
+        }
+      end
+
       def coerce_id(id)
         Integer(id) if id
       rescue ArgumentError
@@ -74,11 +80,7 @@ module ORMivore
       EOS
     end
 
-    attr_reader :id
-
-    def repo
-      @repo[0]
-    end
+    attr_reader :id, :repo
 
     def dismissed?
       @dismissed[0]
@@ -90,10 +92,10 @@ module ORMivore
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
       @applied_associations = [].freeze
+      @repo = options[:repo]
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
-      @repo = [options[:repo]]
 
       # mutable by design (caches)
       @associations_cache = LazyCache.new
@@ -122,15 +124,39 @@ module ORMivore
 
       @local_attributes = change_processor.attributes.freeze
       @applied_associations = change_processor.associations.freeze
+      @repo = @parent.repo
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
-      @repo = [@parent.repo]
 
       # mutable by design (caches)
       @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
 
       validate_absence_of_unknown_attributes
+
+      freeze
+    end
+
+    # constructor for 'attach repo' nodes
+    def initialize_with_attached_repo(parent, repo)
+      # immutable
+      @parent = parent
+      raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
+      @id = @parent.id
+
+      @local_attributes = {}.freeze
+      @applied_associations = {}.freeze
+      @repo = repo
+
+      raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
+      raise InvalidStateError,
+        'Can not attach #{parent} to #{repo} because it is already attached to #{parent.repo}' if parent.repo
+
+      # mutable by necessity, ugly workaround to avoid freezing references
+      @dismissed = [false]
+
+      # mutable by design (caches)
+      @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
 
       freeze
     end
@@ -254,14 +280,7 @@ module ORMivore
     end
 
     def attach_repo(r)
-      # teaching old dog new tricks here is not great, but it is lesser of 2
-      # evils - it woud be really bad to have 2 entities in same time line to
-      # have different repos
-
-      parent.attach_repo(r) if parent
-      self.repo = r
-
-      self
+      self.class.new_with_attached_repo(self, r)
     end
 
     def dismiss
