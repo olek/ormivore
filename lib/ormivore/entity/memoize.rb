@@ -1,28 +1,49 @@
 module ORMivore
   module Entity
     module Memoize
-      def memoize
-        method_names = self.public_instance_methods(false)
-        yield
-        method_names = self.public_instance_methods(false) - method_names
+      module ClassMethods
+        def memoize
+          method_names = self.public_instance_methods(false)
+          yield
+          method_names = self.public_instance_methods(false) - method_names
 
-        method_names.each do |method_name|
-          memoize_method(method_name)
+          method_names.each do |method_name|
+            memoize_method(method_name)
+          end
+        end
+
+        private
+
+        def memoize_method(method_name)
+          original_method = self.instance_method(method_name)
+
+          define_method(method_name) do
+            memoize(method_name) {
+              original_method.bind(self).call
+            }
+          end
         end
       end
 
-      private
+      def self.included(base)
+        base.extend(ClassMethods)
+      end
 
-      def memoize_method(method_name)
-        original_method = self.instance_method(method_name)
+      def memoize(name)
+        name = name.to_sym
+        @memoize_cache ||= {}
+        already_cached = @memoize_cache[name]
 
-        cache_name = "#{self.name.demodulize}.#{method_name}".to_sym
-
-        define_method(method_name) do
-          entity.memoize(cache_name) {
-            original_method.bind(self).call
-          }
+        if already_cached
+          already_cached
+        else
+          @memoize_cache[name] = yield
         end
+      end
+
+      def freeze
+        @memoize_cache ||= {}
+        super
       end
     end
   end

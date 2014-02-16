@@ -13,8 +13,10 @@ module ORMivore
         raise BadArgumentError, "Can not redefine responsibility '#{name}'" if method_defined?(name)
 
         define_method(name) do
-          responsibilities_cache[name] ||= responsibility_class.new(self)
+          responsibility_class.new(self)
         end
+
+        self.memoize(name)
       end
 
       alias_method :role, :responsibility

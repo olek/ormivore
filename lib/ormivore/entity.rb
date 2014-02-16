@@ -36,7 +36,9 @@ module ORMivore
     end
 
     def self.included(base)
-      base.send(:include, Coercions) # how naughty of us
+      # how naughty of us
+      base.send(:include, Coercions)
+      base.send(:include, Memoize)
 
       # not so naughty, but still...
       base.extend(ClassMethods)
@@ -95,8 +97,6 @@ module ORMivore
 
       # mutable by design (caches)
       @associations_cache = LazyCache.new
-      @memoize_cache = {}
-      @responsibilities_cache = {}
 
       eager_fetch_associations = options[:associations]
       if eager_fetch_associations
@@ -129,48 +129,50 @@ module ORMivore
 
       # mutable by design (caches)
       @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
-      @memoize_cache = {}
-      @responsibilities_cache = {}
 
       validate_absence_of_unknown_attributes
 
       freeze
     end
 
-    # TODO local memoize?
     def attributes
-      collect_from_root({}) { |e, acc|
-        acc.merge(e.local_attributes)
-      }.tap { |o|
-        o.each { |k, v|
-          o[k] = nil if v == NULL
+      memoize(:attributes) do
+        collect_from_root({}) { |e, acc|
+          acc.merge(e.local_attributes)
+        }.tap { |o|
+          o.each { |k, v|
+            o[k] = nil if v == NULL
+          }
         }
-      }
+      end
     end
 
-    # TODO local memoize?
     def attribute(name)
-      name = name.to_sym if name
+      raise BadArgumentError, "Missing attribute name" unless name
+      memoize("attribute_#{name}") do
+        name = name.to_sym
 
-      node = find_nearest_node { |e|
-        !!e.local_attributes[name]
-      }
+        node = find_nearest_node { |e|
+          !!e.local_attributes[name]
+        }
 
-      attr = node.local_attributes[name]
-      raise BadArgumentError, "Unknown attribute '#{name}' on entity '#{self.class}'" unless attr || self.class.attributes_list.include?(name)
+        attr = node.local_attributes[name]
+        raise BadArgumentError, "Unknown attribute '#{name}' on entity '#{self.class}'" unless attr || self.class.attributes_list.include?(name)
 
-      attr == NULL ? nil : attr
+        attr == NULL ? nil : attr
+      end
     end
 
-    # TODO local memoize?
     def changes
-      collect_from_root({}) { |e, acc|
-        unless e.root?
-          acc.merge!(e.local_attributes)
-        end
+      memoize(:changes) do
+        collect_from_root({}) { |e, acc|
+          unless e.root?
+            acc.merge!(e.local_attributes)
+          end
 
-        acc
-      }
+          acc
+        }
+      end
     end
 
     def lazy_associations
@@ -198,15 +200,16 @@ module ORMivore
       public_send(name)
     end
 
-    # TODO local memoize?
     def association_changes
-      collect_from_root([]) { |e, acc|
-        unless e.root?
-          acc.concat(e.applied_associations)
-        end
+      memoize(:association_changes) do
+        collect_from_root([]) { |e, acc|
+          unless e.root?
+            acc.concat(e.applied_associations)
+          end
 
-        acc
-      }
+          acc
+        }
+      end
     end
 
     def foreign_key_changes
@@ -228,10 +231,16 @@ module ORMivore
         }
     end
 
+    # 'rails way' name would be 'dirty?' :)
     def changed?
       !!parent
     end
 
+    # ephemeral - just created, does not exist in storage, will perish
+    #     if discarded
+    # durable - persisted in storage, will not be harmed if discarded
+    # revised - past version of it persisted in storage, will lose
+    #     recent changes if discarded
     def ephemeral?
       !id
     end
@@ -300,17 +309,6 @@ module ORMivore
         value.nil? || !value.respond_to?(:dereference_placeholder)
       else
         !!value
-      end
-    end
-
-    def memoize(name)
-      name = name.to_sym
-      already_cached = memoize_cache[name]
-
-      if already_cached
-        already_cached
-      else
-        memoize_cache[name] = yield
       end
     end
 
@@ -409,8 +407,6 @@ module ORMivore
     end
 
     private
-
-    attr_reader :responsibilities_cache
 
     def freeze
       super
