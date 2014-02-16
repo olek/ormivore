@@ -3,10 +3,15 @@
 notification :tmux
 notification :terminal_title
 
+skip_extra_adapter_specs = true
+
+cli = '--color --format nested'
+cli += ' --tag ~secondary_adapter --tag ~sql_adapter' if skip_extra_adapter_specs
+
 guard :rspec,
   :all_on_start => true,
   :run_all => { :cli => '--color' },
-  :cli => '--color --format nested' do
+  :cli => cli do
   watch(%r{^spec/.+_spec\.rb$})
   watch(%r{^app/(.+)\.rb$}) { |m| "spec/#{m[1]}_spec.rb" }
   watch(%r{^spec/(.+)/shared.*\.rb$}) { |m| "spec/#{m[1]}" }

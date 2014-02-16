@@ -187,7 +187,7 @@ describe 'an entity and its ecosystem' do
   #  end
   #}
 
-  context 'with StorageMemoryAdapter' do
+  context 'with StorageMemoryAdapter', :memory_adapter do
     include MemoryHelpers
 
     let(:adapter) { ORMivore::AnonymousFactory::create_memory_adapter.new }
@@ -195,7 +195,7 @@ describe 'an entity and its ecosystem' do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with StorageArAdapter', :ar_db do
+  context 'with StorageArAdapter', :secondary_adapter, :ar_db do
     include ArHelpers
 
     let(:entity_table) { 'accounts' }
@@ -207,7 +207,7 @@ describe 'an entity and its ecosystem' do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with StorageSequelAdapter', :sequel_db do
+  context 'with StorageSequelAdapter', :secondary_adapter, :sequel_db do
     include SequelHelpers
 
     let(:entity_table) { 'accounts' }
@@ -219,7 +219,7 @@ describe 'an entity and its ecosystem' do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with StoragePreparedSequelAdapter', :sequel_db do
+  context 'with StoragePreparedSequelAdapter', :sql_adapter, :sequel_db do
     include SequelHelpers
 
     let(:entity_table) { 'accounts' }
@@ -231,7 +231,7 @@ describe 'an entity and its ecosystem' do
     it_behaves_like 'an integrated repo'
   end
 
-  context 'with StorageRedisAdapter', :redis_db do
+  context 'with StorageRedisAdapter', :secondary_adapter, :redis_db do
     include RedisHelpers
 
     let(:prefix) { 'accounts' }

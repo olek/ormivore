@@ -179,35 +179,35 @@ describe 'an association between post and its author' do
     Object.send(:remove_const, :Spec) if Object.const_defined?(:Spec)
   end
 
-  context 'with StorageMemoryAdapter' do
+  context 'with StorageMemoryAdapter', :memory_adapter do
     let(:account_adapter) { ORMivore::AnonymousFactory::create_memory_adapter.new }
     let(:post_adapter) { ORMivore::AnonymousFactory::create_memory_adapter.new }
 
     it_behaves_like 'a many-to-one association'
   end
 
-  context 'with StorageArAdapter', :ar_db do
+  context 'with StorageArAdapter', :secondary_adapter, :ar_db do
     let(:account_adapter) { ORMivore::AnonymousFactory::create_ar_adapter('accounts').new }
     let(:post_adapter) { ORMivore::AnonymousFactory::create_ar_adapter('posts').new }
 
     it_behaves_like 'a many-to-one association'
   end
 
-  context 'with StorageSequelAdapter', :sequel_db do
+  context 'with StorageSequelAdapter', :secondary_adapter, :sequel_db do
     let(:account_adapter) { ORMivore::AnonymousFactory::create_sequel_adapter('accounts').new }
     let(:post_adapter) { ORMivore::AnonymousFactory::create_sequel_adapter('posts').new }
 
     it_behaves_like 'a many-to-one association'
   end
 
-  context 'with StoragePreparedSequelAdapter', :sequel_db do
+  context 'with StoragePreparedSequelAdapter', :sql_adapter, :sequel_db do
     let(:account_adapter) { ORMivore::AnonymousFactory::create_prepared_sequel_adapter( 'accounts').new }
     let(:post_adapter) { ORMivore::AnonymousFactory::create_prepared_sequel_adapter('posts').new }
 
     it_behaves_like 'a many-to-one association'
   end
 
-  context 'with StorageRedisAdapter', :redis_db do
+  context 'with StorageRedisAdapter', :secondary_adapter, :redis_db do
     let(:account_adapter) { ORMivore::AnonymousFactory::create_redis_adapter('accounts').new }
     let(:post_adapter) { ORMivore::AnonymousFactory::create_redis_adapter('posts').new }
 
