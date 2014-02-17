@@ -16,7 +16,7 @@ module ORMivore
           responsibility_class.new(self)
         end
 
-        self.memoize(name)
+        memoize_method(name)
       end
 
       alias_method :role, :responsibility
