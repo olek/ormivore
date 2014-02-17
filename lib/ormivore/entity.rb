@@ -10,12 +10,18 @@ module ORMivore
       def new_with_change_processor(parent, change_processor)
         allocate.tap { |o|
           o.initialize_with_change_processor(parent, change_processor)
+          if o.noop?
+            return parent
+          else
+            parent.dismiss
+          end
         }
       end
 
       def new_with_attached_repo(parent, repo)
         allocate.tap { |o|
           o.initialize_with_attached_repo(parent, repo)
+          parent.dismiss
         }
       end
 
@@ -115,50 +121,28 @@ module ORMivore
       freeze
     end
 
-    # constructor for 'change' nodes
+    # constructor for 'revison' nodes
     def initialize_with_change_processor(parent, change_processor)
-      # immutable
-      @parent = parent
-      raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
-      @id = @parent.id
+      shared_initialize(parent) do
+        @local_attributes = change_processor.attributes.freeze
+        @applied_associations = change_processor.associations.freeze
+        @repo = @parent.repo
+      end
 
-      @local_attributes = change_processor.attributes.freeze
-      @applied_associations = change_processor.associations.freeze
-      @repo = @parent.repo
-
-      # mutable by necessity, ugly workaround to avoid freezing references
-      @dismissed = [false]
-
-      # mutable by design (caches)
-      @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
-
-      validate_absence_of_unknown_attributes
-
-      freeze
     end
 
     # constructor for 'attach repo' nodes
     def initialize_with_attached_repo(parent, repo)
-      # immutable
-      @parent = parent
-      raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
-      @id = @parent.id
+      shared_initialize(parent) do
+        @local_attributes = {}.freeze
+        @applied_associations = {}.freeze
+        @repo = repo
 
-      @local_attributes = {}.freeze
-      @applied_associations = {}.freeze
-      @repo = repo
+        raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
+        raise InvalidStateError,
+          'Can not attach #{parent} to #{repo} because it is already attached to #{parent.repo}' if parent.repo
 
-      raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
-      raise InvalidStateError,
-        'Can not attach #{parent} to #{repo} because it is already attached to #{parent.repo}' if parent.repo
-
-      # mutable by necessity, ugly workaround to avoid freezing references
-      @dismissed = [false]
-
-      # mutable by design (caches)
-      @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
-
-      freeze
+      end
     end
 
     def attributes
@@ -262,10 +246,10 @@ module ORMivore
       !!parent
     end
 
-    # ephemeral - just created, does not exist in storage, will perish
-    #     if discarded
-    # durable - persisted in storage, will not be harmed if discarded
-    # revised - past version of it persisted in storage, will lose
+    # ephemeral: in-memory-only, not stored, will disappear without a
+    #     trace if discarded
+    # durable: persisted in storage, no data loss if discarded
+    # revised: was persisted in storage, and then modified/revised, will lose
     #     recent changes if discarded
     def ephemeral?
       !id
@@ -279,15 +263,10 @@ module ORMivore
       !ephemeral? && changed?
     end
 
-    def attach_repo(r)
-      self.class.new_with_attached_repo(self, r)
-    end
-
     def dismiss
-      # another 'functional' sin - dismissing ad object is definitely going to
-      # change its behavior, but being able to continue using old versions of
-      # already persisted object seems to be even worse
-      parent.dismiss if parent
+      # 'functional' sin - dismissing ad object is definitely going to
+      # change its behavior, but being able to continue using 'past' versions of
+      # object that moved on seems to be even worse
       @dismissed[0] = true
 
       self
@@ -295,9 +274,11 @@ module ORMivore
 
     def apply(attrs)
       raise InvalidStateError, "Dismissed entities can not be modified any longer" if dismissed?
-      applied = self.class.new_with_change_processor(self, ChangeProcessor.new(self, attrs).call)
+      self.class.new_with_change_processor(self, ChangeProcessor.new(self, attrs).call)
+    end
 
-      applied.noop? ? self : applied
+    def attach_repo(r)
+      self.class.new_with_attached_repo(self, r)
     end
 
     def validate
@@ -356,6 +337,11 @@ module ORMivore
         attributes.hash ^
         foreign_keys.hash ^
         repo.hash
+    end
+
+    # for internal use only, not true public API
+    def noop?
+      local_attributes.empty? && applied_associations.empty?
     end
 
     def inspect(options = {})
@@ -421,10 +407,6 @@ module ORMivore
       end
     end
 
-    def noop?
-      local_attributes.empty? && applied_associations.empty?
-    end
-
     private
 
     def freeze
@@ -432,6 +414,28 @@ module ORMivore
 
       @local_attributes.freeze
       @applied_associations.freeze
+    end
+
+    def shared_initialize(parent)
+      # immutable
+      @parent = parent
+      raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
+      @id = @parent.id
+
+      yield # non-shared initialize here
+
+      # mutable by necessity, ugly workaround to avoid freezing references
+      @dismissed = [false]
+
+      # mutable for the time being
+      # TODO move associations_cache to session, right next to identity
+      # map, and entities will become 99.999% mutation free ('dismissed'
+      # will be the only exception)
+      @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
+
+      validate_absence_of_unknown_attributes
+
+      freeze
     end
 
     def validate_absence_of_unknown_attributes
