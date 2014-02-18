@@ -15,8 +15,8 @@ describe 'a repo' do
 
   let(:entity_class) {
     double('entity_class', new: new_entity, name: 'FakeEntity',
-      attributes_list: [:foo], association_descriptions: {},
-      foreign_key_association_descriptions: {}, foreign_keys: [])
+      attributes_list: [:foo], association_definitions: {},
+      foreign_key_association_definitions: {}, foreign_keys: [])
   }
 
   let(:port) {

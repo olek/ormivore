@@ -223,20 +223,20 @@ module ORMivore
     end
 
     def foreign_key_changes
-      ad = self.class.foreign_key_association_descriptions
+      ads = self.class.foreign_key_association_definitions
       association_changes.
-        select { |o| ad.has_key?(o[:name]) }.
+        select { |o| ads.has_key?(o[:name]) }.
         each_with_object({}) { |o, acc|
-          acc[ad[o[:name]][:foreign_key]] = o[:entities].first.id
+          acc[ads[o[:name]].foreign_key] = o[:entities].first.id
         }
     end
 
     # TODO Ugh. There must be a simpler way to get foreign keys of an entity
     def foreign_keys
-      self.class.foreign_key_association_descriptions.
-        each_with_object({}) { |(association_name, data), acc|
+      self.class.foreign_key_association_definitions.
+        each_with_object({}) { |(association_name, ad), acc|
           fk_accessor = "#{association_name}_id".to_sym
-          fk_name = data[:foreign_key]
+          fk_name = ad.foreign_key
           acc[fk_name] = self.public_send(fk_accessor)
         }
     end
@@ -305,7 +305,7 @@ module ORMivore
     def association_cached?(name)
       value = cached_association(name, dereference: false)
 
-      if self.class.foreign_key_association_descriptions[name]
+      if self.class.foreign_key_association_definitions[name]
         value.nil? || !value.respond_to?(:dereference_placeholder)
       else
         !!value

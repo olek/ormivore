@@ -2,21 +2,21 @@ module ORMivore
   module Entity
     module AssociationsDSL
       def association_names
-        association_descriptions.keys
+        association_definitions.keys
       end
 
-      def association_descriptions
-        @association_descriptions ||= {}
+      def association_definitions
+        @association_definitions ||= {}
       end
 
-      def foreign_key_association_descriptions
-        @fkad ||= association_descriptions.each_with_object({}) { |(k, data), acc|
-          acc[k] = data if [:many_to_one, :one_to_one].include?(data[:type])
+      def foreign_key_association_definitions
+        @fkad ||= association_definitions.each_with_object({}) { |(k, ad), acc|
+          acc[k] = ad if ad.direct?
         }
       end
 
       def foreign_keys
-        @fks ||= foreign_key_association_descriptions.map { |k, v| v[:foreign_key] }
+        @fks ||= foreign_key_association_definitions.map { |k, v| v.foreign_key }
       end
 
       private
@@ -52,23 +52,23 @@ module ORMivore
       alias_method :one_to_one, :many_to_one
 
       def one_to_many(name, entity_class, options)
-        data = add_association_description(:one_to_many, name, entity_class, options)
+        ad = add_association_description(:one_to_many, name, entity_class, options)
 
         name = name.to_sym
 
         define_method(name) do
           changes = self.association_changes.select { |o| o[:name] == name }
 
-          unchanged = 
+          unchanged =
             if ephemeral?
               []
             else
               self.cache_association(name) {
                 foreign_key =
-                  if data[:inverse_of]
-                    data[:entity_class].association_descriptions[data[:inverse_of]][:foreign_key]
+                  if ad.inverse_of
+                    ad.entity_class.association_definitions[ad.inverse_of].foreign_key
                   else
-                    data[:foreign_key] or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
+                    ad.foreign_key or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
                   end
                 self.repo.family[entity_class].send('find_all_by_attribute', foreign_key, self.id)
               }
@@ -79,7 +79,7 @@ module ORMivore
       end
 
       def many_to_many(name, entity_class, options)
-        data = add_association_description(:many_to_many, name, entity_class, options)
+        ad = add_association_description(:many_to_many, name, entity_class, options)
 
         name = name.to_sym
 
@@ -93,11 +93,11 @@ module ORMivore
           else
             unchanged = self.cache_association(name) {
               # TODO this roundabout dance about getting association as in DB is ugly
-              public_send(data[:through]) # initiate query
-              join_entities = cached_association(data[:through]) # pull value as it is in DB without changes applied
+              public_send(ad.through) # initiate query
+              join_entities = cached_association(ad.through) # pull value as it is in DB without changes applied
 
               if join_entities
-                join_entities.map { |link| link.association(data[:source]) }.sort_by(&:id)
+                join_entities.map { |link| link.association(ad.source) }.sort_by(&:id)
               else
                 []
               end
@@ -115,25 +115,7 @@ module ORMivore
         raise BadArgumentError, "Association #{name} is already defined" if association_names.include?(name)
         raise BadArgumentError, "Association #{name} can not have nil entity class" unless entity_class
 
-        association_descriptions[name] = {
-          type: type,
-          entity_class: entity_class
-        }.tap { |h|
-          h[:through] = options.fetch(:through).to_sym if type == :many_to_many
-          h[:inverse_of] = options[:inverse_of].to_sym if options[:inverse_of]
-          h[:foreign_key] = options[:fk].to_sym if options[:fk]
-          h[:source] = options[:source].to_sym if options[:source]
-
-          validate_association_description(name, h)
-        }
-      end
-
-      def validate_association_description(name, data)
-        # TODO expand this validation to cover many, many more cases...
-        if data[:type] == :many_to_many
-          raise BadArgumentError, "No 'through' association defined on association '#{name}'" unless data[:through]
-          raise BadArgumentError, "No 'source' association defined on association '#{name}'" unless data[:source]
-        end
+        association_definitions[name] = AssociationDefinition.new(name, type, entity_class, options)
       end
 
       def self.apply_changes(changes, initial)

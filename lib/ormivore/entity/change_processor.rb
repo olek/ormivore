@@ -43,8 +43,8 @@ module ORMivore
       def convert_association(name, value)
         raise BadAttributesError, "Unknown association name '#{name}'" unless parent.class.association_names.include?(name)
 
-        data = parent.class.association_descriptions[name]
-        case type = data[:type]
+        ad = parent.class.association_definitions[name]
+        case type = ad.type
         when :many_to_one, :one_to_one
           raise BadAttributesError, "#{type} association change requires single entity" unless value.is_a?(Entity)
           { name: name, action: :set, entities: [value] }
@@ -79,10 +79,10 @@ module ORMivore
       def convert_set_associations_to_add_remove_pairs
         # convert set into add/remove commands asking parent for current state of association.
         # TODO public_send here is not awesome. Introduce method on entity like .attribute(name) but for association
-        ad = parent.class.association_descriptions
+        ads = parent.class.association_definitions
         replacements = associations.
           select { |o| o[:action] == :set }.
-          select { |o| ![:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }.
+          select { |o| ads[o[:name]].reverse? }.
           map { |o| o.values_at(:name, :action, :entities) }.
           each_with_object([]) do |(name, _, entities), acc|
             current_entities = parent.public_send(name)
@@ -93,29 +93,29 @@ module ORMivore
             acc << { name: name, action: :add, entities: add_enttities } unless add_enttities.empty?
           end
 
-        associations.delete_if { |o| o[:action] == :set && ![:many_to_one, :one_to_one].include?(ad[o[:name]][:type]) }
+        associations.delete_if { |o| o[:action] == :set && ads[o[:name]].reverse? }
         associations.concat(replacements)
       end
 
       def generate_reverse_through_association_changes
-        ad = parent.class.association_descriptions
+        ads = parent.class.association_definitions
         associations.
           map { |o| o.values_at(:name, :action, :entities) }.
           each_with_object([]) do |(name, action, entities), acc|
-            data = ad[name]
-            through = data[:through]
+            ad = ads[name]
+            through = ad.through
             if through
-              source = data[:source]
-              through_data = ad[through]
+              source = ad.source
+              through_ad = ads[through]
               through_entities = entities.each_with_object([]) { |e, entities_acc|
                 # NOTE what if parent or e are ephemeral?
                 through_entity =
                   if action == :add
-                    parent.repo.family[through_data[:entity_class]].create(
-                      through_data[:inverse_of] => parent, source => e)
+                    parent.repo.family[through_ad.entity_class].create(
+                      through_ad.inverse_of => parent, source => e)
                   else
                     parent.association(through).detect { |o|
-                      o.association(through_data[:inverse_of]) == parent && o.association(source) == e
+                      o.association(through_ad.inverse_of) == parent && o.association(source) == e
                     }
                   end
                 entities_acc << through_entity
@@ -127,13 +127,12 @@ module ORMivore
 
       # TODO this should be permanently cached somewhere
       def reverse_through_associations_lookup
-        ad = parent.class.association_descriptions
-        ad.each_with_object({}) { |(name, data), acc|
-          data = ad[name]
-          through = data[:through]
+        ads = parent.class.association_definitions
+        ads.each_with_object({}) { |(name, ad), acc|
+          through = ad.through
           if through
             acc[through] ||= []
-            acc[through] << [name, data]
+            acc[through] << [name, ad]
           end
         }
       end
@@ -146,8 +145,8 @@ module ORMivore
           each_with_object([]) do |(name, action, entities), acc|
             join_data = through_lookup[name]
             if join_data && !join_data.empty?
-              join_data.each do |(target_association, target_association_data)|
-                source = target_association_data[:source]
+              join_data.each do |(target_association, target_association_definition)|
+                source = target_association_definition.source
                 target_entities = entities.map(&source).compact
                 unless target_entities.empty?
                   acc << { name: target_association, action: action, entities: target_entities }
@@ -163,9 +162,9 @@ module ORMivore
 
       def prune_associations
         associations.delete_if do |association|
-          data = parent.class.association_descriptions[association[:name]]
-          raise BadArgumentError, "Unknown association '#{association[:name]}'" unless data
-          noop_direct_link_association?(association, data) ||
+          ad = parent.class.association_definitions[association[:name]]
+          raise BadArgumentError, "Unknown association '#{association[:name]}'" unless ad
+          noop_direct_link_association?(association, ad) ||
             association_already_present?(association)
         end
       end
@@ -175,9 +174,9 @@ module ORMivore
         parent.association_changes.any? { |assoc| assoc.eql?(association) }
       end
 
-      def noop_direct_link_association?(association, data)
+      def noop_direct_link_association?(association, ad)
         # TODO check for direction of one_to_one, and extract this question to be reusable (at least 3 places have it)
-        return false unless [:many_to_one, :one_to_one].include?(data[:type])
+        return false unless ad.direct?
 
         entity = association[:entities].first
         if parent.association_cached?(association[:name])

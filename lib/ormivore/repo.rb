@@ -174,11 +174,11 @@ module ORMivore
 
     # NOTE this seems to belong to new AssociationChanges class, with entity.inspect_applied_associations
     def collect_association_alterations(entity)
-      ad = entity_class.association_descriptions
+      ads = entity_class.association_definitions
       entity.association_changes.
-        select { |o| ad[o[:name]][:type] == :one_to_many }.
+        select { |o| ads[o[:name]].type == :one_to_many }.
         each_with_object({}) { |o, acc|
-          add_remove_pair = acc[o[:name]] ||= [[], [], ad[o[:name]][:entity_class], ad[o[:name]][:foreign_key], ad[o[:name]][:inverse_of]]
+          add_remove_pair = acc[o[:name]] ||= [[], [], ads[o[:name]].entity_class, ads[o[:name]].foreign_key, ads[o[:name]].inverse_of]
           entities = o[:entities]
           case o[:action]
           when :add
@@ -212,11 +212,11 @@ module ORMivore
     end
 
     def extract_direct_link_associations(attrs)
-      entity_class.foreign_key_association_descriptions.each_with_object({}) do |(name, description), acc|
-        foreign_key = description[:foreign_key]
+      entity_class.foreign_key_association_definitions.each_with_object({}) do |(name, ad), acc|
+        foreign_key = ad.foreign_key
         foreign_key_value = entity_class.coerce_id(attrs.delete(foreign_key))
         if foreign_key_value
-          acc[name] = Entity::Placeholder.new(family[description[:entity_class]], foreign_key_value)
+          acc[name] = Entity::Placeholder.new(family[ad.entity_class], foreign_key_value)
         end
       end
     end
