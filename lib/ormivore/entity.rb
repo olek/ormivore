@@ -191,7 +191,7 @@ module ORMivore
         if ca
           acc[name] =
             if ca.respond_to?(:dereference_placeholder)
-              if association_changes.any? { |o| o[:name] == name }
+              if association_adjustments.any? { |o| o.name == name }
                 public_send(name)
               else
                 ca
@@ -210,8 +210,8 @@ module ORMivore
       public_send(name)
     end
 
-    def association_changes
-      memoize(:association_changes) do
+    def association_adjustments
+      memoize(:association_adjustments) do
         collect_from_root([]) { |e, acc|
           unless e.root?
             acc.concat(e.applied_associations)
@@ -224,10 +224,10 @@ module ORMivore
 
     def foreign_key_changes
       ads = self.class.foreign_key_association_definitions
-      association_changes.
-        select { |o| ads.has_key?(o[:name]) }.
+      association_adjustments.
+        select { |o| ads.has_key?(o.name) }.
         each_with_object({}) { |o, acc|
-          acc[ads[o[:name]].foreign_key] = o[:entities].first.id
+          acc[ads[o.name].foreign_key] = o.entities.first.id
         }
     end
 
@@ -367,7 +367,7 @@ module ORMivore
       encoder['local_attributes'] = @local_attributes
       encoder['applied_associations'] = @applied_associations
       encoder['changes'] = changes
-      encoder['association_changes'] = association_changes
+      encoder['association_adjustments'] = association_adjustments
       encoder['associations_cache'] = @associations_cache
       encoder['memoize_cache'] = @memoize_cache
     end
@@ -464,11 +464,10 @@ module ORMivore
       }.join(', ').prepend('{') << '}'
     end
 
-    def inspect_applied_associations(aa)
-      aa.
-        map { |o| o.values_at(:name, :action, :entities) }.
-        map { |(_, action, entities)|
-          "<#{action} #{inspect_entities(entities)}>"
+    def inspect_applied_associations(aas)
+      aas.
+        map { |aa|
+          "<#{aa.action} #{inspect_entities(aa.entities)}>"
         }.join(', ').prepend('[') << ']'
     end
   end

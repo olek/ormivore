@@ -27,10 +27,10 @@ module ORMivore
         name = name.to_sym
 
         define_method(name) do
-          changed = self.association_changes.select { |o| o[:name] == name }.last
+          changed = self.association_adjustments.select { |o| o.name == name }.last
 
           if changed
-            changed[:entities].first
+            changed.entities.first
           else
             self.cache_association(name) {
               self.cached_association(name, dereference: true)
@@ -39,10 +39,10 @@ module ORMivore
         end
 
         define_method("#{name}_id") do
-          changed = self.association_changes.select { |o| o[:name] == name }.last
+          changed = self.association_adjustments.select { |o| o.name == name }.last
 
           if changed
-            changed[:entities].first.id
+            changed.entities.first.id
           else
             self.cached_association(name, dereference: false).try(:id)
           end
@@ -57,7 +57,7 @@ module ORMivore
         name = name.to_sym
 
         define_method(name) do
-          changes = self.association_changes.select { |o| o[:name] == name }
+          changes = self.association_adjustments.select { |o| o.name == name }
 
           unchanged =
             if ephemeral?
@@ -84,8 +84,8 @@ module ORMivore
         name = name.to_sym
 
         define_method(name) do
-          changes = self.association_changes.select { |o| o[:name] == name }
-          last_set_with_index = changes.zip(0...changes.length).select { |(o, _)| o[:action] == :set }.last
+          changes = self.association_adjustments.select { |o| o.name == name }
+          last_set_with_index = changes.zip(0...changes.length).select { |(o, _)| o.action == :set }.last
           changes = changes[last_set_with_index.last..-1] if last_set_with_index
 
           if last_set_with_index
@@ -120,13 +120,13 @@ module ORMivore
 
       def self.apply_changes(changes, initial)
         changes.inject(initial) { |last, change|
-          case change[:action]
+          case change.action
           when :add
-            last + change[:entities]
+            last + change.entities
           when :remove
-            last - change[:entities]
+            last - change.entities
           when :set
-            change[:entities]
+            change.entities
           else
             fail
           end

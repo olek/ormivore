@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe 'a repo' do
   let(:entity) {
-    double('entity', id: nil, changes: { foo: 'bar' }, association_changes: {},
+    double('entity', id: nil, changes: { foo: 'bar' }, association_adjustments: {},
       foreign_keys: {}, foreign_key_changes: {},
       validate: nil, dismissed?: false, dismiss: nil)
   }

@@ -22,6 +22,7 @@ module ORMivore
 
         symbolize
         validate
+        freeze
       end
 
       def direct?

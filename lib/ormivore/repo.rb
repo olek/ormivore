@@ -175,12 +175,12 @@ module ORMivore
     # NOTE this seems to belong to new AssociationChanges class, with entity.inspect_applied_associations
     def collect_association_alterations(entity)
       ads = entity_class.association_definitions
-      entity.association_changes.
-        select { |o| ads[o[:name]].type == :one_to_many }.
+      entity.association_adjustments.
+        select { |o| ads[o.name].type == :one_to_many }.
         each_with_object({}) { |o, acc|
-          add_remove_pair = acc[o[:name]] ||= [[], [], ads[o[:name]].entity_class, ads[o[:name]].foreign_key, ads[o[:name]].inverse_of]
-          entities = o[:entities]
-          case o[:action]
+          add_remove_pair = acc[o.name] ||= [[], [], ads[o.name].entity_class, ads[o.name].foreign_key, ads[o.name].inverse_of]
+          entities = o.entities
+          case o.action
           when :add
             add_remove_pair[0].concat(entities)
             add_remove_pair[1].delete_if { |e| entities.include?(e) }
