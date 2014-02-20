@@ -153,17 +153,17 @@ module ORMivore
 
     def persist_entity_associations(entity)
       alterations_hash = collect_association_alterations(entity)
-      alterations_hash.each do |name, (add, remove, e_class, foreign_key, inverse_of)|
-        association_repo = family[e_class]
+      alterations_hash.each do |name, (add, remove, ad)|
+        association_repo = family[ad.entity_class]
         remove.each do |e|
           association_repo.delete(e)
         end
         add.each do |e|
           # inverse_of must be specified if inverse relation exists, othervise plain fk attribute is acceptible substitute
-          if inverse_of
-            e = e.apply(inverse_of => entity)
+          if ad.inverse_of
+            e = e.apply(ad.inverse_of => entity)
           else
-            e = e.apply(foreign_key => entity.id)
+            e = e.apply(ad.foreign_key => entity.id)
           end
           e = association_repo.persist(e)
         end
@@ -178,7 +178,7 @@ module ORMivore
       entity.association_adjustments.
         select { |o| ads[o.name].type == :one_to_many }.
         each_with_object({}) { |o, acc|
-          add_remove_pair = acc[o.name] ||= [[], [], ads[o.name].entity_class, ads[o.name].foreign_key, ads[o.name].inverse_of]
+          add_remove_pair = acc[o.name] ||= [[], [], ads[o.name]]
           entities = o.entities
           case o.action
           when :add
