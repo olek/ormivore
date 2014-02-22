@@ -212,7 +212,7 @@ module ORMivore
     end
 
     def extract_direct_link_associations(attrs)
-      entity_class.foreign_key_association_definitions.each_with_object({}) do |(name, ad), acc|
+      entity_class.fk_association_definitions.each_with_object({}) do |(name, ad), acc|
         foreign_key = ad.foreign_key
         foreign_key_value = entity_class.coerce_id(attrs.delete(foreign_key))
         if foreign_key_value

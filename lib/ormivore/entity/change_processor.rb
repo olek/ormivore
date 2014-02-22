@@ -5,21 +5,27 @@ module ORMivore
         attributes = attributes.symbolize_keys # copy
 
         @parent = parent
+        fkan = parent.class.fk_association_names
         an = parent.class.association_names
         @unprocessed_attributes = attributes
+        @unprocessed_fk_associations = attributes.each_with_object({}) { |(k, _), acc|
+          acc[k] = attributes.delete(k) if fkan.include?(k)
+        }
         @unprocessed_associations = attributes.each_with_object({}) { |(k, _), acc|
           acc[k] = attributes.delete(k) if an.include?(k)
         }
       end
 
-      attr_reader :attributes, :associations
+      attr_reader :attributes, :associations, :fk_associations
 
       def call
         @attributes = parent.class.coerce(@unprocessed_attributes.symbolize_keys)
+        @fk_associations = convert_associations(@unprocessed_fk_associations)
         @associations = convert_associations(@unprocessed_associations)
         convert_set_associations_to_add_remove_pairs
 
         prune_attributes
+        prune_fk_associations
         prune_associations
 
         associations.concat(
@@ -156,12 +162,21 @@ module ORMivore
         attributes.delete_if { |k, v| v == parent.attribute(k) }
       end
 
+      def prune_fk_associations
+        fk_associations.delete_if do |association|
+          ad = parent.class.fk_association_definitions[association.name]
+          raise BadArgumentError, "Unknown association '#{association.name}'" unless ad
+
+          noop_direct_link_association?(association, ad)
+        end
+      end
+
       def prune_associations
         associations.delete_if do |association|
           ad = parent.class.association_definitions[association.name]
           raise BadArgumentError, "Unknown association '#{association.name}'" unless ad
-          noop_direct_link_association?(association, ad) ||
-            association_already_present?(association)
+
+          association_already_present?(association)
         end
       end
 
@@ -171,11 +186,10 @@ module ORMivore
       end
 
       def noop_direct_link_association?(association, ad)
-        # TODO check for direction of one_to_one, and extract this question to be reusable (at least 3 places have it)
         return false unless ad.direct?
 
         entity = association.entities.first
-        if parent.association_cached?(association.name)
+        if parent.fk_association_cached?(association.name)
           current_entity = parent.public_send(association.name)
           current_entity.eql?(entity)
         else

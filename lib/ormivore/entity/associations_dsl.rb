@@ -1,6 +1,10 @@
 module ORMivore
   module Entity
     module AssociationsDSL
+      def fk_association_names
+        fk_association_definitions.keys
+      end
+
       def association_names
         association_definitions.keys
       end
@@ -9,14 +13,14 @@ module ORMivore
         @association_definitions ||= {}
       end
 
-      def foreign_key_association_definitions
+      def fk_association_definitions
         @fkad ||= association_definitions.each_with_object({}) { |(k, ad), acc|
           acc[k] = ad if ad.direct?
         }
       end
 
       def foreign_keys
-        @fks ||= foreign_key_association_definitions.map { |k, v| v.foreign_key }
+        @fks ||= fk_association_definitions.map { |k, v| v.foreign_key }
       end
 
       private
@@ -27,24 +31,24 @@ module ORMivore
         name = name.to_sym
 
         define_method(name) do
-          changed = self.association_adjustments.select { |o| o.name == name }.last
+          changed = self.fk_association_adjustments.select { |o| o.name == name }.last
 
           if changed
             changed.entities.first
           else
-            self.cache_association(name) {
-              self.cached_association(name, dereference: true)
+            self.cache_fk_association(name) {
+              self.cached_fk_association(name, dereference: true)
             }
           end
         end
 
         define_method("#{name}_id") do
-          changed = self.association_adjustments.select { |o| o.name == name }.last
+          changed = self.fk_association_adjustments.select { |o| o.name == name }.last
 
           if changed
             changed.entities.first.id
           else
-            self.cached_association(name, dereference: false).try(:id)
+            self.cached_fk_association(name, dereference: false).try(:id)
           end
         end
       end
