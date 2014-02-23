@@ -14,12 +14,17 @@ module ORMivore
 
       @port = port
       @entity_class = entity_class
-      @family = options.fetch(:family, nil)
+      @family = options[:family]
+      @session = options[:session]
       @family.add(self, @entity_class) if @family
     end
 
+    def clone(options)
+      self.class.new(entity_class, port, options)
+    end
+
     def create(attrs = nil)
-      entity = entity_class.new(attributes: {}, repo: self)
+      entity = entity_class.new_root(attributes: {}, repo: self, session: session)
 
       if attrs
         entity.apply(attrs)
@@ -31,11 +36,16 @@ module ORMivore
     def find_by_id(id, options = {})
       quiet = options.fetch(:quiet, false)
 
-      load_entity(port.find_by_id(
+      if session
+        entity = session.identity_map(entity_class)[id]
+        return entity if entity
+      end
+
+      pass_through_identity_map(load_entity(port.find_by_id(
           id,
           all_known_columns
         )
-      )
+      ))
     rescue RecordNotFound => e
       if quiet
         return nil
@@ -61,9 +71,13 @@ module ORMivore
 
       objects.each_with_object({}) { |o, entities_map|
         id = block_given? ? yield(o) : o
+        # TODO use coerce_id here (requires making repo_spec less brittle)
+        # entity_attrs = entities_attrs.find { |e| e[:id] && entity_class.coerce_id(e[:id]) == id }
         entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
-          entities_map[o] = load_entity(entity_attrs)
+          entity = session.identity_map(entity_class)[id] if session
+          entity ||= pass_through_identity_map(load_entity(entity_attrs))
+          entities_map[o] = entity
         elsif !quiet
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
@@ -108,11 +122,31 @@ module ORMivore
       end
     end
 
-    attr_reader :family, :entity_class
+    attr_reader :family, :session, :entity_class
 
     private
 
     attr_reader :port
+
+    def pass_through_identity_map(e)
+      if e && session
+        if e.is_a?(Array)
+          e.map { |o|
+            identity_map.current_or_set(o)
+          }
+        else
+          identity_map.current_or_set(e)
+        end
+      else
+        e
+      end
+    end
+
+    def identity_map
+      if session
+        session.identity_map(entity_class)
+      end
+    end
 
     # this is 'package' or 'friendly' API, to be used only by ORMivore itself
     def find_all_by_attribute(name, value)
@@ -201,11 +235,12 @@ module ORMivore
         direct_link_associations = extract_direct_link_associations(attrs)
 
         new_entity_options = { repo: self }
+        new_entity_options[:session] = session if session
         new_entity_options[:attributes] = attrs unless attrs.empty?
         new_entity_options[:associations] = direct_link_associations unless direct_link_associations.empty?
         new_entity_options[:id] = entity_id if entity_id
 
-        entity_class.new(new_entity_options)
+        entity_class.new_root(new_entity_options)
       else
         nil
       end

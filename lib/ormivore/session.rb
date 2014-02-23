@@ -1,21 +1,59 @@
 module ORMivore
   class Session
     def initialize(repo_family)
-      @real_repo_family = repo_family or fail
-      @repo_proxy_family = Object.new.tap do |o|
+      fail unless repo_family
+
+      @repo_family = Object.new.tap do |o|
         o.extend ORMivore::RepoFamily
-        @real_repo_family.keys.each do |ec|
-          o.add(SessionRepo.new(@real_repo_family[ec]), ec)
+        repo_family.keys.each do |ec|
+          source_repo = repo_family[ec]
+          source_repo.clone(family: o, session: self)
         end
       end
+
+      @caching_repos =
+        @repo_family.keys.each_with_object({}) do |ec, acc|
+          acc[ec] = SessionRepo.new(@repo_family[ec])
+        end
+
+      @identity_maps =
+        @repo_family.keys.each_with_object({}) do |ec, acc|
+          acc[ec] = IdentityMap.new(ec)
+        end
+
+      @current_generated_identities = Hash.new(0)
+
+      @repo_family.freeze
+      @caching_repos.freeze
+      @identity_maps.freeze
+
+      freeze
     end
 
-    def repo(name)
-      repo_proxy_family[name]
+    def repo(entity_class)
+      caching_repos[entity_class]
+    end
+
+    def register(entity)
+      fail unless entity
+      fail unless repo_family.keys.include?(entity.class)
+
+      identity_maps[entity.class].set(entity)
+    end
+
+    def identity_map(entity_class)
+      identity_maps[entity_class]
+    end
+
+    def generate_identity(entity_class)
+      fail unless entity_class
+      fail unless repo_family.keys.include?(entity_class)
+
+      current_generated_identities[entity_class] -= 1
     end
 
     private
 
-    attr_reader :real_repo_family, :repo_proxy_family
+    attr_reader :repo_family, :identity_maps, :caching_repos
   end
 end

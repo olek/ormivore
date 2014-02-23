@@ -7,6 +7,13 @@ module ORMivore
     }.freeze
 
     module ClassMethods
+      def new_root(options = {})
+        allocate.tap { |o|
+          o.initialize_root(options)
+          o.session.register(o) if o.session
+        }
+      end
+
       def new_with_change_processor(parent, change_processor)
         allocate.tap { |o|
           o.initialize_with_change_processor(parent, change_processor)
@@ -15,6 +22,7 @@ module ORMivore
           else
             parent.dismiss
           end
+          o.session.register(o) if o.session
         }
       end
 
@@ -22,6 +30,7 @@ module ORMivore
         allocate.tap { |o|
           o.initialize_with_attached_repo(parent, repo)
           parent.dismiss
+          o.session.register(o) if o.session
         }
       end
 
@@ -86,20 +95,26 @@ module ORMivore
       EOS
     end
 
-    attr_reader :id, :repo
+    attr_reader :id, :identity, :repo, :session
 
     def dismissed?
       @dismissed[0]
     end
 
+    # disabled default constructor
+    def initialize(*args)
+      fail "Default factory .new disabled, please use custom factories"
+    end
+
     # constructor for root
-    def initialize(options = {})
+    def initialize_root(options = {})
       # immutable
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
       @applied_associations = [].freeze
       @applied_fk_associations = [].freeze
       @repo = options[:repo]
+      @session = options[:session]
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
@@ -118,6 +133,9 @@ module ORMivore
       raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || @local_attributes.empty?
       @id = self.class.coerce_id(@id)
 
+      @identity = @id
+      @identity ||= @session.generate_identity(self.class) if @session
+
       validate_absence_of_unknown_attributes
 
       freeze
@@ -130,6 +148,7 @@ module ORMivore
         @applied_associations = change_processor.associations.freeze
         @applied_fk_associations = change_processor.fk_associations.freeze
         @repo = @parent.repo
+        @session = @parent.session
       end
 
     end
@@ -141,6 +160,7 @@ module ORMivore
         @applied_associations = [].freeze
         @applied_fk_associations = [].freeze
         @repo = repo
+        @session = @parent.session # NOTE does that even makes sense?
 
         raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
         raise InvalidStateError,
@@ -374,7 +394,8 @@ module ORMivore
       return false unless other.ephemeral?
       return attributes == other.attributes &&
         foreign_keys == other.foreign_keys &&
-        repo == other.repo
+        repo == other.repo &&
+        session == other.session
     end
 
     # more strict than ==, because durable entities with same id but different attributes are not considered equal
@@ -384,14 +405,16 @@ module ORMivore
       return id == other.id &&
         attributes == other.attributes &&
         foreign_keys == other.foreign_keys &&
-        repo == other.repo
+        repo == other.repo &&
+        session == other.session
     end
 
     def hash
       return id.hash ^
         attributes.hash ^
         foreign_keys.hash ^
-        repo.hash
+        repo.hash ^
+        session.hash
     end
 
     # for internal use only, not true public API
@@ -437,11 +460,6 @@ module ORMivore
     attr_reader :local_attributes, :applied_associations, :applied_fk_associations # allows changing the hash
     attr_reader :associations_cache, :fk_associations_cache
 
-    def repo=(value)
-      raise InvalidStateError, "Can not attach repo second time" if repo
-      @repo[0] = value
-    end
-
     def root?
       !parent
     end
@@ -481,6 +499,7 @@ module ORMivore
       @parent = parent
       raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
       @id = @parent.id
+      @identity = @parent.identity
 
       yield # non-shared initialize here
 

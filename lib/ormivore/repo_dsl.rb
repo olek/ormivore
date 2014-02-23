@@ -31,7 +31,10 @@ module ORMivore
           all_known_columns,
           options
         )
-        entities = entities_attrs.map { |ea| load_entity(ea) }
+        entities = entities_attrs.map { |ea|
+          entity = session.identity_map(entity_class)[entity_class.coerce_id(ea[:id])] if session
+          entity ||= pass_through_identity_map(load_entity(ea))
+        }
         type == :first ? entities.first : entities
       end
     end

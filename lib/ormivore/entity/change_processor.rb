@@ -55,7 +55,7 @@ module ORMivore
           AssociationAdjustment.new(name, :set, [value])
         else
           raise BadAttributesError,
-            "#{type} association change requires array" unless value.respond_to?(:[]) && value.respond_to?(:length)
+            "#{type} association change requires array" unless value.is_a?(Array)
           if %w(+ -).include?(value[0].to_s)
             action =
               case value[0].to_sym

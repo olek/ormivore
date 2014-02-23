@@ -2,7 +2,8 @@ require 'spec_helper'
 
 describe 'a repo' do
   let(:entity) {
-    double('entity', id: nil, changes: { foo: 'bar' }, association_adjustments: {},
+    double('entity', id: nil, session: nil,
+      changes: { foo: 'bar' }, association_adjustments: {},
       foreign_keys: {}, foreign_key_changes: {},
       validate: nil, dismissed?: false, dismiss: nil)
   }
@@ -14,7 +15,7 @@ describe 'a repo' do
   let(:attributes_list) { [:id, :foo] }
 
   let(:entity_class) {
-    double('entity_class', new: new_entity, name: 'FakeEntity',
+    double('entity_class', new_root: new_entity, name: 'FakeEntity', coerce_id: 123,
       attributes_list: [:foo], association_definitions: {},
       fk_association_definitions: {}, foreign_keys: [])
   }
@@ -42,7 +43,7 @@ describe 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_by_id).with(:foo, attributes_list).and_return(id: 123, foo: 'bar')
-      entity_class.should_receive(:new).with(attributes: {foo: 'bar'}, id: 123, repo: subject)
+      entity_class.should_receive(:new_root).with(attributes: {foo: 'bar'}, id: 123, repo: subject)
       subject.find_by_id(:foo)
     end
 
@@ -70,8 +71,8 @@ describe 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-      entity_class.should_receive(:new).with(attributes: {a: 'b'}, id: 123, repo: subject)
-      entity_class.should_receive(:new).with(attributes: {c: 'd'}, id: 124, repo: subject)
+      entity_class.should_receive(:new_root).with(attributes: {a: 'b'}, id: 123, repo: subject)
+      entity_class.should_receive(:new_root).with(attributes: {c: 'd'}, id: 124, repo: subject)
       subject.find_all_by_id_as_hash([123, 124], quiet: true)
     end
 
@@ -94,8 +95,8 @@ describe 'a repo' do
 
       it 'returns map of input objects to entities' do
         port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-        entity_class.should_receive(:new).with(attributes: {a: 'b'}, id: 123, repo: subject).and_return(:foo)
-        entity_class.should_receive(:new).with(attributes: {c: 'd'}, id: 124, repo: subject).and_return(:bar)
+        entity_class.should_receive(:new_root).with(attributes: {a: 'b'}, id: 123, repo: subject).and_return(:foo)
+        entity_class.should_receive(:new_root).with(attributes: {c: 'd'}, id: 124, repo: subject).and_return(:bar)
         result = subject.find_all_by_id_as_hash(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
         result.should have(2).entities
         result['321'].should == :foo
@@ -134,7 +135,7 @@ describe 'a repo' do
       it 'creates new entity with all attributes' do
         entity.should_receive(:attributes).and_return(a: 'b')
         # entity.should_receive(:changed?).and_return(true)
-        entity_class.should_receive(:new).with(attributes: {a: 'b'}, id: entity.id, repo: subject).and_return(:baz)
+        entity_class.should_receive(:new_root).with(attributes: {a: 'b'}, id: entity.id, repo: subject).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 
