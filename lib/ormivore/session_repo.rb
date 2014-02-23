@@ -11,6 +11,8 @@ module ORMivore
         define_finder_proxy(m)
       end
 
+      identity_map # prime before freezing
+
       freeze
     end
 
@@ -27,27 +29,29 @@ module ORMivore
     def define_finder_proxy(name)
       singleton.class_eval do
         define_method name do |*args|
-          pass_through_identity_map(
-            memoize(name) do
-              repo.send(name, *args)
-            end
-          )
+          make_current = true
+          results = memoize(name) do
+            make_current = false
+            repo.send(name, *args)
+          end
+
+          make_current ? make_current(results) : results
         end
       end
     end
 
     def singleton
-      (class << self; self; end)
+      @singleton ||= (class << self; self; end)
     end
 
-    def pass_through_identity_map(e)
+    def make_current(e)
       if e
         if e.is_a?(Array)
           e.map { |o|
-            identity_map.current_or_set(o)
+            identity_map.current(o)
           }
         else
-          identity_map.current_or_set(e)
+          identity_map.current(e)
         end
       else
         e
@@ -55,7 +59,7 @@ module ORMivore
     end
 
     def identity_map
-      repo.session.identity_map(repo.entity_class)
+      @identity_map ||= repo.session.identity_map(repo.entity_class)
     end
   end
 end

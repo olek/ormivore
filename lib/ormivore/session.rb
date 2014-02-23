@@ -1,5 +1,13 @@
 module ORMivore
   class Session
+    NULL = Object.new.tap do |o|
+      def repo(entity_class); 'This would have been repo'; end
+      def o.to_s; "#{Module.nesting.first.name}::NULL"; end
+      def o.register(entity); entity; end
+      def o.identity_map(entity_class); IdentityMap::NULL end
+      def o.generate_identity(*args); -3 end
+    end
+
     def initialize(repo_family)
       fail unless repo_family
 
@@ -11,14 +19,14 @@ module ORMivore
         end
       end
 
-      @caching_repos =
-        @repo_family.keys.each_with_object({}) do |ec, acc|
-          acc[ec] = SessionRepo.new(@repo_family[ec])
-        end
-
       @identity_maps =
         @repo_family.keys.each_with_object({}) do |ec, acc|
           acc[ec] = IdentityMap.new(ec)
+        end
+
+      @caching_repos =
+        @repo_family.keys.each_with_object({}) do |ec, acc|
+          acc[ec] = SessionRepo.new(@repo_family[ec])
         end
 
       @current_generated_identities = Hash.new(0)

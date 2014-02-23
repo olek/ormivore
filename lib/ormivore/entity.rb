@@ -1,16 +1,14 @@
 module ORMivore
   module Entity
     NULL = Object.new.tap { |o|
-      def o.to_s
-        "ORMivore::Entity::NULL"
-      end
+      def o.to_s; "#{Module.nesting.first.name}::NULL"; end
     }.freeze
 
     module ClassMethods
       def new_root(options = {})
         allocate.tap { |o|
           o.initialize_root(options)
-          o.session.register(o) if o.session
+          o.session.register(o)
         }
       end
 
@@ -22,7 +20,7 @@ module ORMivore
           else
             parent.dismiss
           end
-          o.session.register(o) if o.session
+          o.session.register(o)
         }
       end
 
@@ -30,7 +28,7 @@ module ORMivore
         allocate.tap { |o|
           o.initialize_with_attached_repo(parent, repo)
           parent.dismiss
-          o.session.register(o) if o.session
+          o.session.register(o)
         }
       end
 
@@ -114,7 +112,7 @@ module ORMivore
       @applied_associations = [].freeze
       @applied_fk_associations = [].freeze
       @repo = options[:repo]
-      @session = options[:session]
+      @session = options[:session] || Session::NULL
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
@@ -134,7 +132,7 @@ module ORMivore
       @id = self.class.coerce_id(@id)
 
       @identity = @id
-      @identity ||= @session.generate_identity(self.class) if @session
+      @identity ||= @session.generate_identity(self.class)
 
       validate_absence_of_unknown_attributes
 

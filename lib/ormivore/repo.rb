@@ -15,7 +15,7 @@ module ORMivore
       @port = port
       @entity_class = entity_class
       @family = options[:family]
-      @session = options[:session]
+      @session = options[:session] || Session::NULL
       @family.add(self, @entity_class) if @family
     end
 
@@ -36,16 +36,15 @@ module ORMivore
     def find_by_id(id, options = {})
       quiet = options.fetch(:quiet, false)
 
-      if session
-        entity = session.identity_map(entity_class)[id]
-        return entity if entity
+      identity_map[id].tap do |o|
+        return o if o
       end
 
-      pass_through_identity_map(load_entity(port.find_by_id(
+      load_entity(port.find_by_id(
           id,
           all_known_columns
         )
-      ))
+      )
     rescue RecordNotFound => e
       if quiet
         return nil
@@ -75,9 +74,7 @@ module ORMivore
         # entity_attrs = entities_attrs.find { |e| e[:id] && entity_class.coerce_id(e[:id]) == id }
         entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
-          entity = session.identity_map(entity_class)[id] if session
-          entity ||= pass_through_identity_map(load_entity(entity_attrs))
-          entities_map[o] = entity
+          entities_map[o] = load_entity(entity_attrs)
         elsif !quiet
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
@@ -128,24 +125,8 @@ module ORMivore
 
     attr_reader :port
 
-    def pass_through_identity_map(e)
-      if e && session
-        if e.is_a?(Array)
-          e.map { |o|
-            identity_map.current_or_set(o)
-          }
-        else
-          identity_map.current_or_set(e)
-        end
-      else
-        e
-      end
-    end
-
     def identity_map
-      if session
-        session.identity_map(entity_class)
-      end
+      session.identity_map(entity_class)
     end
 
     # this is 'package' or 'friendly' API, to be used only by ORMivore itself
@@ -180,6 +161,9 @@ module ORMivore
 
           burn_phoenix(entity)
         else
+          # NOTE discontinuity of ephemeral to durable entities likely
+          # to bite us during UnitOfWork persistance
+          identity_map.delete(entity)
           load_entity(port.create(changes))
         end
       end
@@ -232,15 +216,20 @@ module ORMivore
         attrs = attrs.dup
         attrs.reject! {|k,v| v.nil? }
         entity_id = attrs.delete(:id)
-        direct_link_associations = extract_direct_link_associations(attrs)
 
-        new_entity_options = { repo: self }
-        new_entity_options[:session] = session if session
-        new_entity_options[:attributes] = attrs unless attrs.empty?
-        new_entity_options[:associations] = direct_link_associations unless direct_link_associations.empty?
-        new_entity_options[:id] = entity_id if entity_id
+        preloaded = identity_map[entity_id]
 
-        entity_class.new_root(new_entity_options)
+        unless preloaded
+          direct_link_associations = extract_direct_link_associations(attrs)
+
+          new_entity_options = { repo: self }
+          new_entity_options[:session] = session
+          new_entity_options[:attributes] = attrs unless attrs.empty?
+          new_entity_options[:associations] = direct_link_associations unless direct_link_associations.empty?
+          new_entity_options[:id] = entity_id if entity_id
+
+          identity_map.set(entity_class.new_root(new_entity_options))
+        end
       else
         nil
       end
@@ -257,6 +246,7 @@ module ORMivore
     end
 
     def burn_phoenix(entity)
+      identity_map.delete(entity)
       load_entity(entity_to_hash(entity))
     end
 

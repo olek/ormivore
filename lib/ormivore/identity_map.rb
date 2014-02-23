@@ -1,5 +1,14 @@
 module ORMivore
   class IdentityMap
+    NULL = Object.new.tap do |o|
+      def o.to_s; "#{Module.nesting.first.name}::NULL"; end
+      def o.[](identity); nil; end
+      def o.set(entity); entity; end
+      def o.delete(entity); nil; end
+      def o.current(entity); entity end
+      def o.current_or_set(entity); entity end
+    end
+
     def initialize(entity_class)
       @entity_class = entity_class or fail
       @storage = {}
@@ -10,21 +19,26 @@ module ORMivore
     def [](identity)
       fail unless identity
 
-      storage[identity]
+      storage[@entity_class.coerce_id(identity)]
     end
 
     def set(entity)
       fail unless entity
       fail unless entity.class == entity_class
-      fail if entity.ephemeral?
 
       storage[entity.identity] = entity
+    end
+
+    def delete(entity)
+      fail unless entity
+      fail unless entity.class == entity_class
+
+      storage.delete(entity.identity)
     end
 
     def current(entity)
       fail unless entity
       fail unless entity.class == entity_class
-      fail if entity.ephemeral?
 
       self[entity.identity]
     end
@@ -32,7 +46,6 @@ module ORMivore
     def current_or_set(entity)
       fail unless entity
       fail unless entity.class == entity_class
-      fail if entity.ephemeral?
 
       current(entity) || set(entity)
     end

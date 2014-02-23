@@ -43,7 +43,7 @@ describe 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_by_id).with(:foo, attributes_list).and_return(id: 123, foo: 'bar')
-      entity_class.should_receive(:new_root).with(attributes: {foo: 'bar'}, id: 123, repo: subject)
+      entity_class.should_receive(:new_root).with(hash_including(attributes: {foo: 'bar'}, id: 123))
       subject.find_by_id(:foo)
     end
 
@@ -71,8 +71,8 @@ describe 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-      entity_class.should_receive(:new_root).with(attributes: {a: 'b'}, id: 123, repo: subject)
-      entity_class.should_receive(:new_root).with(attributes: {c: 'd'}, id: 124, repo: subject)
+      entity_class.should_receive(:new_root).with(hash_including(attributes: {a: 'b'}, id: 123))
+      entity_class.should_receive(:new_root).with(hash_including(attributes: {c: 'd'}, id: 124))
       subject.find_all_by_id_as_hash([123, 124], quiet: true)
     end
 
@@ -95,8 +95,8 @@ describe 'a repo' do
 
       it 'returns map of input objects to entities' do
         port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-        entity_class.should_receive(:new_root).with(attributes: {a: 'b'}, id: 123, repo: subject).and_return(:foo)
-        entity_class.should_receive(:new_root).with(attributes: {c: 'd'}, id: 124, repo: subject).and_return(:bar)
+        entity_class.should_receive(:new_root).with(hash_including(attributes: {a: 'b'}, id: 123)).and_return(:foo)
+        entity_class.should_receive(:new_root).with(hash_including(attributes: {c: 'd'}, id: 124)).and_return(:bar)
         result = subject.find_all_by_id_as_hash(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
         result.should have(2).entities
         result['321'].should == :foo
@@ -135,7 +135,8 @@ describe 'a repo' do
       it 'creates new entity with all attributes' do
         entity.should_receive(:attributes).and_return(a: 'b')
         # entity.should_receive(:changed?).and_return(true)
-        entity_class.should_receive(:new_root).with(attributes: {a: 'b'}, id: entity.id, repo: subject).and_return(:baz)
+        entity_class.should_receive(:new_root).
+          with(hash_including(attributes: {a: 'b'}, id: entity.id)).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 
