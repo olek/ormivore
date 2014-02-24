@@ -15,8 +15,9 @@ module ORMivore
       @port = port
       @entity_class = entity_class
       @family = options[:family]
+      family_member = options.fetch(family_member, true)
+      @family.add(self, @entity_class) if @family && family_member
       @session = options[:session] || Session::NULL
-      @family.add(self, @entity_class) if @family
     end
 
     def clone(options)
@@ -117,6 +118,29 @@ module ORMivore
       else
         raise ORMivore::StorageError, 'Can not delete unsaved entity'
       end
+    end
+
+    def inspect(options = {})
+      verbose = options.fetch(:verbose, false)
+
+      "#<#{self.class.name}".tap { |s|
+          if verbose
+            s << " entity_class=#{entity_class.inspect}"
+            s << " port=#{port.inspect}"
+            s << " family=#{family.inspect}"
+            s << " session=#{session.inspect(verbose: false)}"
+          else
+            s << (":0x%08x" % (object_id * 2))
+          end
+      } << '>'
+    end
+
+    # customizing to_yaml output
+    def encode_with(encoder)
+      encoder['entity_class'] = entity_class
+      encoder['port'] = port
+      encoder['family'] = family
+      encoder['session'] = session
     end
 
     attr_reader :family, :session, :entity_class

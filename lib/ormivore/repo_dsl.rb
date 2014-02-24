@@ -32,8 +32,7 @@ module ORMivore
           options
         )
         entities = entities_attrs.map { |ea|
-          entity = session.identity_map(entity_class)[entity_class.coerce_id(ea[:id])] if session
-          entity ||= pass_through_identity_map(load_entity(ea))
+          load_entity(ea)
         }
         type == :first ? entities.first : entities
       end

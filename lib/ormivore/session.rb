@@ -11,42 +11,53 @@ module ORMivore
     def initialize(repo_family)
       fail unless repo_family
 
+      @entity_classes = repo_family.keys
+
       @repo_family = Object.new.tap do |o|
         o.extend ORMivore::RepoFamily
-        repo_family.keys.each do |ec|
-          source_repo = repo_family[ec]
-          source_repo.clone(family: o, session: self)
-        end
       end
 
+      @cloned_repos =
+        entity_classes.each_with_object({}) do |ec, acc|
+          source_repo = repo_family[ec]
+          # those repos should use other SessionRepos to load associations
+          acc[ec] = source_repo.clone(family: @repo_family, family_member: false, session: self)
+        end
+
       @identity_maps =
-        @repo_family.keys.each_with_object({}) do |ec, acc|
+        entity_classes.each_with_object({}) do |ec, acc|
           acc[ec] = IdentityMap.new(ec)
         end
 
-      @caching_repos =
-        @repo_family.keys.each_with_object({}) do |ec, acc|
-          acc[ec] = SessionRepo.new(@repo_family[ec])
-        end
+      entity_classes.each do |ec|
+        SessionRepo.new(@cloned_repos[ec], family: @repo_family)
+      end
 
       @current_generated_identities = Hash.new(0)
 
+      @cloned_repos.freeze
       @repo_family.freeze
-      @caching_repos.freeze
       @identity_maps.freeze
 
       freeze
     end
 
     def repo(entity_class)
-      caching_repos[entity_class]
+      repo_family[entity_class]
     end
 
     def register(entity)
       fail unless entity
-      fail unless repo_family.keys.include?(entity.class)
+      fail unless entity_classes.include?(entity.class)
 
       identity_maps[entity.class].set(entity)
+    end
+
+    def current(entity)
+      fail unless entity
+      fail unless entity_classes.include?(entity.class)
+
+      identity_maps[entity.class].current(entity)
     end
 
     def identity_map(entity_class)
@@ -55,13 +66,32 @@ module ORMivore
 
     def generate_identity(entity_class)
       fail unless entity_class
-      fail unless repo_family.keys.include?(entity_class)
+      fail unless entity_classes.include?(entity_class)
 
       current_generated_identities[entity_class] -= 1
     end
 
+    def inspect(options = {})
+      verbose = options.fetch(:verbose, false)
+
+      "#<#{self.class.name}".tap { |s|
+          if verbose
+            s << " repo_family=#{repo_family.inspect}"
+            s << " identity_maps=#{identity_maps.inspect}"
+          else
+            s << (":0x%08x" % (object_id * 2))
+          end
+      } << '>'
+    end
+
+    # customizing to_yaml output
+    def encode_with(encoder)
+      encoder['repo_family'] = repo_family
+      encoder['identity_maps'] = identity_maps
+    end
+
     private
 
-    attr_reader :repo_family, :identity_maps, :caching_repos
+    attr_reader :repo_family, :identity_maps, :entity_classes
   end
 end

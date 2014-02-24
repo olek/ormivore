@@ -328,6 +328,10 @@ module ORMivore
       self.class.new_with_change_processor(self, ChangeProcessor.new(self, attrs).call)
     end
 
+    def current
+      session.current(self)
+    end
+
     def attach_repo(r)
       self.class.new_with_attached_repo(self, r)
     end
