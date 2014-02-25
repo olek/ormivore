@@ -207,24 +207,6 @@ module ORMivore
       end
     end
 
-    def lazy_fk_associations
-      self.class.association_names.each_with_object({}) { |name, acc|
-        ca = cached_fk_association(name, dereference: false)
-        if ca
-          acc[name] =
-            if ca.respond_to?(:dereference_placeholder)
-              if fk_association_adjustments.any? { |o| o.name == name }
-                public_send(name)
-              else
-                ca
-              end
-            else
-              public_send(name)
-            end
-        end
-      }
-    end
-
     def lazy_associations
       self.class.association_names.each_with_object({}) { |name, acc|
         ca = cached_association(name, dereference: false)

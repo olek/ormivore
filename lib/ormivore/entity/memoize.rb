@@ -41,6 +41,12 @@ module ORMivore
         end
       end
 
+      def memoized?(name)
+        name = name.to_sym
+        @memoize_cache ||= {}
+        !!@memoize_cache[name]
+      end
+
       def freeze
         @memoize_cache ||= {}
         super
