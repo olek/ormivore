@@ -109,6 +109,7 @@ module ORMivore
       # immutable
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
+      @local_fk_identities = {}
       @applied_associations = [].freeze
       @applied_fk_associations = [].freeze
       @repo = options[:repo]
@@ -125,8 +126,11 @@ module ORMivore
       if eager_fetch_associations
         eager_fetch_associations.each do |name, value|
           @fk_associations_cache.set(name, value)
+          @local_fk_identities[name] = value.id
         end
       end
+
+      @local_fk_identities.freeze
 
       raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || @local_attributes.empty?
       @id = self.class.coerce_id(@id)
@@ -415,7 +419,6 @@ module ORMivore
           s << " id=#{id}" if id
           if verbose
             s << " attributes=#{attributes.inspect}" unless attributes.empty?
-            s << " lazy_fk_associations=#{inspect_entities_map(lazy_fk_associations)}" unless lazy_fk_associations.empty?
             s << " lazy_associations=#{inspect_entities_map(lazy_associations)}" unless lazy_associations.empty?
             s << " applied_fk_associations=#{inspect_applied_associations(applied_fk_associations)}" unless applied_fk_associations.empty?
             s << " applied_associations=#{inspect_applied_associations(applied_associations)}" unless applied_associations.empty?
@@ -429,6 +432,7 @@ module ORMivore
     def encode_with(encoder)
       encoder['id'] = @id
       encoder['local_attributes'] = @local_attributes
+      encoder['local_fk_identities'] = @local_fk_identities
       encoder['applied_fk_associations'] = @applied_fk_associations
       encoder['applied_associations'] = @applied_associations
       encoder['changes'] = changes
@@ -441,7 +445,8 @@ module ORMivore
     protected
 
     attr_reader :parent # Read only access
-    attr_reader :local_attributes, :applied_associations, :applied_fk_associations # allows changing the hash
+    attr_reader :local_attributes, :local_fk_identities
+    attr_reader :applied_associations, :applied_fk_associations # allows changing the hash
     attr_reader :associations_cache, :fk_associations_cache
 
     def root?

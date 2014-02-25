@@ -17,6 +17,12 @@ module ORMivore
       def inspect(options = {})
         "#<#{self.class.name} id=#{id}>"
       end
+
+      # customizing to_yaml output that otherwise is a bit too long
+      def encode_with(encoder)
+        encoder['id'] = @id
+        encoder['repo'] = @repo.inspect
+      end
     end
   end
 end
