@@ -17,6 +17,36 @@ describe 'an entity' do
 
   subject { described_class.new_root(attributes: attrs, id: 123) }
 
+  describe '.shorthand' do
+    context 'when shorthand was previously not set' do
+      it 'returns nil' do
+        described_class.shorthand_notation.should be_nil
+      end
+    end
+
+    context 'when shorthand was previously set to symbol' do
+      let(:described_class) {
+        ORMivore::AnonymousFactory::create_entity do
+          shorthand :foo
+        end
+      }
+      it 'returns previously set shorthand' do
+        described_class.shorthand_notation.should == :foo
+      end
+    end
+
+    context 'when shorthand was previously set to string' do
+      let(:described_class) {
+        ORMivore::AnonymousFactory::create_entity do
+          shorthand 'foo'
+        end
+      }
+      it 'returns previously set shorthand as symbol' do
+        described_class.shorthand_notation.should == :foo
+      end
+    end
+  end
+
   describe '#initialize' do
     it 'succeeds if no options are specified' do
       described_class.new_root

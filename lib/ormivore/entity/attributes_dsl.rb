@@ -13,7 +13,15 @@ module ORMivore
         @optional_attributes_list ||= []
       end
 
+      def shorthand_notation
+        @shorthand
+      end
+
       private
+
+      def shorthand(shorthand)
+        @shorthand = shorthand.to_sym
+      end
 
       def attributes(&block)
         fail unless block_given?

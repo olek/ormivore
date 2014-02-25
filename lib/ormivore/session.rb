@@ -33,6 +33,20 @@ module ORMivore
         SessionRepo.new(@cloned_repos[ec], family: @repo_family)
       end
 
+      @repos = Object.new.tap do |o|
+        def o.to_s; "#{Module.nesting.first.name}::Repos"; end
+
+        @repo_family.keys.each do |entity_class|
+          name = entity_class.shorthand_notation
+          next unless name
+          repo = @repo_family[entity_class]
+
+          o.define_singleton_method(name) {
+            repo
+          }
+        end
+      end
+
       @current_generated_identities = Hash.new(0)
 
       @cloned_repos.freeze
@@ -42,8 +56,18 @@ module ORMivore
       freeze
     end
 
-    def repo(entity_class)
-      repo_family[entity_class]
+    def repo(o = nil)
+      if o
+        if o.is_a?(Symbol)
+          @repos.public_send(o)
+        elsif o.include?(ORMivore::Entity)
+          repo_family[o]
+        else
+          raise BadArgumentError, "Unexpected argument #{o.inspect}"
+        end
+      else
+        @repos
+      end
     end
 
     def register(entity)
