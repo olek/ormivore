@@ -147,6 +147,7 @@ module ORMivore
     def initialize_with_change_processor(parent, change_processor)
       shared_initialize(parent) do
         @local_attributes = change_processor.attributes.freeze
+        @local_fk_identities = change_processor.fk_identities.freeze
         @applied_associations = change_processor.associations.freeze
         @applied_fk_associations = change_processor.fk_associations.freeze
         @repo = @parent.repo
@@ -159,6 +160,7 @@ module ORMivore
     def initialize_with_attached_repo(parent, repo)
       shared_initialize(parent) do
         @local_attributes = {}.freeze
+        @local_fk_identities = {}.freeze
         @applied_associations = [].freeze
         @applied_fk_associations = [].freeze
         @repo = repo
@@ -192,10 +194,28 @@ module ORMivore
           !!e.local_attributes[name]
         }
 
-        attr = node.local_attributes[name]
+        attr = node.local_attributes[name] if node
         raise BadArgumentError, "Unknown attribute '#{name}' on entity '#{self.class}'" unless attr || self.class.attributes_list.include?(name)
 
         attr == NULL ? nil : attr
+      end
+    end
+
+    def fk_identity(name)
+      raise BadArgumentError, "Missing foreign key name" unless name
+      memoize("fk_identity_#{name}") do
+        name = name.to_sym
+
+        node = find_nearest_node { |e|
+          !!e.local_fk_identities[name]
+        }
+
+        fk_identity = node.local_fk_identities[name] if node
+        raise BadArgumentError,
+          "Unknown foreign key '#{name}' on entity '#{self.class}'" unless fk_identity ||
+            self.class.fk_association_names.include?(name)
+
+        fk_identity == NULL ? nil : fk_identity
       end
     end
 

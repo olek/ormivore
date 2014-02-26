@@ -2,14 +2,14 @@ require 'spec_helper'
 
 describe 'a repo' do
   let(:entity) {
-    double('entity', id: nil, session: nil,
+    double('entity', id: nil, session: nil, identity: -3,
       changes: { foo: 'bar' }, association_adjustments: {},
       foreign_keys: {}, foreign_key_changes: {},
       validate: nil, dismissed?: false, dismiss: nil)
   }
 
   let(:new_entity) {
-    double('new_entity', id: 123)
+    double('new_entity', id: 123, identity: 123)
   }
 
   let(:attributes_list) { [:id, :foo] }
@@ -108,7 +108,7 @@ describe 'a repo' do
   describe '#persist' do
     context 'when entity is new' do
       it 'delegates to port.create' do
-        port.should_receive(:create).with(foo: 'bar')
+        port.should_receive(:create).with(foo: 'bar').and_return({})
         subject.persist(entity)
       end
 

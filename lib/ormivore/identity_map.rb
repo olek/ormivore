@@ -7,19 +7,22 @@ module ORMivore
       def o.delete(entity); nil; end
       def o.current(entity); entity end
       def o.current_or_set(entity); entity end
+      def o.alias_identity(new_identity, old_identity); end
     end
 
     def initialize(entity_class)
       @entity_class = entity_class or fail
       @storage = {}
+      @old_to_new_identity_aliases = {}
 
       freeze
     end
 
     def [](identity)
       fail unless identity
+      identity = @entity_class.coerce_id(identity)
 
-      storage[@entity_class.coerce_id(identity)]
+      storage[identity] || storage[old_to_new_identity_aliases[identity]]
     end
 
     def set(entity)
@@ -50,8 +53,15 @@ module ORMivore
       current(entity) || set(entity)
     end
 
+    def alias_identity(new_identity, old_identity)
+      fail unless new_identity && new_identity > 0
+      fail unless old_identity && old_identity < 0
+
+      old_to_new_identity_aliases[old_identity] = new_identity
+    end
+
     private
 
-    attr_reader :entity_class, :storage
+    attr_reader :entity_class, :storage, :old_to_new_identity_aliases
   end
 end

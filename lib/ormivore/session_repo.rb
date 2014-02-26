@@ -8,7 +8,11 @@ module ORMivore
       @repo = repo or fail
       @family = options.fetch(:family)
 
-      (%w(find_by_id find_all_by_id find_all_by_id_as_hash) +
+      %w(create persist).each do |m|
+        define_proxy(m)
+      end
+
+      (%w(find_by_id find_all_by_id find_all_by_id_as_hash find_all_by_attribute) +
         repo.public_methods(false).select { |m| m =~ /^find_/ }
       ).each do |m|
         define_finder_proxy(m)
@@ -45,6 +49,14 @@ module ORMivore
     def include_memoize_on_singleton
       singleton.class_eval do
         include Entity::Memoize
+      end
+    end
+
+    def define_proxy(name)
+      singleton.class_eval do
+        define_method name do |*args|
+          repo.send(name, *args)
+        end
       end
     end
 

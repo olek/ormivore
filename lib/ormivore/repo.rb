@@ -188,7 +188,11 @@ module ORMivore
           # NOTE discontinuity of ephemeral to durable entities likely
           # to bite us during UnitOfWork persistance
           identity_map.delete(entity)
-          load_entity(port.create(changes))
+          load_entity(port.create(changes)).tap { |o|
+            unless o.identity == entity.identity
+              identity_map.alias_identity(o.identity, entity.identity)
+            end
+          }
         end
       end
     end

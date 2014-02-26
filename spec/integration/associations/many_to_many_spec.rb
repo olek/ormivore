@@ -4,16 +4,23 @@ shared_examples_for 'a many-to-many association' do
   let(:family) { ORMivore::AnonymousFactory::create_repo_family.new }
 
   let(:post_port) { Spec::Post::StoragePort.new(post_adapter) }
-  let!(:post_repo) { Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family) }
-
   let(:tag_port) { Spec::EarTag::StoragePort.new(tag_adapter) }
-  let!(:tag_repo) { Spec::EarTag::Repo.new(Spec::EarTag::Entity, tag_port, family: family) }
-
   let(:tagging_port) { Spec::EarTagging::StoragePort.new(tagging_adapter) }
-  let!(:tagging_repo) { Spec::EarTagging::Repo.new(Spec::EarTagging::Entity, tagging_port, family: family) }
+
+  let(:post_repo) { session.repo.post }
+  let(:tagging_repo) { session.repo.tagging }
+  let(:tag_repo) { session.repo.tag }
+
+  let(:session) { ORMivore::Session.new(family) }
 
   let(:subject) { post_repo.create(title: 'foo') }
   let(:tag) { tag_repo.create(name: 'foo') }
+
+  before do
+    Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family)
+    Spec::EarTagging::Repo.new(Spec::EarTagging::Entity, tagging_port, family: family)
+    Spec::EarTag::Repo.new(Spec::EarTag::Entity, tag_port, family: family)
+  end
 
   context 'for ephemeral post' do
     it 'returns empty array' do
@@ -34,7 +41,7 @@ shared_examples_for 'a many-to-many association' do
       it 'creates new tagging for assigned tag' do
         subject.taggings.tap { |o|
           o.should have(1).taggings
-          o.first.article.should be(subject.send(:parent))
+          o.first.article.should be(subject)
           o.first.tag.should be(tag)
         }
       end
@@ -117,12 +124,16 @@ describe 'an association between post and its author' do
     Spec = Module.new
 
     ORMivore::create_entity_skeleton(Spec, :ear_tag, port: true, repo: true) do
+      shorthand :tag
+
       attributes do
         string :name
       end
     end
 
     ORMivore::create_entity_skeleton(Spec, :ear_tagging, port: true, repo: true) do
+      shorthand :tagging
+
       one_to_one :tag, Spec::EarTag::Entity, fk: :tag_id
     end
 

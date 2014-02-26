@@ -78,11 +78,14 @@ module ORMivore
         EOC
       end
 
-      entity_class = namespace.module_eval <<-EOC
+      namespace.module_eval <<-EOC
         class Entity
           include ORMivore::Entity
+          shorthand '#{name}'
         end
       EOC
+
+      entity_class = namespace::Entity
 
       if block_given?
         entity_class.instance_eval(&block)

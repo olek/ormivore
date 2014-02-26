@@ -31,24 +31,26 @@ module ORMivore
         name = name.to_sym
 
         define_method(name) do
-          changed = self.fk_association_adjustments.select { |o| o.name == name }.last
+          identity = fk_identity(name)
 
-          if changed
-            changed.entities.first
+          if identity
+            session.lookup(entity_class, identity)
           else
-            self.cache_fk_association(name) {
-              self.cached_fk_association(name, dereference: true)
-            }
+            nil
           end
         end
 
         define_method("#{name}_id") do
-          changed = self.fk_association_adjustments.select { |o| o.name == name }.last
+          identity = fk_identity(name)
 
-          if changed
-            changed.entities.first.id
+          if identity
+            if identity > 0
+              identity
+            else
+              nil # ephemeral entity
+            end
           else
-            self.cached_fk_association(name, dereference: false).try(:id)
+            nil
           end
         end
       end

@@ -4,6 +4,8 @@ module ORMivore
       def repo(entity_class); 'This would have been repo'; end
       def o.to_s; "#{Module.nesting.first.name}::NULL"; end
       def o.register(entity); entity; end
+      def o.current(entity); entity; end
+      def o.lookup(entity_class, identity); nil; end
       def o.identity_map(entity_class); IdentityMap::NULL end
       def o.generate_identity(*args); -3 end
     end
@@ -84,6 +86,14 @@ module ORMivore
       identity_maps[entity.class].current(entity)
     end
 
+    def lookup(entity_class, identity)
+      fail unless entity_class
+      fail unless identity
+      fail unless entity_classes.include?(entity_class)
+
+      identity_maps[entity_class][identity]
+    end
+
     def identity_map(entity_class)
       identity_maps[entity_class]
     end
@@ -116,6 +126,6 @@ module ORMivore
 
     private
 
-    attr_reader :repo_family, :identity_maps, :entity_classes
+    attr_reader :repo_family, :identity_maps, :entity_classes, :current_generated_identities
   end
 end

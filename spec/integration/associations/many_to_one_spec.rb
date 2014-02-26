@@ -4,10 +4,17 @@ shared_examples_for 'a many-to-one association' do
   let(:family) { ORMivore::AnonymousFactory::create_repo_family.new }
 
   let(:account_port) { Spec::Account::StoragePort.new(account_adapter) }
-  let(:account_repo) { Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family) }
-
   let(:post_port) { Spec::Post::StoragePort.new(post_adapter) }
-  let(:post_repo) { Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family) }
+
+  let(:account_repo) { session.repo.account }
+  let(:post_repo) { session.repo.post }
+
+  let(:session) { ORMivore::Session.new(family) }
+
+  before do
+    Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family)
+    Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family)
+  end
 
   context 'for ephemeral post' do
     let(:subject) { post_repo.create(title: 'foo') }
