@@ -110,22 +110,15 @@ module ORMivore
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
       @local_fk_identities = {}
-      @applied_associations = [].freeze
-      @applied_fk_associations = [].freeze
       @repo = options[:repo]
       @session = options[:session] || Session::NULL
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
 
-      # mutable by design (caches)
-      @associations_cache = LazyCache.new
-      @fk_associations_cache = LazyCache.new
-
       eager_fetch_associations = options[:associations]
       if eager_fetch_associations
         eager_fetch_associations.each do |name, value|
-          @fk_associations_cache.set(name, value)
           @local_fk_identities[name] = value.id
         end
       end
@@ -148,8 +141,6 @@ module ORMivore
       shared_initialize(parent) do
         @local_attributes = change_processor.attributes.freeze
         @local_fk_identities = change_processor.fk_identities.freeze
-        @applied_associations = change_processor.associations.freeze
-        @applied_fk_associations = change_processor.fk_associations.freeze
         @repo = @parent.repo
         @session = @parent.session
       end
@@ -161,8 +152,6 @@ module ORMivore
       shared_initialize(parent) do
         @local_attributes = {}.freeze
         @local_fk_identities = {}.freeze
-        @applied_associations = [].freeze
-        @applied_fk_associations = [].freeze
         @repo = repo
         @session = @parent.session # NOTE does that even makes sense?
 
@@ -213,6 +202,18 @@ module ORMivore
       end
     end
 
+    def fk_identities
+      memoize(:fk_identities) do
+        collect_from_root({}) { |e, acc|
+          acc.merge(e.local_fk_identities)
+        }.tap { |o|
+          o.each { |k, v|
+            o[k] = nil if v == NULL
+          }
+        }
+      end
+    end
+
     def fk_identity(name)
       raise BadArgumentError, "Missing foreign key name" unless name
       memoize("fk_identity_#{name}") do
@@ -253,73 +254,6 @@ module ORMivore
           acc
         }
       end
-    end
-
-    def lazy_associations
-      self.class.association_names.each_with_object({}) { |name, acc|
-        ca = cached_association(name, dereference: false)
-        if ca
-          acc[name] =
-            if ca.respond_to?(:dereference_placeholder)
-              if association_adjustments.any? { |o| o.name == name }
-                public_send(name)
-              else
-                ca
-              end
-            else
-              public_send(name)
-            end
-        end
-      }
-    end
-
-    def association(name)
-      name = name.to_sym if name
-      raise BadArgumentError, "No association '#{name}' registered." unless self.class.association_names.include?(name)
-
-      public_send(name)
-    end
-
-    def fk_association_adjustments
-      memoize(:fk_association_adjustments) do
-        collect_from_root([]) { |e, acc|
-          unless e.root?
-            acc.concat(e.applied_fk_associations)
-          end
-
-          acc
-        }
-      end
-    end
-
-    def association_adjustments
-      memoize(:association_adjustments) do
-        collect_from_root([]) { |e, acc|
-          unless e.root?
-            acc.concat(e.applied_associations)
-          end
-
-          acc
-        }
-      end
-    end
-
-    def foreign_key_changes
-      ads = self.class.fk_association_definitions
-      fk_association_adjustments.
-        each_with_object({}) { |o, acc|
-          acc[ads[o.name].foreign_key] = o.entities.first.id
-        }
-    end
-
-    # TODO Ugh. There must be a simpler way to get foreign keys of an entity
-    def foreign_keys
-      self.class.fk_association_definitions.
-        each_with_object({}) { |(association_name, ad), acc|
-          fk_accessor = "#{association_name}_id".to_sym
-          fk_name = ad.foreign_key
-          acc[fk_name] = self.public_send(fk_accessor)
-        }
     end
 
     # 'rails way' name would be 'dirty?' :)
@@ -375,57 +309,13 @@ module ORMivore
       end
     end
 
-    def cache_fk_association(name)
-      raise BadArgumentError, "Block needed for cache_fk_association" unless block_given?
-      fk_associations_cache.cache(name) {
-        yield
-      }
-    end
-
-    def cached_fk_association(name, options = {})
-      raise BadArgumentError, "No block needed for cached_fk_association, maybe you meant cache_fk_association?" if block_given?
-      fk_associations_cache.get(name, options)
-    end
-
-    def fk_association_cached?(name)
-      value = cached_fk_association(name, dereference: false)
-
-      if self.class.fk_association_definitions[name]
-        value.nil? || !value.respond_to?(:dereference_placeholder)
-      else
-        !!value
-      end
-    end
-
-    def cache_association(name)
-      raise BadArgumentError, "Block needed for cache_association" unless block_given?
-      associations_cache.cache(name) {
-        yield
-      }
-    end
-
-    def cached_association(name, options = {})
-      raise BadArgumentError, "No block needed for cached_association, maybe you meant cache_association?" if block_given?
-      associations_cache.get(name, options)
-    end
-
-    def association_cached?(name)
-      value = cached_association(name, dereference: false)
-
-      if self.class.fk_association_definitions[name]
-        value.nil? || !value.respond_to?(:dereference_placeholder)
-      else
-        !!value
-      end
-    end
-
     def ==(other)
       return false unless other.class == self.class
 
       return id == other.id unless ephemeral?
       return false unless other.ephemeral?
       return attributes == other.attributes &&
-        foreign_keys == other.foreign_keys &&
+        fk_identities == other.fk_identities &&
         repo == other.repo &&
         session == other.session
     end
@@ -436,7 +326,7 @@ module ORMivore
 
       return id == other.id &&
         attributes == other.attributes &&
-        foreign_keys == other.foreign_keys &&
+        fk_identities == other.fk_identities &&
         repo == other.repo &&
         session == other.session
     end
@@ -444,14 +334,14 @@ module ORMivore
     def hash
       return id.hash ^
         attributes.hash ^
-        foreign_keys.hash ^
+        fk_identities.hash ^
         repo.hash ^
         session.hash
     end
 
     # for internal use only, not true public API
     def noop?
-      local_attributes.empty? && applied_fk_associations.empty? && applied_associations.empty?
+      local_attributes.empty? && local_fk_identities.empty?
     end
 
     def inspect(options = {})
@@ -463,9 +353,7 @@ module ORMivore
           s << " id=#{id}" if id
           if verbose
             s << " attributes=#{attributes.inspect}" unless attributes.empty?
-            s << " lazy_associations=#{inspect_entities_map(lazy_associations)}" unless lazy_associations.empty?
-            s << " applied_fk_associations=#{inspect_applied_associations(applied_fk_associations)}" unless applied_fk_associations.empty?
-            s << " applied_associations=#{inspect_applied_associations(applied_associations)}" unless applied_associations.empty?
+            s << " fk_identities=#{fk_identities.inspect}" unless fk_identities.empty?
           else
             s << (":0x%08x" % (object_id * 2)) unless root? || id
           end
@@ -477,12 +365,8 @@ module ORMivore
       encoder['id'] = @id
       encoder['local_attributes'] = @local_attributes
       encoder['local_fk_identities'] = @local_fk_identities
-      encoder['applied_fk_associations'] = @applied_fk_associations
-      encoder['applied_associations'] = @applied_associations
       encoder['changes'] = changes
-      encoder['association_adjustments'] = association_adjustments
-      encoder['fk_associations_cache'] = @fk_associations_cache
-      encoder['associations_cache'] = @associations_cache
+      encoder['fk_identity_changes?'] = fk_identity_changes
       encoder['memoize_cache'] = @memoize_cache
     end
 
@@ -490,8 +374,6 @@ module ORMivore
 
     attr_reader :parent # Read only access
     attr_reader :local_attributes, :local_fk_identities
-    attr_reader :applied_associations, :applied_fk_associations # allows changing the hash
-    attr_reader :associations_cache, :fk_associations_cache
 
     def root?
       !parent
@@ -523,8 +405,6 @@ module ORMivore
       super
 
       @local_attributes.freeze
-      @applied_fk_associations.freeze
-      @applied_associations.freeze
     end
 
     def shared_initialize(parent)
@@ -539,13 +419,6 @@ module ORMivore
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
 
-      # mutable for the time being
-      # TODO move associations_cache to session, right next to identity
-      # map, and entities will become 99.999% mutation free ('dismissed'
-      # will be the only exception)
-      @associations_cache = @parent.associations_cache # associations_cache is shared between all entity versions
-      @fk_associations_cache = @parent.fk_associations_cache # fk_associations_cache is shared between all entity versions
-
       validate_absence_of_unknown_attributes
 
       freeze
@@ -557,31 +430,6 @@ module ORMivore
       }
 
       raise BadAttributesError, "Unknown attributes #{unknown_attrs.inspect}" unless unknown_attrs.empty?
-    end
-
-    # FIXME all those inspects here smell... find better place for them
-    def inspect_entities(entities)
-      return 'NIL' unless entities
-      if entities.respond_to?(:length)
-        entities.map { |e|
-          e.inspect(verbose: false)
-        }.join(', ').prepend('[') << ']'
-      else
-        entities.inspect(verbose: false)
-      end
-    end
-
-    def inspect_entities_map(map)
-      map.map { |k, v|
-        "#{k.inspect}=>#{inspect_entities(v)}"
-      }.join(', ').prepend('{') << '}'
-    end
-
-    def inspect_applied_associations(aas)
-      aas.
-        map { |aa|
-          "<#{aa.action} #{inspect_entities(aa.entities)}>"
-        }.join(', ').prepend('[') << ']'
     end
   end
 end

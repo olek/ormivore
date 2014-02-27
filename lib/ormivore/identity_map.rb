@@ -67,5 +67,24 @@ module ORMivore
     private
 
     attr_reader :entity_class, :storage, :old_to_new_identity_aliases
+
+    # TODO define .inspect and .encode_with that use those inspect_*
+
+    def inspect_entities(entities)
+      return 'NIL' unless entities
+      if entities.respond_to?(:length)
+        entities.map { |e|
+          e.inspect(verbose: false)
+        }.join(', ').prepend('[') << ']'
+      else
+        entities.inspect(verbose: false)
+      end
+    end
+
+    def inspect_entities_map(map)
+      map.map { |k, v|
+        "#{k.inspect}=>#{inspect_entities(v)}"
+      }.join(', ').prepend('{') << '}'
+    end
   end
 end

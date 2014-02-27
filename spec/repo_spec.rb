@@ -3,8 +3,8 @@ require 'spec_helper'
 describe 'a repo' do
   let(:entity) {
     double('entity', id: nil, session: nil, identity: -3,
-      changes: { foo: 'bar' }, association_adjustments: {},
-      foreign_keys: {}, foreign_key_changes: {},
+      changes: { foo: 'bar' },
+      fk_identities: {}, fk_identity_changes: {},
       validate: nil, dismissed?: false, dismiss: nil)
   }
 

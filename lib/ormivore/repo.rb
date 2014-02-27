@@ -90,16 +90,6 @@ module ORMivore
       validate_entity_argument(entity)
 
       rtn = persist_entity(entity)
-      if persist_entity_associations(entity) && rtn.equal?(entity)
-        # FIXME those associations are stale, new entities may have been persisted
-        # if we had identity map, we could just refresh them
-        #associations = entity.loaded_associations
-        #associations.each do |k, v|
-        #  associations[k] = v.sort_by(&:id) if v.respond_to?(:length)
-        #end
-
-        rtn = burn_phoenix(entity)
-      end
       entity.dismiss unless rtn.equal?(entity)
 
       rtn
@@ -173,7 +163,7 @@ module ORMivore
     def persist_entity(entity)
       entity.validate
 
-      changes = entity.changes.merge(entity.foreign_key_changes)
+      changes = entity.changes.merge(entity.fk_identity_changes)
 
       if changes.empty?
         entity
@@ -195,48 +185,6 @@ module ORMivore
           }
         end
       end
-    end
-
-    def persist_entity_associations(entity)
-      alterations_hash = collect_association_alterations(entity)
-      alterations_hash.each do |name, (add, remove, ad)|
-        association_repo = family[ad.entity_class]
-        remove.each do |e|
-          association_repo.delete(e)
-        end
-        add.each do |e|
-          # inverse_of must be specified if inverse relation exists, othervise plain fk attribute is acceptible substitute
-          if ad.inverse_of
-            e = e.apply(ad.inverse_of => entity)
-          else
-            e = e.apply(ad.foreign_key => entity.id)
-          end
-          e = association_repo.persist(e)
-        end
-      end
-
-      !alterations_hash.empty?
-    end
-
-    # NOTE this seems to belong to new AssociationChanges class, with entity.inspect_applied_associations
-    def collect_association_alterations(entity)
-      ads = entity_class.association_definitions
-      entity.association_adjustments.
-        select { |o| ads[o.name].type == :one_to_many }.
-        each_with_object({}) { |o, acc|
-          add_remove_pair = acc[o.name] ||= [[], [], ads[o.name]]
-          entities = o.entities
-          case o.action
-          when :add
-            add_remove_pair[0].concat(entities)
-            add_remove_pair[1].delete_if { |e| entities.include?(e) }
-          when :remove
-            entities.each do |e|
-              add_remove_pair[0].delete(e)
-              add_remove_pair[1] << e unless e.ephemeral?
-            end
-          end
-        }
     end
 
     def load_entity(attrs)
@@ -280,7 +228,7 @@ module ORMivore
 
     def entity_to_hash(entity)
       { id: entity.id }.
-        merge!(entity.foreign_keys).
+        merge!(entity.fk_identities).
         merge!(entity.attributes)
     end
 
