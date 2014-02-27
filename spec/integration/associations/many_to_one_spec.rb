@@ -16,6 +16,7 @@ shared_examples_for 'a many-to-one association' do
     Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family)
   end
 
+=begin
   context 'for ephemeral post' do
     let(:subject) { post_repo.create(title: 'foo') }
     let(:author) { account_repo.create(firstname: 'foo') }
@@ -161,6 +162,7 @@ shared_examples_for 'a many-to-one association' do
       end
     end
   end
+=end
 end
 
 describe 'an association between post and its author' do

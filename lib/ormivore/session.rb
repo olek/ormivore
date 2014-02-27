@@ -1,7 +1,7 @@
 module ORMivore
   class Session
     NULL = Object.new.tap do |o|
-      def repo(entity_class); 'This would have been repo'; end
+      def o.repo(entity_class = nil); 'This would have been repo'; end
       def o.to_s; "#{Module.nesting.first.name}::NULL"; end
       def o.register(entity); entity; end
       def o.current(entity); entity; end
@@ -103,6 +103,29 @@ module ORMivore
       fail unless entity_classes.include?(entity_class)
 
       current_generated_identities[entity_class] -= 1
+    end
+
+    def fk_identity_changes(entity, fk_name)
+      removal, additions = [], []
+
+      additions =
+        identity_map(entity.class).values.select { |o|
+          o.fk_identity_changes[fk_name] == entity.identity
+        }
+
+
+      unless entity.ephemeral?
+        removal =
+            identity_map(entity.class).values.select { |o|
+              fk_identity_changes = o.fk_identity_changes
+              fk_identity_changes.has_key?(fk_name) &&
+                fk_identity_changes[fk_name] != entity.identity &&
+                o.durable_ancestor.fk_identity(fk_name) == entity.identity
+            }
+      end
+
+
+      [removal, additions]
     end
 
     def inspect(options = {})

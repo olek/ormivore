@@ -22,6 +22,7 @@ shared_examples_for 'a many-to-many association' do
     Spec::EarTag::Repo.new(Spec::EarTag::Entity, tag_port, family: family)
   end
 
+=begin
   context 'for ephemeral post' do
     it 'returns empty array' do
       subject.taggings.should be_empty
@@ -185,6 +186,7 @@ describe 'an association between post and its author' do
 
     it_behaves_like 'a many-to-many association'
   end
+=end
 
 =begin should we test associations with redis? it lacks generic find interface...
   context 'with StorageRedisAdapter', :redis_db do

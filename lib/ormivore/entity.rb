@@ -201,6 +201,18 @@ module ORMivore
       end
     end
 
+    def durable_ancestor
+      if ephemeral?
+        nil
+      elsif durable?
+        self
+      elsif revised?
+        parent.durable_ancestor
+      else
+        fail "Wait, what state this entity is in??? #{self.inspect}"
+      end
+    end
+
     def fk_identity(name)
       raise BadArgumentError, "Missing foreign key name" unless name
       memoize("fk_identity_#{name}") do
@@ -216,6 +228,18 @@ module ORMivore
             self.class.fk_association_names.include?(name)
 
         fk_identity == NULL ? nil : fk_identity
+      end
+    end
+
+    def fk_identity_changes
+      memoize(:fk_identity_changes) do
+        collect_from_root({}) { |e, acc|
+          unless e.root?
+            acc.merge!(e.local_fk_identities)
+          end
+
+          acc
+        }
       end
     end
 

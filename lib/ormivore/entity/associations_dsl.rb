@@ -63,24 +63,25 @@ module ORMivore
         name = name.to_sym
 
         define_method(name) do
-          changes = self.association_adjustments.select { |o| o.name == name }
+          foreign_key =
+            if ad.inverse_of
+              ad.entity_class.association_definitions[ad.inverse_of].foreign_key
+            else
+              fail '???'
+            end
 
           unchanged =
             if ephemeral?
               []
             else
-              self.cache_association(name) {
-                foreign_key =
-                  if ad.inverse_of
-                    ad.entity_class.association_definitions[ad.inverse_of].foreign_key
-                  else
-                    ad.foreign_key or raise InvalidStateError, "Missing foreign key for association '#{name}' in #{self.inspect}"
-                  end
-                self.repo.family[entity_class].send('find_all_by_attribute', foreign_key, self.id)
-              }
+              self.session.repo(entity_class).send('find_all_by_attribute', foreign_key, self.id)
             end
 
-          AssociationsDSL.apply_changes(changes, unchanged)
+          removals, additions = session.fk_identity_changes(self, foreign_key)
+          unchanged - removals + additions
+
+          #changes = self.association_adjustments.select { |o| o.name == name }
+          #AssociationsDSL.apply_changes(changes, unchanged)
         end
       end
 

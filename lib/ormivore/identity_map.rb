@@ -25,6 +25,10 @@ module ORMivore
       storage[identity] || storage[old_to_new_identity_aliases[identity]]
     end
 
+    def values
+      storage.values
+    end
+
     def set(entity)
       fail unless entity
       fail unless entity.class == entity_class

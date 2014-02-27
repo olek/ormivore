@@ -35,6 +35,8 @@ module ORMivore
           generate_reverse_through_association_changes
         )
 
+        propagate_reverse_fk_changes
+
         self
       end
 
@@ -172,6 +174,16 @@ module ORMivore
               end
             end
           end
+      end
+
+      def propagate_reverse_fk_changes
+        associations.each do |aa|
+          ad = parent.class.association_definitions[aa.name]
+          reverse_fk_association_name = ad.entity_class.association_definitions[ad.inverse_of].name
+          aa.entities.each do |reverse|
+            reverse.apply(reverse_fk_association_name => (aa.action == :add ? parent : nil))
+          end
+        end
       end
 
       def prune_attributes

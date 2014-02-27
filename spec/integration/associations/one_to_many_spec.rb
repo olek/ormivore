@@ -4,11 +4,19 @@ shared_examples_for 'a one-to-many association' do
   let(:family) { ORMivore::AnonymousFactory::create_repo_family.new }
 
   let(:account_port) { Spec::Account::StoragePort.new(account_adapter) }
-  let(:account_repo) { Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family) }
-
   let(:post_port) { Spec::Post::StoragePort.new(post_adapter) }
-  let(:post_repo) { Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family) }
 
+  let(:account_repo) { session.repo.account }
+  let(:post_repo) { session.repo.post }
+
+  let(:session) { ORMivore::Session.new(family) }
+
+  before do
+    Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family)
+    Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family)
+  end
+
+=begin
   context 'for ephemeral account' do
     let(:subject) { account_repo.create(firstname: 'foo') }
     let(:post) { post_repo.create(title: 'foo') }
@@ -18,8 +26,27 @@ shared_examples_for 'a one-to-many association' do
     end
 
     context 'when article is set to ephemeral post' do
-      it 'returns assigned article' do
-        subject.apply(articles: [post]).articles.tap { |o|
+      it 'returns assigned article', focus: true do
+        # NOTE This is sample of the future syntax for associations
+        association do
+          from Spec::Post::Entity
+          as :account
+          to Spec::Account::Entity
+          with :many, :articles
+          #with :one, :article
+        end
+
+        through_association(
+          from Spec::Post::Entity,
+          as :tags
+          to Spec::Tag::Entity, # optional ?
+          through :taggings,
+          source :tag
+        )
+
+        session.association(subject, :articles).set([post])
+
+        session.association(subject, :articles).values.tap { |o|
           o.should eq([post])
           o.first.should be(post)
         }
@@ -300,6 +327,7 @@ shared_examples_for 'a one-to-many association' do
       end
     end
   end
+=end
 end
 
 describe 'an association between post and its author' do
@@ -321,8 +349,6 @@ describe 'an association between post and its author' do
     end
 
     Spec::Account::Entity.instance_eval do
-      # TODO build a set of tests for the case when there is no inverse association
-      # one_to_many :articles, Spec::Post::Entity, fk: :post_id
       one_to_many :articles, Spec::Post::Entity, inverse_of: :author
     end
   end
