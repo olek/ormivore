@@ -30,10 +30,10 @@ shared_examples_for 'a one-to-many association' do
         # NOTE This is sample of the future syntax for associations
         association do
           from Spec::Post::Entity
-          as :account
           to Spec::Account::Entity
-          with :many, :articles
-          #with :one, :article
+          as :account
+          inverse_of :many, :articles
+          #inverse_of :one, :article
         end
 
         through_association(
