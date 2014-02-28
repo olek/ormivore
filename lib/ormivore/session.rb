@@ -1,17 +1,21 @@
 module ORMivore
   class Session
     NULL = Object.new.tap do |o|
-      def o.repo(entity_class = nil); 'This would have been repo'; end
       def o.to_s; "#{Module.nesting.first.name}::NULL"; end
+      def o.repo(entity_class = nil); 'This would have been repo'; end
       def o.register(entity); entity; end
       def o.current(entity); entity; end
       def o.lookup(entity_class, identity); nil; end
       def o.identity_map(entity_class); IdentityMap::NULL end
       def o.generate_identity(*args); -3 end
+      def o.association_definitions; AssociationDefinitions::NULL end
     end
 
-    def initialize(repo_family)
+    def initialize(repo_family, association_definitions)
       fail unless repo_family
+      fail unless association_definitions
+
+      @association_definitions = association_definitions
 
       @entity_classes = repo_family.keys
 
@@ -146,6 +150,8 @@ module ORMivore
       encoder['repo_family'] = repo_family
       encoder['identity_maps'] = identity_maps
     end
+
+    attr_reader :association_definitions
 
     private
 

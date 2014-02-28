@@ -5,7 +5,7 @@ module ORMivore
         attributes = attributes.symbolize_keys # copy
 
         @parent = parent
-        fkan = parent.class.fk_association_names
+        fkan = parent.session.association_definitions.fk_names_for(parent.class)
         @unprocessed_attributes = attributes
         @unprocessed_fk_identities = attributes.each_with_object({}) { |(k, _), acc|
           acc[k] = attributes.delete(k) if fkan.include?(k)

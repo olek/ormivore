@@ -163,7 +163,7 @@ module ORMivore
     def persist_entity(entity)
       entity.validate
 
-      changes = entity.changes.merge(entity.fk_identity_changes)
+      changes = entity.changes
 
       if changes.empty?
         entity
@@ -196,28 +196,15 @@ module ORMivore
         preloaded = identity_map[entity_id]
 
         unless preloaded
-          direct_link_associations = extract_direct_link_associations(attrs)
-
           new_entity_options = { repo: self }
           new_entity_options[:session] = session
           new_entity_options[:attributes] = attrs unless attrs.empty?
-          new_entity_options[:associations] = direct_link_associations unless direct_link_associations.empty?
           new_entity_options[:id] = entity_id if entity_id
 
           identity_map.set(entity_class.new_root(new_entity_options))
         end
       else
         nil
-      end
-    end
-
-    def extract_direct_link_associations(attrs)
-      entity_class.fk_association_definitions.each_with_object({}) do |(name, ad), acc|
-        foreign_key = ad.foreign_key
-        foreign_key_value = entity_class.coerce_id(attrs.delete(foreign_key))
-        if foreign_key_value
-          acc[name] = Entity::Placeholder.new(family[ad.entity_class], foreign_key_value)
-        end
       end
     end
 
@@ -228,12 +215,11 @@ module ORMivore
 
     def entity_to_hash(entity)
       { id: entity.id }.
-        merge!(entity.fk_identities).
         merge!(entity.attributes)
     end
 
     def all_known_columns
-      [:id].concat(entity_class.foreign_keys).concat(entity_class.attributes_list)
+      [:id].concat(entity_class.attributes_list)
     end
   end
 end

@@ -1,5 +1,6 @@
 require 'ormivore/errors'
 require 'ormivore/lazy_cache'
+require 'ormivore/association_definitions'
 require 'ormivore/entity/coercions'
 require 'ormivore/entity/placeholder'
 require 'ormivore/entity/attributes_dsl'
