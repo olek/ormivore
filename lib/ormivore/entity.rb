@@ -24,13 +24,13 @@ module ORMivore
         }
       end
 
-      def new_with_attached_repo(parent, repo)
-        allocate.tap { |o|
-          o.initialize_with_attached_repo(parent, repo)
-          parent.dismiss
-          o.session.register(o)
-        }
-      end
+      #def new_with_attached_repo(parent, repo)
+      #  allocate.tap { |o|
+      #    o.initialize_with_attached_repo(parent, repo)
+      #    parent.dismiss
+      #    o.session.register(o)
+      #  }
+      #end
 
       def coerce_id(id)
         Integer(id) if id
@@ -92,7 +92,7 @@ module ORMivore
       EOS
     end
 
-    attr_reader :id, :identity, :repo, :session
+    attr_reader :id, :identity, :session
 
     def dismissed?
       @dismissed[0]
@@ -109,7 +109,6 @@ module ORMivore
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
       @local_fk_identities = {}
-      @repo = options[:repo]
       @session = options[:session] || Session::NULL
 
       # mutable by necessity, ugly workaround to avoid freezing references
@@ -140,26 +139,25 @@ module ORMivore
       shared_initialize(parent) do
         @local_attributes = change_processor.attributes.freeze
         @local_fk_identities = change_processor.fk_identities.freeze
-        @repo = @parent.repo
         @session = @parent.session
       end
 
     end
 
     # constructor for 'attach repo' nodes
-    def initialize_with_attached_repo(parent, repo)
-      shared_initialize(parent) do
-        @local_attributes = {}.freeze
-        @local_fk_identities = {}.freeze
-        @repo = repo
-        @session = @parent.session # NOTE does that even makes sense?
+    #def initialize_with_attached_repo(parent, repo)
+    #  shared_initialize(parent) do
+    #    @local_attributes = {}.freeze
+    #    @local_fk_identities = {}.freeze
+    #    @repo = repo
+    #    @session = @parent.session # NOTE does that even makes sense?
 
-        raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
-        raise InvalidStateError,
-          'Can not attach #{parent} to #{repo} because it is already attached to #{parent.repo}' if parent.repo
+    #    raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
+    #    raise InvalidStateError,
+    #      'Can not attach #{parent} to #{repo} because it is already attached to #{parent.repo}' if parent.repo
 
-      end
-    end
+    #  end
+    #end
 
     def attributes
       memoize(:attributes) do
@@ -266,7 +264,7 @@ module ORMivore
     # revised: was persisted in storage, and then modified/revised, will lose
     #     recent changes if discarded
     def ephemeral?
-      !id
+      !id || id < 0
     end
 
     def durable?
@@ -295,10 +293,6 @@ module ORMivore
       session.current(self)
     end
 
-    def attach_repo(r)
-      self.class.new_with_attached_repo(self, r)
-    end
-
     def validate
       attrs = attributes
       self.class.attributes_list.each do |attr|
@@ -311,22 +305,17 @@ module ORMivore
     def ==(other)
       return false unless other.class == self.class
 
-      return id == other.id unless ephemeral?
-      return false unless other.ephemeral?
-      return attributes == other.attributes &&
-        fk_identities == other.fk_identities &&
-        repo == other.repo &&
-        session == other.session
+      return id == other.id
     end
 
-    # more strict than ==, because durable entities with same id but different attributes are not considered equal
+    # much more strict than ==
+    # entities with same id but different attributes/session are not considered equal
     def eql?(other)
       return false unless other.class == self.class
 
       return id == other.id &&
         attributes == other.attributes &&
         fk_identities == other.fk_identities &&
-        repo == other.repo &&
         session == other.session
     end
 
@@ -334,7 +323,6 @@ module ORMivore
       return id.hash ^
         attributes.hash ^
         fk_identities.hash ^
-        repo.hash ^
         session.hash
     end
 

@@ -197,21 +197,21 @@ describe 'an entity' do
     end
   end
 
-  describe '#attach_repo' do
-    it 'attaches repo to entity that lacks it' do
-      described_class.new_root.attach_repo(:foo).repo.should == :foo
-    end
+  #describe '#attach_repo' do
+  #  it 'attaches repo to entity that lacks it' do
+  #    described_class.new_root.attach_repo(:foo).repo.should == :foo
+  #  end
 
-    it 'leaves repo of the parent alone as nil' do
-      parent = described_class.new_root
-      parent.apply(attr_1: test_value).attach_repo(:foo)
-      parent.repo.should == nil
-    end
+  #  it 'leaves repo of the parent alone as nil' do
+  #    parent = described_class.new_root
+  #    parent.apply(attr_1: test_value).attach_repo(:foo)
+  #    parent.repo.should == nil
+  #  end
 
-    it 'raises error if entity already has repo' do
-      expect {
-        described_class.new_root(repo: :foo).attach_repo(:bar)
-      }.to raise_error ORMivore::InvalidStateError
-    end
-  end
+  #  it 'raises error if entity already has repo' do
+  #    expect {
+  #      described_class.new_root(repo: :foo).attach_repo(:bar)
+  #    }.to raise_error ORMivore::InvalidStateError
+  #  end
+  #end
 end

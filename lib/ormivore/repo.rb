@@ -41,6 +41,8 @@ module ORMivore
         return o if o
       end
 
+      raise RecordNotFound if identity_map.deleted?(id)
+
       load_entity(port.find_by_id(
           id,
           all_known_columns
@@ -54,28 +56,27 @@ module ORMivore
       end
     end
 
-    def find_all_by_id_as_hash(objects, options = {})
+    def find_all_by_id_as_hash(ids, options = {})
       quiet = options.fetch(:quiet, false)
 
-      ids =
-        if block_given?
-          objects.map { |o| yield(o) }
-        else
-          objects
-        end
+      clean_ids = ids.reject { |id| identity_map.deleted?(id) }
+      unless quiet || ids.length == clean_ids.length
+        raise ORMivore::RecordNotFound, "#{entity_class.name} with ids #{(ids - clean_ids).inspect} were not found"
+      end
+
+      return [] if clean_ids.empty?
 
       entities_attrs = port.find_all_by_id(
         ids,
         all_known_columns
       )
 
-      objects.each_with_object({}) { |o, entities_map|
-        id = block_given? ? yield(o) : o
+      ids.each_with_object({}) { |id, entities_map|
         # TODO use coerce_id here (requires making repo_spec less brittle)
         # entity_attrs = entities_attrs.find { |e| e[:id] && entity_class.coerce_id(e[:id]) == id }
         entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
-          entities_map[o] = load_entity(entity_attrs)
+          entities_map[id] = load_entity(entity_attrs)
         elsif !quiet
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
@@ -175,9 +176,7 @@ module ORMivore
 
           burn_phoenix(entity)
         else
-          # NOTE discontinuity of ephemeral to durable entities likely
-          # to bite us during UnitOfWork persistance
-          identity_map.delete(entity)
+          identity_map.unset(entity)
           load_entity(port.create(changes)).tap { |o|
             unless o.identity == entity.identity
               identity_map.alias_identity(o.identity, entity.identity)
@@ -209,7 +208,7 @@ module ORMivore
     end
 
     def burn_phoenix(entity)
-      identity_map.delete(entity)
+      identity_map.unset(entity)
       load_entity(entity_to_hash(entity))
     end
 

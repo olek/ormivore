@@ -1,6 +1,6 @@
 module ORMivore
   module Association
-    class ReverseForeignKeyAssociationCoolection
+    class ReverseForeignKeyAssociationCollection
       def initialize(identity, association_definition, session)
         @identity = identity
         @name = association_definition.as
@@ -11,20 +11,38 @@ module ORMivore
       def values
         removals, additions = fk_identity_changes
 
-        unchanged =
-          if identity > 0
-            repo.send('find_all_by_attribute', fk_name, identity)
-          else
-            []
-          end
-
         unchanged - removals + additions
+      end
+
+      def set(entities)
+        remove(values)
+        add(entities)
+      end
+
+      def add(entities)
+        entities.map { |e|
+          e.apply(fk_name => identity)
+        }
+      end
+
+      def remove(entities)
+        entities.map { |e|
+          e.apply(fk_name => nil)
+        }
       end
 
       private
 
       def fk_name
         "#{name}_id"
+      end
+
+      def unchanged
+        if identity > 0
+          repo.send('find_all_by_attribute', fk_name, identity)
+        else
+          []
+        end
       end
 
       def fk_identity_changes

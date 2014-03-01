@@ -6,7 +6,9 @@ module ORMivore
       def o.to_s; "#{Module.nesting.first.name}::NULL"; end
       def o.[](identity); nil; end
       def o.set(entity); entity; end
+      def o.unset(entity); nil; end
       def o.delete(entity); nil; end
+      def o.deleted?(identity); false; end
       def o.current(entity); entity end
       def o.current_or_set(entity); entity end
       def o.alias_identity(new_identity, old_identity); end
@@ -15,6 +17,7 @@ module ORMivore
     def initialize(entity_class)
       @entity_class = entity_class or fail
       @storage = {}
+      @trash = {}
       @old_to_new_identity_aliases = {}
 
       freeze
@@ -40,11 +43,23 @@ module ORMivore
       storage[entity.identity] = entity
     end
 
-    def delete(entity)
+    def unset(entity)
       fail unless entity
       fail unless entity.class == entity_class
 
       storage.delete(entity.identity)
+    end
+
+    def delete(entity)
+      fail unless entity
+      fail unless entity.class == entity_class
+
+      trash[entity.identity] = entity
+      storage.delete(entity.identity)
+    end
+
+    def deleted?(identity)
+      !!trash[identity]
     end
 
     def current(entity)
@@ -70,7 +85,7 @@ module ORMivore
 
     private
 
-    attr_reader :entity_class, :storage, :old_to_new_identity_aliases
+    attr_reader :entity_class, :storage, :trash, :old_to_new_identity_aliases
 
     # TODO define .inspect and .encode_with that use those inspect_*
 

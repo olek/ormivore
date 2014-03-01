@@ -6,7 +6,7 @@ module ORMivore
         @to = to or fail
         @as = as or fail
         if reverse
-          @reverse_name = reverse[1] or fail
+          @reverse_as = reverse[1] or fail
           @reverse_multiplier = reverse[0] or fail
           fail unless [:one, :many].include?(@reverse_multiplier)
         end
@@ -19,13 +19,13 @@ module ORMivore
       end
 
       def matches_in_reverse?(entity_class, name)
-        entity_class == to && name == reverse_name
+        entity_class == to && name == reverse_as
       end
 
       def create_association(identity, name, session, options={})
         if options[:reverse]
           if reverse_multiplier == :many
-            ReverseForeignKeyAssociationCoolection.new(identity, name, session)
+            ReverseForeignKeyAssociationCollection.new(identity, name, session)
           else
             # TODO implement reverse foreign key association
             fail 'Not Impemented yet'
@@ -35,7 +35,7 @@ module ORMivore
         end
       end
 
-      attr_reader :from, :to, :as, :reverse_name, :reverse_multiplier
+      attr_reader :from, :to, :as, :reverse_as, :reverse_multiplier
     end
   end
 end

@@ -17,7 +17,7 @@ module ORMivore
 
         def transitive_association(&block)
           fail unless block_given?
-          association_definition_builder = TransitiveAssociationDefinitionBuilder.new
+          association_definition_builder = TransitiveAssociationDefinitionBuilder.new(self)
           association_definition_builder.instance_eval(&block)
 
           association_definitions << association_definition_builder.call
@@ -48,6 +48,10 @@ module ORMivore
         end
 
         class TransitiveAssociationDefinitionBuilder
+          def initialize(association_definitions)
+            @association_definitions = association_definitions
+          end
+
           def from(entity_class)
             @from = entity_class or fail
           end
@@ -60,8 +64,10 @@ module ORMivore
             @as = name or fail
           end
 
-          def via(via)
-            @via = via or fail
+          def via(via_nature, via)
+            fail unless via_nature
+            fail unless via
+            @via = [via_nature, via] or fail
           end
 
           def linked_by(linked_by)
@@ -69,7 +75,7 @@ module ORMivore
           end
 
           def call
-            TransientAssociationDefinition.new(@from, @to, @as, @via, @linked_by)
+            TransientAssociationDefinition.new(@from, @to, @as, @via, @linked_by, @association_definitions)
           end
         end
       end
@@ -93,13 +99,19 @@ module ORMivore
       end
 
       def create_association(entity, name)
+        fail unless entity
+        fail unless name
+
         name = name.to_sym
 
         ad = detect { |o| o.matches?(entity.class, name) || o.matches_in_reverse?(entity.class, name) }
 
         raise BadAttributesError, "Could not find association '#{name}' on entity #{entity.inspect}" unless ad
 
-        options = { reverse: ad.matches_in_reverse?(entity.class, name) }
+        options = {
+          association_definitions: self,
+          reverse: ad.matches_in_reverse?(entity.class, name)
+        }
 
         ad.create_association(entity.identity, ad, entity.session, options)
       end

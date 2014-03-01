@@ -17,6 +17,10 @@ module ORMivore
         end
       end
 
+      def set(entity)
+        identity_map[identity].apply(fk_name => entity.identity)
+      end
+
       private
 
       attr_reader :identity, :name, :identity_map, :repo

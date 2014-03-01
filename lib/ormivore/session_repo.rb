@@ -64,7 +64,8 @@ module ORMivore
       singleton.class_eval do
         define_method name do |*args|
           make_current = true
-          results = memoize(name) do
+          mkey = "#{name}(#{args.inspect})"
+          results = memoize(mkey) do
             make_current = false
             repo.send(name, *args)
           end
@@ -79,7 +80,7 @@ module ORMivore
         if e.is_a?(Array)
           e.map { |o|
             o.current
-          }
+          }.compact
         else
           e.current
         end

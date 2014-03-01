@@ -87,22 +87,22 @@ describe 'a repo' do
       end
     end
 
-    context 'when block is provided' do
-      it 'uses block to convert array of objects to array of ids' do
-        port.should_receive(:find_all_by_id).with([123, 124], attributes_list).and_return([{}, {}])
-        subject.find_all_by_id_as_hash(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
-      end
+  #  context 'when block is provided' do
+  #    it 'uses block to convert array of objects to array of ids' do
+  #      port.should_receive(:find_all_by_id).with([123, 124], attributes_list).and_return([{}, {}])
+  #      subject.find_all_by_id_as_hash(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
+  #    end
 
-      it 'returns map of input objects to entities' do
-        port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-        entity_class.should_receive(:new_root).with(hash_including(attributes: {a: 'b'}, id: 123)).and_return(:foo)
-        entity_class.should_receive(:new_root).with(hash_including(attributes: {c: 'd'}, id: 124)).and_return(:bar)
-        result = subject.find_all_by_id_as_hash(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
-        result.should have(2).entities
-        result['321'].should == :foo
-        result['421'].should == :bar
-      end
-    end
+  #    it 'returns map of input objects to entities' do
+  #      port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
+  #      entity_class.should_receive(:new_root).with(hash_including(attributes: {a: 'b'}, id: 123)).and_return(:foo)
+  #      entity_class.should_receive(:new_root).with(hash_including(attributes: {c: 'd'}, id: 124)).and_return(:bar)
+  #      result = subject.find_all_by_id_as_hash(['321', '421'], quiet: true) { |o| Integer(o.reverse) }
+  #      result.should have(2).entities
+  #      result['321'].should == :foo
+  #      result['421'].should == :bar
+  #    end
+  #  end
   end
 
   describe '#persist' do

@@ -32,16 +32,17 @@ shared_examples_for 'a one-to-many association' do
           from Spec::Post::Entity
           to Spec::Account::Entity
           as :account
-          inverse_of :many, :articles
-          #inverse_of :one, :article
+          reverse_as :many, :articles
+          #reverse_as :one, :article
         end
 
         through_association(
           from Spec::Post::Entity,
-          as :tags
           to Spec::Tag::Entity, # optional ?
-          through :taggings,
-          source :tag
+          as :tags
+          via :essential, :taggings,
+          via :incidental, :taggings,
+          linked_by :tag
         )
 
         session.association(subject, :articles).set([post])
