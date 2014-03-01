@@ -52,4 +52,3 @@ module ORMivore
     end
   end
 end
-

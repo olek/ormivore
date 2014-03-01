@@ -15,12 +15,15 @@ module ORMivore
           association_definitions << association_definition_builder.call
         end
 
+        def transitive_association(&block)
+          fail unless block_given?
+          association_definition_builder = TransitiveAssociationDefinitionBuilder.new
+          association_definition_builder.instance_eval(&block)
+
+          association_definitions << association_definition_builder.call
+        end
+
         class AssociationDefinitionBuilder
-          attr_reader :foo
-
-          def initialize
-          end
-
           def from(entity_class)
             @from = entity_class or fail
           end
@@ -41,6 +44,32 @@ module ORMivore
 
           def call
             AssociationDefinition.new(@from, @to, @as, @reverse_as)
+          end
+        end
+
+        class TransitiveAssociationDefinitionBuilder
+          def from(entity_class)
+            @from = entity_class or fail
+          end
+
+          def to(entity_class)
+            @to = entity_class or fail
+          end
+
+          def as(name)
+            @as = name or fail
+          end
+
+          def via(via)
+            @via = via or fail
+          end
+
+          def linked_by(linked_by)
+            @linked_by = linked_by or fail
+          end
+
+          def call
+            TransientAssociationDefinition.new(@from, @to, @as, @via, @linked_by)
           end
         end
       end
@@ -65,17 +94,14 @@ module ORMivore
 
       def create_association(entity, name)
         name = name.to_sym
-        if ad = detect { |o| o.from == entity.class && o.as == name }
-          Association::ForeignKeyAssociation.new(entity.identity, ad, entity.session)
-        elsif ad = detect { |o| o.to == entity.class && o.reverse_name == name }
-          if ad.reverse_multiplier == :many
-            Association::ReverseForeignKeyAssociationCoolection.new(entity.identity, ad, entity.session)
-          else
-            fail 'Not Impemented yet'
-          end
-        else
-          raise BadAttributesError, "Could not find association '#{name}' on entity #{entity}"
-        end
+
+        ad = detect { |o| o.matches?(entity.class, name) || o.matches_in_reverse?(entity.class, name) }
+
+        raise BadAttributesError, "Could not find association '#{name}' on entity #{entity.inspect}" unless ad
+
+        options = { reverse: ad.matches_in_reverse?(entity.class, name) }
+
+        ad.create_association(entity.identity, ad, entity.session, options)
       end
 
       private
