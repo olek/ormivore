@@ -1,5 +1,7 @@
 module ORMivore
   class IdentityMap
+    include Enumerable
+
     NULL = Object.new.tap do |o|
       def o.to_s; "#{Module.nesting.first.name}::NULL"; end
       def o.[](identity); nil; end
@@ -18,15 +20,17 @@ module ORMivore
       freeze
     end
 
+    def each
+      storage.values.each do |o|
+        yield(o)
+      end
+    end
+
     def [](identity)
       fail unless identity
       identity = @entity_class.coerce_id(identity)
 
       storage[identity] || storage[old_to_new_identity_aliases[identity]]
-    end
-
-    def values
-      storage.values
     end
 
     def set(entity)

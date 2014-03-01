@@ -81,10 +81,10 @@ module ORMivore
             o.current
           }
         else
-          o.current
+          e.current
         end
       else
-        e
+        nil
       end
     end
   end

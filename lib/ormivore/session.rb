@@ -8,7 +8,7 @@ module ORMivore
       def o.lookup(entity_class, identity); nil; end
       def o.identity_map(entity_class); IdentityMap::NULL end
       def o.generate_identity(*args); -3 end
-      def o.association_definitions; AssociationDefinitions::NULL end
+      def o.association_definitions; Association::AssociationDefinitions::NULL end
     end
 
     def initialize(repo_family, association_definitions)
@@ -109,27 +109,8 @@ module ORMivore
       current_generated_identities[entity_class] -= 1
     end
 
-    def fk_identity_changes(entity, fk_name)
-      removal, additions = [], []
-
-      additions =
-        identity_map(entity.class).values.select { |o|
-          o.fk_identity_changes[fk_name] == entity.identity
-        }
-
-
-      unless entity.ephemeral?
-        removal =
-            identity_map(entity.class).values.select { |o|
-              fk_identity_changes = o.fk_identity_changes
-              fk_identity_changes.has_key?(fk_name) &&
-                fk_identity_changes[fk_name] != entity.identity &&
-                o.durable_ancestor.fk_identity(fk_name) == entity.identity
-            }
-      end
-
-
-      [removal, additions]
+    def association(entity, name)
+      association_definitions.create_association(entity, name)
     end
 
     def inspect(options = {})
