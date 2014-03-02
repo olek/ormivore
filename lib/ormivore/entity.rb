@@ -108,20 +108,10 @@ module ORMivore
       # immutable
       @id = options[:id]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
-      @local_fk_identities = {}
       @session = options[:session] || Session::NULL
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
-
-      eager_fetch_associations = options[:associations]
-      if eager_fetch_associations
-        eager_fetch_associations.each do |name, value|
-          @local_fk_identities[name] = value.id
-        end
-      end
-
-      @local_fk_identities.freeze
 
       raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || @local_attributes.empty?
       @id = self.class.coerce_id(@id)
@@ -138,7 +128,6 @@ module ORMivore
     def initialize_with_change_processor(parent, change_processor)
       shared_initialize(parent) do
         @local_attributes = change_processor.attributes.freeze
-        @local_fk_identities = change_processor.fk_identities.freeze
         @session = @parent.session
       end
 
@@ -148,7 +137,6 @@ module ORMivore
     #def initialize_with_attached_repo(parent, repo)
     #  shared_initialize(parent) do
     #    @local_attributes = {}.freeze
-    #    @local_fk_identities = {}.freeze
     #    @repo = repo
     #    @session = @parent.session # NOTE does that even makes sense?
 
@@ -196,48 +184,6 @@ module ORMivore
         parent.durable_ancestor
       else
         fail "Wait, what state this entity is in??? #{self.inspect}"
-      end
-    end
-
-    def fk_identities
-      memoize(:fk_identities) do
-        collect_from_root({}) { |e, acc|
-          acc.merge(e.local_fk_identities)
-        }.tap { |o|
-          o.each { |k, v|
-            o[k] = nil if v == NULL
-          }
-        }
-      end
-    end
-
-    def fk_identity(name)
-      raise BadArgumentError, "Missing foreign key name" unless name
-      memoize("fk_identity_#{name}") do
-        name = name.to_sym
-
-        node = find_nearest_node { |e|
-          !!e.local_fk_identities[name]
-        }
-
-        fk_identity = node.local_fk_identities[name] if node
-        raise BadArgumentError,
-          "Unknown foreign key '#{name}' on entity '#{self.class}'" unless fk_identity ||
-            self.class.fk_association_names.include?(name)
-
-        fk_identity == NULL ? nil : fk_identity
-      end
-    end
-
-    def fk_identity_changes
-      memoize(:fk_identity_changes) do
-        collect_from_root({}) { |e, acc|
-          unless e.root?
-            acc.merge!(e.local_fk_identities)
-          end
-
-          acc
-        }
       end
     end
 
@@ -315,20 +261,18 @@ module ORMivore
 
       return id == other.id &&
         attributes == other.attributes &&
-        fk_identities == other.fk_identities &&
         session == other.session
     end
 
     def hash
       return id.hash ^
         attributes.hash ^
-        fk_identities.hash ^
         session.hash
     end
 
     # for internal use only, not true public API
     def noop?
-      local_attributes.empty? && local_fk_identities.empty?
+      local_attributes.empty?
     end
 
     def inspect(options = {})
@@ -340,7 +284,6 @@ module ORMivore
           s << " id=#{id}" if id
           if verbose
             s << " attributes=#{attributes.inspect}" unless attributes.empty?
-            s << " fk_identities=#{fk_identities.inspect}" unless fk_identities.empty?
           else
             s << (":0x%08x" % (object_id * 2)) unless root? || id
           end
@@ -351,7 +294,6 @@ module ORMivore
     def encode_with(encoder)
       encoder['id'] = @id
       encoder['local_attributes'] = @local_attributes
-      encoder['local_fk_identities'] = @local_fk_identities
       encoder['changes'] = changes
       encoder['fk_identity_changes?'] = fk_identity_changes
       encoder['memoize_cache'] = @memoize_cache
@@ -360,7 +302,7 @@ module ORMivore
     protected
 
     attr_reader :parent # Read only access
-    attr_reader :local_attributes, :local_fk_identities
+    attr_reader :local_attributes
 
     def root?
       !parent
