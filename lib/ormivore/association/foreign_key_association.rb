@@ -4,30 +4,32 @@ module ORMivore
       def initialize(identity, association_definition, session)
         @identity = identity
         @name = association_definition.as
-        @identity_map = session.identity_map(association_definition.from)
+        @fk_name = association_definition.foreign_key_name
+        @from_identity_map = session.identity_map(association_definition.from)
+        @to_identity_map = session.identity_map(association_definition.to)
         @repo = session.repo(association_definition.to)
       end
 
       def value
-        fk_value = identity_map[identity].attribute(fk_name)
-        if fk_value
-          repo.find_by_id(fk_value)
-        else
-          nil
-        end
+        loaded_associated_entity ||
+          ((o = foreign_key_value) && repo.find_by_id(o))
       end
 
       def set(entity)
-        identity_map[identity].apply(fk_name => entity.identity)
+        from_identity_map[identity].apply(fk_name => entity.identity)
+      end
+
+      def foreign_key_value
+        from_identity_map[identity].attribute(fk_name)
       end
 
       private
 
-      attr_reader :identity, :name, :identity_map, :repo
-
-      def fk_name
-        "#{name}_id"
+      def loaded_associated_entity
+        to_identity_map[foreign_key_value]
       end
+
+      attr_reader :identity, :name, :from_identity_map, :to_identity_map, :repo, :fk_name
     end
   end
 end

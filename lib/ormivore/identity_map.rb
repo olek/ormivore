@@ -30,7 +30,7 @@ module ORMivore
     end
 
     def [](identity)
-      fail unless identity
+      raise BadArgumentError, "No identity provided for identity map #{self.inspect}" unless identity
       identity = @entity_class.coerce_id(identity)
 
       storage[identity] || storage[old_to_new_identity_aliases[identity]]
@@ -81,6 +81,10 @@ module ORMivore
       fail unless old_identity && old_identity < 0
 
       old_to_new_identity_aliases[old_identity] = new_identity
+    end
+
+    def deleted
+      trash.values
     end
 
     private

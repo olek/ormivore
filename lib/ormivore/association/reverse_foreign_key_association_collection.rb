@@ -4,6 +4,7 @@ module ORMivore
       def initialize(identity, association_definition, session)
         @identity = identity
         @name = association_definition.as
+        @fk_name = association_definition.foreign_key_name
         @identity_map = session.identity_map(association_definition.from)
         @repo = session.repo(association_definition.from)
       end
@@ -33,10 +34,6 @@ module ORMivore
 
       private
 
-      def fk_name
-        "#{name}_id"
-      end
-
       def unchanged
         if identity > 0
           repo.send('find_all_by_attribute', fk_name, identity)
@@ -50,23 +47,23 @@ module ORMivore
 
         additions =
           identity_map.select { |o|
-            o.fk_identity_changes[fk_name] == identity
+            o.changes[fk_name] == identity
           }
 
         if identity > 0
           removal =
               identity_map.select { |o|
-                fk_identity_changes = o.fk_identity_changes
-                fk_identity_changes.has_key?(fk_name) &&
-                  fk_identity_changes[fk_name] != identity &&
-                  o.durable_ancestor.fk_identity(fk_name) == identity
+                changes = o.changes
+                changes.has_key?(fk_name) &&
+                  changes[fk_name] != identity &&
+                  o.durable_ancestor.attribute(fk_name) == identity
               }
         end
 
         [removal, additions]
       end
 
-      attr_reader :identity, :name, :identity_map, :repo
+      attr_reader :identity, :name, :fk_name, :identity_map, :repo
     end
   end
 end

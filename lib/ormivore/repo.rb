@@ -178,10 +178,22 @@ module ORMivore
         else
           identity_map.unset(entity)
           load_entity(port.create(changes)).tap { |o|
-            unless o.identity == entity.identity
-              identity_map.alias_identity(o.identity, entity.identity)
-            end
+            identity_map.alias_identity(o.identity, entity.identity)
+            update_all_references_to(entity, o.identity)
           }
+        end
+      end
+    end
+
+    def update_all_references_to(entity, new_identity)
+      session.association_definitions.select { |o|
+        o.type == :foreign_key &&
+        o.to == entity.class
+      }.each do |association_definition|
+        session.identity_map(association_definition.from).select { |o|
+          o.attribute(association_definition.foreign_key_name) == entity.identity
+        }.each do |o|
+          o.apply(association_definition.foreign_key_name => new_identity)
         end
       end
     end

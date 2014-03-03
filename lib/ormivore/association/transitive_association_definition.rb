@@ -23,6 +23,10 @@ module ORMivore
         freeze
       end
 
+      def type
+        :transient
+      end
+
       def matches?(entity_class, name)
         entity_class == from && name == as
       end

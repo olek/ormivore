@@ -4,6 +4,7 @@ module ORMivore
       NULL = Object.new.tap do |o|
         def o.to_s; "#{Module.nesting.first.name}::NULL"; end
         def o.fk_names_for(entity_class); [] end
+        def o.select; [] end
       end
 
       module DSL

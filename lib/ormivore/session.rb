@@ -62,6 +62,10 @@ module ORMivore
       freeze
     end
 
+    def entity_classes
+      identity_maps.keys
+    end
+
     def repo(o = nil)
       if o
         if o.is_a?(Symbol)
@@ -113,6 +117,10 @@ module ORMivore
       association_definitions.create_association(entity, name)
     end
 
+    def commit
+      SillySessionPersistenceStrategy.new(self).call
+    end
+
     def inspect(options = {})
       verbose = options.fetch(:verbose, false)
 
@@ -132,10 +140,10 @@ module ORMivore
       encoder['identity_maps'] = identity_maps
     end
 
-    attr_reader :association_definitions
+    attr_reader :association_definitions, :entity_classes
 
     private
 
-    attr_reader :repo_family, :identity_maps, :entity_classes, :current_generated_identities
+    attr_reader :repo_family, :identity_maps, :current_generated_identities
   end
 end

@@ -46,7 +46,7 @@ module ORMivore
       private
 
       def fk(name)
-        "#{name}_id"
+        :"#{name}_id"
       end
 
       def via_association

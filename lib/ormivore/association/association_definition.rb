@@ -14,6 +14,14 @@ module ORMivore
         freeze
       end
 
+      def type
+        :foreign_key
+      end
+
+      def foreign_key_name
+        :"#{@as}_id"
+      end
+
       def matches?(entity_class, name)
         entity_class == from && name == as
       end
