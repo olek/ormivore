@@ -5,7 +5,8 @@
 ## Synopsis
 
 Persistence isolation framework for long term ruby projects.
-Not really an ORM, but a way to tame one.
+
+Or, "Half, not Half-Assed" approach to ORM.
 
 ## Caution
 
@@ -28,7 +29,7 @@ for experimentation. Changes are highly likely to be not backward
 compatible. If you decide to use it, prepare to roll up your sleeves,
 and I disclaim any potential indirect harm to kittens.
 
-Just to state the obvious - ORMivore is not production ready just yet, and maybe will never be.
+Just to state the obvious - ORMivore is not production ready just yet.
 
 ## Motivation
 
@@ -50,15 +51,10 @@ project, or slowly eliminating them on a legacy app.
 immediately, and never sugar-coated with short term gain
 - Long term maintenability trumps supersonic speed of initial development
 - There is much to be learned from functional programming
+- So much complexity in software comes from trying to make one thing do
+  two things (Ryan Singer)
 
 ## Philosophy explained
-
-Many ORMs simply do too good of a job - they isolate developers from
-storage so much that developers choose to pretend it is just an inconvenient
-abstraction, and ignore it as much as possible. That causes huge loss of
-database efficiency. ORMivore does not abstract storage too far away -
-it does only the bare minimum. No automatic associations management, no
-callbacks, no frills at all.
 
 OOD is great, but have to be applied with care. ORMivore uses plain data
 structures (functional style) to communicate between different layers,
@@ -75,6 +71,11 @@ Ports and adapters pattern (hexagonal architecture) are core of
 ORMivore, and it is great for isolating persistance logic from entities.
 It also allows for some degree of substitutability of different storages.
 
+Putting responsibility of managing data and managing association in one
+same object leads to many lies inside of code that quickly relult in a
+lot of complexity. It is much simpler to divide those responsibilities
+(not easier, but much simpler).
+
 While STI and polymorphic relations are bad for your health, your legacy
 database is probably littered with them, and ORMivore provides means to
 map those to domain objects in a 'class-less' way.
@@ -87,79 +88,99 @@ Just add 'gem "ormivore"' to Gemfile, or run 'gem install ormivore'.
 
 ## Basic Code Example
 
-There is quite a bit of boiler plate code here that looks a little
-ridiculous for such a simple example, but it will come handy when
-real functionality and tests are added.
+Typical setup would include a bit of boiler plate code that would look a
+little ridiculous for such simple example heere. This example is using
+shortcuts that generate boiler plate classes automatically, but for real
+production code spelling things out probably is better, it will come
+handy when real functionality and tests are added.
+
+This is complete example that can be copy/pasted in the console, and
+will work. It uses memory adapter to avoid having to configure database
+access, but code change to get it to work with SQL database is trivial.
 
 ```ruby
-class Account
-  include ORMivore::Entity
 
-  attributes(
-    firstname: String,
-    lastname: String,
-    email: String
-  )
-end
+Sample = Module.new
 
-class NoopConverter
-  def attributes_list_to_storage(list)
-    list
-  end
-
-  def from_storage(attrs)
-    attrs
-  end
-
-  def to_storage(attrs)
-    attrs
+ORMivore::create_entity_skeleton(Sample, :post, port: true, repo: true, memory_adapter: true) do
+  attributes do
+    string :title
+    string :body
   end
 end
 
-class AccountStorageMemoryAdapter
-  include ORMivore::MemoryAdapter
-
-  self.default_converter_class = NoopConverter
+ORMivore::create_entity_skeleton(Sample, :tag, port: true, repo: true, memory_adapter: true) do
+  attributes do
+    string :name
+  end
 end
 
-class AccountStorageArAdapter
-  include ORMivore::ArAdapter
-
-  self.table_name = 'accounts'
-  self.default_converter_class = NoopConverter
+ORMivore::create_entity_skeleton(Sample, :tagging, port: true, repo: true, memory_adapter: true) do
+  attributes do
+    integer :post_id
+    integer :tag_id
+  end
 end
 
-class AccountStoragePort
-  include ORMivore::Port
+module Sample
+  class Associations
+    extend ORMivore::Association::AssociationDefinitions
+
+    association do
+      from Tagging::Entity
+      to Post::Entity
+      as :post
+      reverse_as :many, :taggings
+    end
+
+    association do
+      from Tagging::Entity
+      to Tag::Entity
+      as :tag
+    end
+
+    transitive_association do
+      from Post::Entity
+      to Tag::Entity
+      as :tags
+      via :incidental, :taggings
+      linked_by :tag
+    end
+  end
+
+  module Repos
+    extend ORMivore::RepoFamily
+  end
+
+  Post::Repo.new(Post::Entity, Post::StoragePort.new(Post::StorageMemoryAdapter.new), family: Repos)
+  Tag::Repo.new(Tag::Entity, Tag::StoragePort.new(Tag::StorageMemoryAdapter.new), family: Repos)
+  Tagging::Repo.new(Tagging::Entity, Tagging::StoragePort.new(Tagging::StorageMemoryAdapter.new), family: Repos)
+  Repos.freeze
 end
 
-class AccountRepo
-  include ORMivore::Repo
+session = ORMivore::Session.new(Sample::Repos, Sample::Associations) # #<ORMivore::Session:0x7ffe1beef7c0>
+post = session.repo.post.create(title: 'foo', body: 'bar') # #<Sample::Post::Entity derived attributes={:title=>"foo", :body=>"bar"}>
+post = post.apply(body: 'baz') # #<Sample::Post::Entity derived attributes={:title=>"foo", :body=>"baz"}>
+session.association(post, :tags).values # []
+t1 = session.repo.tag.create(name: 't1') # #<Sample::Tag::Entity derived attributes={:name=>"t1"}>
+session.association(post, :tags).add(t1) # [#<Sample::Tagging::Entity derived attributes={:post_id=>-1, :tag_id=>-1}>]
+session.association(post, :tags).values # [#<Sample::Tag::Entity derived attributes={:name=>"t1"}>]
+session.association(post, :taggings).values # [#<Sample::Tagging::Entity derived attributes={:post_id=>-1, :tag_id=>-1}>]
+session.commit # [Sample::Post::Entity, Sample::Tag::Entity, Sample::Tagging::Entity]
 
-  self.default_entity_class = App::Account
-end
+session = ORMivore::Session.new(Sample::Repos, Sample::Associations) # #<ORMivore::Session:0x7ffe1be699e0>
+post = session.repo.post.find_by_id(1) # #<Sample::Post::Entity root id=1 attributes={:title=>"foo", :body=>"baz"}>
+session.association(post, :tags).values # [#<Sample::Tag::Entity root id=1 attributes={:name=>"t1"}>]
+session.association(post, :taggings).values # [#<Sample::Tagging::Entity root id=1 attributes={:post_id=>1, :tag_id=>1}>]
 
-mem_db_repo = AccountRepo.new(AccountStoragePort.new(AccountStorageMemoryAdapter.new), Account)
-sql_db_repo = AccountRepo.new(AccountStoragePort.new(AccountStorageArAdapter.new), Account)
-ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: 'db/db.sqlite3')
 
-new_account = Account.new(firstname: 'John', lastname: 'Doe')
-
-saved_to_mem_db_account = mem_db_repo.persist(new_account)
-
-changed_account = saved_to_mem_db_account.apply(firstname: 'Jane')
-
-saved_to_mem_db_changed_account = mem_db_repo.persist(changed_account)
-
-reloaded_from_mem_db_account = mem_db_repo.find_by_id(saved_to_mem_db_account.id)
-
-saved_to_sql_db_account = sql_db_repo.persist(new_account)
 ```
 
 ## In Depth Code Examples
 
-Just look under app/ directory for the setup of sample project that is
-used by test cases.
+Check integration specs for more in depth examples. Also...
+Monologue blog app is in the process of being ported to ORMivore, check
+it out (it is work in progress).
 
 ## Tests
 
