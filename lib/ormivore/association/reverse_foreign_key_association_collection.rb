@@ -5,11 +5,14 @@ module ORMivore
         @identity = identity
         @name = association_definition.as
         @fk_name = association_definition.foreign_key_name
-        @identity_map = session.identity_map(association_definition.from)
+        @obverse_identity_map = session.identity_map(association_definition.from)
+        @reverse_identity_map = session.identity_map(association_definition.to)
         @repo = session.repo(association_definition.from)
       end
 
       def values
+        renew_identity
+
         removals, additions = fk_identity_changes
 
         unchanged - removals + additions
@@ -21,6 +24,8 @@ module ORMivore
       end
 
       def add(entities)
+        renew_identity
+
         entities.map { |e|
           e.apply(fk_name => identity)
         }
@@ -34,6 +39,10 @@ module ORMivore
 
       private
 
+      def renew_identity
+        @identity = reverse_identity_map[identity].identity
+      end
+
       def unchanged
         if identity > 0
           repo.send('find_all_by_attribute', fk_name, identity)
@@ -46,13 +55,13 @@ module ORMivore
         removal, additions = [], []
 
         additions =
-          identity_map.select { |o|
+          obverse_identity_map.select { |o|
             o.changes[fk_name] == identity
           }
 
         if identity > 0
           removal =
-              identity_map.select { |o|
+              obverse_identity_map.select { |o|
                 changes = o.changes
                 changes.has_key?(fk_name) &&
                   changes[fk_name] != identity &&
@@ -63,7 +72,7 @@ module ORMivore
         [removal, additions]
       end
 
-      attr_reader :identity, :name, :fk_name, :identity_map, :repo
+      attr_reader :identity, :name, :fk_name, :obverse_identity_map, :reverse_identity_map, :repo
     end
   end
 end

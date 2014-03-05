@@ -9,163 +9,59 @@ shared_examples_for 'a many-to-one association' do
   let(:account_repo) { session.repo.account }
   let(:post_repo) { session.repo.post }
 
-  let(:session) { ORMivore::Session.new(family) }
+  let(:session) { ORMivore::Session.new(family, associations) }
+
+  let(:association) {
+    session.association(subject, :account)
+  }
 
   before do
     Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family)
     Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family)
   end
 
-=begin
   context 'for ephemeral post' do
     let(:subject) { post_repo.create(title: 'foo') }
-    let(:author) { account_repo.create(firstname: 'foo') }
+    let(:account) { account_repo.create(firstname: 'foo') }
 
     it 'returns nil' do
-      subject.author.should be nil
+      association.value.should be nil
     end
 
-    context 'when author is set to ephemeral account' do
-      it 'returns assigned author' do
-        subject.apply(author: author).author.should be(author)
+    context 'when account is set to ephemeral account' do
+      it 'returns assigned account' do
+        association.set(account)
+        association.value.should be(account)
       end
 
-      it 'remembers assigned author after persisting' do
-        pending 'not working yet'
-
-        post_repo.persist(subject.apply(author: author)).
-          author.should be(author)
-      end
-    end
-
-    context 'when author is set to durable account' do
-      it 'returns assigned author' do
-        other_author = account_repo.persist(author)
-        subject.apply(author: other_author).author.should be(other_author)
-      end
-    end
-  end
-
-  context 'for durable post without an account' do
-    let(:subject) { post_repo.persist(post_repo.create(title: 'foo')) }
-    let(:author) { account_repo.create(firstname: 'foo') }
-
-    it 'returns nil' do
-      subject.author.should be nil
-    end
-
-    context 'when author is set to ephemeral account' do
-      it 'returns assigned author' do
-        subject.apply(author: author).author.should be(author)
-      end
-
-      it 'remembers assigned ephemeral author after persisting post' do
-        pending 'not working yet'
-
-        post_repo.persist(subject.apply(author: author)).author.should be(author)
+      it 'remembers assigned account after persisting' do
+        association.set(account)
+        post_repo.persist(subject.current)
+        association.value.should be(account)
       end
     end
 
-    context 'when author changed to ephemeral account twice' do
-      it 'returns latest ephemeral author' do
-        post = subject.apply(author: author)
-        revised_author = author.apply(firstname: 'bar')
-        post.apply(author: revised_author).author.should be(revised_author)
-      end
-
-      it 'remembers assigned ephemeral author after persisting' do
-        pending 'not working yet'
-
-        post = subject.apply(author: author)
-        revised_author = author.apply(firstname: 'bar')
-        post_repo.persist(post.apply(author: revised_author)).author.should eql(revised_author)
+    context 'when account is set to durable account' do
+      it 'returns assigned account' do
+        other_account = account_repo.persist(account)
+        other_account.should be_durable
+        association.set(other_account)
+        association.value.should be(other_account)
       end
     end
 
-    context 'when author is set to durable account' do
-      it 'returns assigned author' do
-        other_author = account_repo.persist(author)
-        subject.apply(author: other_author).author.should be(other_author)
+    context 'when account is set to durable account id' do
+      it 'returns assigned account' do
+        other_account = account_repo.persist(account)
+        other_account.should be_durable
+        subject.apply(account_id: other_account.id)
+        association.value.should be(other_account)
       end
     end
   end
-
-  context 'for durable post with author' do
-    let(:author) { account_repo.persist(account_repo.create(firstname: 'foo')) }
-
-    let(:subject) { post_repo.persist(post_repo.create(title: 'foo', author: author)) }
-
-    it 'returns previously assigned durable author' do
-      # NOTE with identity map it should be 'be' identity check, not equivalence
-      subject.author.should eq author
-    end
-
-    context 'when author is changed to ephemeral account' do
-      it 'returns assigned author' do
-        other_author = account_repo.create
-        subject.apply(author: other_author).author.should be(other_author)
-      end
-
-      it 'remembers assigned ephemeral author after persisting' do
-        pending 'not working yet'
-
-        other_author = account_repo.create(firstname: 'foo')
-        post_repo.persist(subject.apply(author: other_author)).
-          author.should eq(other_author)
-      end
-    end
-
-    context 'when author changed to revised version of itself' do
-      it 'returns revised author' do
-        revised_author = author.apply(firstname: 'bar')
-        subject.apply(author: revised_author).author.should be(revised_author)
-      end
-
-      it 'remembers assigned revised author after persisting' do
-        pending 'not working yet'
-
-        revised_author = author.apply(firstname: 'bar')
-        post_repo.persist(subject.apply(author: revised_author)).author.should eql(revised_author)
-      end
-    end
-
-    context 'when author changed to revised version of itself twice' do
-      it 'returns revised author' do
-        revised_author = author.apply(firstname: 'bar')
-        post = subject.apply(author: revised_author)
-        revised_author = revised_author.apply(firstname: 'baz')
-        post.apply(author: revised_author).author.should be(revised_author)
-      end
-
-      it 'remembers assigned revised author after persisting' do
-        pending 'not working yet'
-
-        revised_author = author.apply(firstname: 'bar')
-        post = subject.apply(author: revised_author)
-        revised_author = revised_author.apply(firstname: 'baz')
-        post_repo.persist(post.apply(author: revised_author)).author.should eql(revised_author)
-      end
-    end
-
-    context 'when author is changed to another durable account' do
-      it 'returns assigned author' do
-        other_author = account_repo.create(firstname: 'bar')
-        other_author = account_repo.persist(other_author)
-        subject.apply(author: other_author).author.should be(other_author)
-      end
-
-      it 'remembers assigned author after persisting' do
-        other_author = account_repo.create(firstname: 'bar')
-        other_author = account_repo.persist(other_author)
-        post_repo.persist(subject.apply(author: other_author)).
-          author.should eq(other_author)
-      end
-    end
-  end
-=end
 end
 
-describe 'an association between post and its author' do
+describe 'an association between post and its account' do
   before do
     Object.send(:remove_const, :Spec) if Object.const_defined?(:Spec)
     Spec = Module.new
@@ -179,10 +75,25 @@ describe 'an association between post and its author' do
     ORMivore::create_entity_skeleton(Spec, :post, port: true, repo: true) do
       attributes do
         string  :title
+        integer :account_id
       end
-      many_to_one :author, Spec::Account::Entity, fk: :account_id
+
+      optional :account_id
     end
   end
+
+  let(:associations) {
+    Class.new do
+      extend ORMivore::Association::AssociationDefinitions
+
+      association do
+        from Spec::Post::Entity
+        to Spec::Account::Entity
+        as :account
+        reverse_as :many, :posts
+      end
+    end
+  }
 
   after do
     Object.send(:remove_const, :Spec) if Object.const_defined?(:Spec)

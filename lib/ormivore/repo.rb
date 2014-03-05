@@ -206,7 +206,9 @@ module ORMivore
 
         preloaded = identity_map[entity_id]
 
-        unless preloaded
+        if preloaded
+          preloaded
+        else
           new_entity_options = { repo: self }
           new_entity_options[:session] = session
           new_entity_options[:attributes] = attrs unless attrs.empty?

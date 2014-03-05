@@ -9,326 +9,79 @@ shared_examples_for 'a one-to-many association' do
   let(:account_repo) { session.repo.account }
   let(:post_repo) { session.repo.post }
 
-  let(:session) { ORMivore::Session.new(family) }
+  let(:session) { ORMivore::Session.new(family, associations) }
+
+  let(:association) {
+    session.association(subject, :posts)
+  }
 
   before do
     Spec::Account::Repo.new(Spec::Account::Entity, account_port, family: family)
     Spec::Post::Repo.new(Spec::Post::Entity, post_port, family: family)
   end
 
-=begin
   context 'for ephemeral account' do
     let(:subject) { account_repo.create(firstname: 'foo') }
     let(:post) { post_repo.create(title: 'foo') }
 
     it 'returns empty array' do
-      subject.articles.should be_empty
+      association.values.should be_empty
     end
 
-    context 'when article is set to ephemeral post' do
-      it 'returns assigned article', focus: true do
-        # NOTE This is sample of the future syntax for associations
-        association do
-          from Spec::Post::Entity
-          to Spec::Account::Entity
-          as :account
-          reverse_as :many, :articles
-          #reverse_as :one, :article
-        end
+    context 'when post is set to ephemeral post' do
+      it 'returns assigned post' do
+        association.set([post])
 
-        through_association(
-          from Spec::Post::Entity,
-          to Spec::Tag::Entity, # optional ?
-          as :tags
-          via :essential, :taggings,
-          via :incidental, :taggings,
-          linked_by :tag
-        )
-
-        session.association(subject, :articles).set([post])
-
-        session.association(subject, :articles).values.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
+        association.values.tap { |o|
+          o.should eq([post.current])
+          o.first.should be(post.current)
         }
       end
 
-      it 'remembers assigned article after persisting' do
-        pending 'not working yet'
+      it 'remembers assigned post after persisting' do
+        association.set([post])
 
-        account_repo.persist(
-          subject.apply(articles: [post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
+        account_repo.persist(subject)
+        post_repo.persist(post.current)
+
+        association.values.tap { |o|
+          o.should eq([post.current])
+          o.first.should be(post.current)
         }
       end
     end
 
-    context 'when ephemeral post is added as article' do
-      it 'returns assigned article' do
-        subject.apply(articles: [:+, post]).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
+    context 'when ephemeral post is added as post' do
+      it 'returns assigned post' do
+        association.add([post])
+
+        association.values.tap { |o|
+          o.should eq([post.current])
+          o.first.should be(post.current)
         }
       end
 
-      it 'remembers added article after persisting' do
-        pending 'not working yet'
+      it 'remembers assigned post after persisting' do
+        association.add([post])
 
-        account_repo.persist(
-          subject.apply(articles: [:+, post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
+        account_repo.persist(subject)
+        post_repo.persist(post.current)
+
+        association.values.tap { |o|
+          o.should eq([post.current])
+          o.first.should be(post.current)
         }
       end
 
-      context 'when previously added article is removed' do
-        it 'returns no articles' do
-          subject.apply(articles: [:+, post]).
-            apply(articles: [:-, post]).articles.should be_empty
-        end
-      end
-    end
-
-    context 'when article is set to durable post' do
-      let(:post) { post_repo.persist(super()) }
-
-      it 'returns assigned article' do
-        subject.apply(articles: [post]).tap { |o|
-          o.articles.should eq([post])
-          o.articles.first.should be(post)
-        }
-      end
-
-      it 'remembers assigned article after persisting' do
-        pending 'not working yet'
-
-        account_repo.persist(
-          subject.apply(articles: [post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-
-      context 'when previously added article is removed' do
-        it 'returns no articles' do
-          subject.apply(articles: [:+, post]).
-            apply(articles: [:-, post]).articles.should be_empty
+      context 'when previously added post is removed' do
+        it 'returns no posts' do
+          association.add([post])
+          association.remove([post.current])
+          association.values.should be_empty
         end
       end
     end
   end
-
-  context 'for durable account without articles' do
-    let(:subject) { account_repo.persist(account_repo.create(firstname: 'foo')) }
-    let!(:post) { post_repo.create(title: 'foo') }
-
-    it 'returns empty array' do
-      subject.articles.should be_empty
-    end
-
-    context 'when article is set to ephemeral post' do
-      it 'returns assigned article' do
-        subject.apply(articles: [post]).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-
-      it 'remembers assigned article after persisting' do
-        pending 'not working yet'
-
-        account_repo.persist(
-          subject.apply(articles: [post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-    end
-
-    context 'when ephemeral post is added as an article' do
-      it 'returns assigned article' do
-        subject.apply(articles: [:+, post]).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-
-      it 'remembers added article after persisting' do
-        pending 'not working yet'
-
-        account_repo.persist(
-          subject.apply(articles: [:+, post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-
-      context 'when previously added article is removed' do
-        it 'returns no articles' do
-          subject.apply(articles: [:+, post]).
-            apply(articles: [:-, post]).articles.should be_empty
-        end
-      end
-    end
-
-    context 'when article is set to durable post' do
-      let(:post) { post_repo.persist(super()) }
-
-      it 'returns assigned article' do
-        subject.apply(articles: [post]).tap { |o|
-          o.articles.should eq([post])
-          o.articles.first.should be(post)
-        }
-      end
-
-      it 'remembers assigned article after persisting' do
-        account_repo.persist(
-          subject.apply(articles: [post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should eq(post)
-        }
-      end
-    end
-
-    context 'when durable post is added as an arcicle' do
-      let(:post) { post_repo.persist(super()) }
-
-      it 'returns assigned article' do
-        subject.apply(articles: [:+, post]).tap { |o|
-          o.articles.should eq([post])
-          o.articles.first.should be(post)
-        }
-      end
-
-      it 'remembers added article after persisting' do
-        account_repo.persist(
-          subject.apply(articles: [:+, post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should eq(post)
-        }
-      end
-
-      context 'when previously added article is removed' do
-        it 'returns no articles' do
-          subject.apply(articles: [:+, post]).
-            apply(articles: [:-, post]).articles.should be_empty
-        end
-      end
-    end
-  end
-
-  context 'for durable account with articles' do
-    let(:subject) { account_repo.persist(account_repo.create(firstname: 'foo')) }
-    let!(:prior_post) { post_repo.persist(post_repo.create(title: 'foo', author: subject)) }
-    let(:post) { post_repo.create(title: 'bar') }
-
-    it 'returns array with prior article' do
-      subject.articles.should eq([prior_post])
-    end
-
-    context 'when article is set to ephemeral post' do
-      it 'returns assigned article' do
-        subject.apply(articles: [post]).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-
-      it 'remembers assigned article after persisting' do
-        pending 'not working yet'
-
-        account_repo.persist(
-          subject.apply(articles: [post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should be(post)
-        }
-      end
-    end
-
-    context 'when ephemeral post is added as an article' do
-      it 'returns assigned article in addition to prior article' do
-        subject.apply(articles: [:+, post]).articles.tap { |o|
-          o.should eq([prior_post, post])
-          o.last.should be(post)
-        }
-      end
-
-      it 'remembers added article after persisting' do
-        pending 'not working yet'
-
-        account_repo.persist(
-          subject.apply(articles: [:+, post])
-        ).articles.tap { |o|
-          o.should eq([prior_post, post])
-          o.last.should be(post)
-        }
-      end
-
-      context 'when previously added article is removed' do
-        it 'returns only prior article' do
-          subject.apply(articles: [:+, post]).
-            apply(articles: [:-, post]).articles.should eq([prior_post])
-        end
-      end
-    end
-
-    context 'when article is set to durable post' do
-      let(:post) { post_repo.persist(super()) }
-
-      it 'returns assigned article' do
-        subject.apply(articles: [post]).tap { |o|
-          o.articles.should eq([post])
-          o.articles.first.should be(post)
-        }
-      end
-
-      it 'remembers assigned article after persisting' do
-        account_repo.persist(
-          subject.apply(articles: [post])
-        ).articles.tap { |o|
-          o.should eq([post])
-          o.first.should eq(post)
-        }
-      end
-    end
-
-    context 'when durable post is added as an article' do
-      let(:post) { post_repo.persist(super()) }
-
-      it 'returns assigned article' do
-        subject.apply(articles: [:+, post]).tap { |o|
-          o.articles.should eq([prior_post, post])
-          o.articles.last.should be(post)
-        }
-      end
-
-      it 'remembers added article after persisting' do
-        account_repo.persist(
-          subject.apply(articles: [:+, post])
-        ).articles.tap { |o|
-          o.should eq([prior_post, post])
-          o.last.should eq(post)
-        }
-      end
-
-      context 'when previously added article is removed' do
-        it 'returns only prior article' do
-          subject.apply(articles: [:+, post]).
-            apply(articles: [:-, post]).articles.should eq([prior_post])
-        end
-      end
-    end
-  end
-=end
 end
 
 describe 'an association between post and its author' do
@@ -345,14 +98,24 @@ describe 'an association between post and its author' do
     ORMivore::create_entity_skeleton(Spec, :post, port: true, repo: true) do
       attributes do
         string  :title
+        integer :account_id
       end
-      many_to_one :author, Spec::Account::Entity, fk: :account_id
     end
 
-    Spec::Account::Entity.instance_eval do
-      one_to_many :articles, Spec::Post::Entity, inverse_of: :author
-    end
   end
+
+  let(:associations) {
+    Class.new do
+      extend ORMivore::Association::AssociationDefinitions
+
+      association do
+        from Spec::Post::Entity
+        to Spec::Account::Entity
+        as :account
+        reverse_as :many, :posts
+      end
+    end
+  }
 
   after do
     Object.send(:remove_const, :Spec) if Object.const_defined?(:Spec)

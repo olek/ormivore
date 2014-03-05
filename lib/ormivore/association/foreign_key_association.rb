@@ -26,7 +26,7 @@ module ORMivore
       private
 
       def loaded_associated_entity
-        to_identity_map[foreign_key_value]
+        (fkv = foreign_key_value) ? to_identity_map[fkv] : nil
       end
 
       attr_reader :identity, :name, :from_identity_map, :to_identity_map, :repo, :fk_name

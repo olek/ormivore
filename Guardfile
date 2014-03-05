@@ -4,9 +4,11 @@ notification :tmux
 notification :terminal_title
 
 skip_extra_adapter_specs = true
+#primary_adapter_to_skip = 'memory'
+primary_adapter_to_skip = 'sql'
 
 cli = '--color --format nested'
-cli += ' --tag ~secondary_adapter --tag ~sql_adapter' if skip_extra_adapter_specs
+cli += " --tag ~secondary_adapter --tag ~#{primary_adapter_to_skip}_adapter" if skip_extra_adapter_specs
 
 guard :rspec,
   :all_on_start => true,
