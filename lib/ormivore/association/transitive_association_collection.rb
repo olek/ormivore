@@ -20,8 +20,8 @@ module ORMivore
       end
 
       def set(*entities)
-        remove(values)
-        add(entities)
+        remove(*values)
+        add(*entities)
       end
 
       def add(*entities)
