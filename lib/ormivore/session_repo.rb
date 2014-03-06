@@ -48,7 +48,7 @@ module ORMivore
 
     def include_memoize_on_singleton
       singleton.class_eval do
-        include Entity::Memoize
+        include Memoize
       end
     end
 
