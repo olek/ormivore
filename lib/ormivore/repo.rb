@@ -99,15 +99,13 @@ module ORMivore
     def delete(entity)
       validate_entity_argument(entity)
 
-      if entity.id
-        count = port.delete_one(entity.id)
+      if entity.ephemeral?
+        raise ORMivore::StorageError, 'Can not delete unsaved entity'
+      else
+        count = port.delete_one(entity.identity)
         raise ORMivore::StorageError, 'No records deleted' if count.zero?
         raise ORMivore::StorageError, 'WTF' if count > 1
         entity.dismiss
-
-        true
-      else
-        raise ORMivore::StorageError, 'Can not delete unsaved entity'
       end
     end
 
@@ -169,18 +167,18 @@ module ORMivore
       if changes.empty?
         entity
       else
-        if entity.id
-          count = port.update_one(entity.id, changes)
-          raise ORMivore::StorageError, 'No records updated' if count.zero?
-          raise ORMivore::StorageError, 'WTF' if count > 1
-
-          burn_phoenix(entity)
-        else
+        if entity.ephemeral?
           identity_map.unset(entity)
           load_entity(port.create(changes)).tap { |o|
             identity_map.alias_identity(o.identity, entity.identity)
             update_all_references_to(entity, o.identity)
           }
+        else
+          count = port.update_one(entity.identity, changes)
+          raise ORMivore::StorageError, 'No records updated' if count.zero?
+          raise ORMivore::StorageError, 'WTF' if count > 1
+
+          burn_phoenix(entity)
         end
       end
     end
@@ -227,7 +225,7 @@ module ORMivore
     end
 
     def entity_to_hash(entity)
-      { id: entity.id }.
+      { id: entity.identity }.
         merge!(entity.attributes)
     end
 

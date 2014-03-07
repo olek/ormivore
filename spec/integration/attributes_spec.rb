@@ -136,9 +136,9 @@ shared_examples_for 'an integrated repo' do
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.attributes.should == attrs
-        saved_entity.id.should == existing_entity_id
+        saved_entity.identity.should == existing_entity_id
 
-        load_test_value(saved_entity.id).should == attrs[test_attr]
+        load_test_value(saved_entity.identity).should == attrs[test_attr]
       end
 
       it 'creates entity with no "changes" recorded on it' do

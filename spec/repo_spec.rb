@@ -2,10 +2,12 @@ require 'spec_helper'
 
 describe 'a repo' do
   let(:entity) {
-    double('entity', id: nil, session: nil, identity: -3,
+    double('entity', id: nil, session: nil, identity: -3, ephemeral?: true,
       changes: { foo: 'bar' },
       fk_identities: {}, fk_identity_changes: {},
-      validate: nil, dismissed?: false, dismiss: nil)
+      validate: nil, dismissed?: false).tap { |o|
+        o.stub(:dismiss).and_return(o)
+      }
   }
 
   let(:new_entity) {
@@ -120,7 +122,8 @@ describe 'a repo' do
 
     context 'when entity is not new' do
       before do
-        entity.stub(:id).and_return(123)
+        entity.stub(:identity).and_return(123)
+        entity.stub(:ephemeral?).and_return(false)
         port.stub(:update_one).with(123, foo: 'bar').and_return(1)
       end
 
@@ -136,7 +139,7 @@ describe 'a repo' do
         entity.should_receive(:attributes).and_return(a: 'b')
         # entity.should_receive(:changed?).and_return(true)
         entity_class.should_receive(:new_root).
-          with(hash_including(attributes: {a: 'b'}, id: entity.id)).and_return(:baz)
+          with(hash_including(attributes: {a: 'b'}, id: 123)).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 
@@ -169,7 +172,8 @@ describe 'a repo' do
 
     context 'when entity is not new' do
       before do
-        entity.stub(:id).and_return(123)
+        entity.stub(:identity).and_return(123)
+        entity.stub(:ephemeral?).and_return(false)
         port.stub(:delete_one).with(123).and_return(1)
       end
 
@@ -178,8 +182,8 @@ describe 'a repo' do
         subject.delete(entity)
       end
 
-      it 'returns true if record was deleted' do
-        subject.delete(entity).should == true
+      it 'returns entity if record was deleted' do
+        subject.delete(entity).should be(entity)
       end
 
       it 'raises error if record was not deleted' do

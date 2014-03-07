@@ -251,7 +251,7 @@ module ORMivore
     def ==(other)
       return false unless other.class == self.class
 
-      return id == other.id
+      return identity == other.identity
     end
 
     # much more strict than ==
@@ -259,7 +259,7 @@ module ORMivore
     def eql?(other)
       return false unless other.class == self.class
 
-      return id == other.id &&
+      return identity == other.identity &&
         attributes == other.attributes &&
         session == other.session
     end
