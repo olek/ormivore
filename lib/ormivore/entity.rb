@@ -278,11 +278,11 @@ module ORMivore
       "#<#{self.class.name}".tap { |s|
           s << ' dismissed' if dismissed?
           s <<  (root? ? ' root' : ' derived')
-          s << " id=#{id}" if id
+          s << " identity=#{identity}"
           if verbose
             s << " attributes=#{attributes.inspect}" unless attributes.empty?
           else
-            s << (":0x%08x" % (object_id * 2)) unless root? || id
+            s << (":0x%08x" % (object_id * 2)) unless root? || identity
           end
       } << '>'
     end

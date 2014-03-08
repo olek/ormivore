@@ -87,11 +87,32 @@ module ORMivore
       trash.values
     end
 
+    def inspect(options = {})
+      verbose = options.fetch(:verbose, false)
+
+      "#<#{self.class.name}".tap { |s|
+          if verbose
+            s << " entity_class=#{entity_class.inspect}"
+            s << " storage=#{inspect_entities_map(storage)}"
+            s << " trash=#{inspect_entities_map(trash)}"
+            s << " identity_aliases=#{old_to_new_identity_aliases.inspect}"
+          else
+            s << (":0x%08x" % (object_id * 2))
+          end
+      } << '>'
+    end
+
+    # customizing to_yaml output
+    def encode_with(encoder)
+      encoder['entity_class'] = entity_class
+      encoder['storage'] = storage
+      encoder['trash'] = trash
+      encoder['identity_aliases'] = old_to_new_identity_aliases
+    end
+
     private
 
     attr_reader :entity_class, :storage, :trash, :old_to_new_identity_aliases
-
-    # TODO define .inspect and .encode_with that use those inspect_*
 
     def inspect_entities(entities)
       return 'NIL' unless entities
