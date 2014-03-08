@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe 'a repo' do
   let(:entity) {
-    double('entity', id: nil, session: nil, identity: -3, ephemeral?: true,
+    double('entity', session: nil, identity: -3, ephemeral?: true,
       changes: { foo: 'bar' },
       fk_identities: {}, fk_identity_changes: {},
       validate: nil, dismissed?: false).tap { |o|
@@ -11,7 +11,7 @@ describe 'a repo' do
   }
 
   let(:new_entity) {
-    double('new_entity', id: 123, identity: 123)
+    double('new_entity', identity: 123)
   }
 
   let(:attributes_list) { [:id, :foo] }
@@ -45,7 +45,7 @@ describe 'a repo' do
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_by_id).with(:foo, attributes_list).and_return(id: 123, foo: 'bar')
-      entity_class.should_receive(:new_root).with(hash_including(attributes: {foo: 'bar'}, id: 123))
+      entity_class.should_receive(:new_root).with(hash_including(attributes: {foo: 'bar'}, identity: 123))
       subject.find_by_id(:foo)
     end
 
@@ -68,13 +68,13 @@ describe 'a repo' do
 
     it 'creates and returns new entity' do
       port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123 }, {}])
-      subject.find_all_by_id_as_hash([123, 124], quiet: true).should == { new_entity.id => new_entity }
+      subject.find_all_by_id_as_hash([123, 124], quiet: true).should == { new_entity.identity => new_entity }
     end
 
     it 'creates new entity with proper attributes' do
       port.stub(:find_all_by_id).with(anything, anything).and_return([{ id: 123, a: 'b' }, { id: 124, c: 'd' }])
-      entity_class.should_receive(:new_root).with(hash_including(attributes: {a: 'b'}, id: 123))
-      entity_class.should_receive(:new_root).with(hash_including(attributes: {c: 'd'}, id: 124))
+      entity_class.should_receive(:new_root).with(hash_including(attributes: {a: 'b'}, identity: 123))
+      entity_class.should_receive(:new_root).with(hash_including(attributes: {c: 'd'}, identity: 124))
       subject.find_all_by_id_as_hash([123, 124], quiet: true)
     end
 
@@ -139,7 +139,7 @@ describe 'a repo' do
         entity.should_receive(:attributes).and_return(a: 'b')
         # entity.should_receive(:changed?).and_return(true)
         entity_class.should_receive(:new_root).
-          with(hash_including(attributes: {a: 'b'}, id: 123)).and_return(:baz)
+          with(hash_including(attributes: {a: 'b'}, identity: 123)).and_return(:baz)
         subject.persist(entity).should == :baz
       end
 

@@ -15,7 +15,7 @@ describe 'an entity' do
     end
   }
 
-  subject { described_class.new_root(attributes: attrs, id: 123) }
+  subject { described_class.new_root(attributes: attrs, identity: 123) }
 
   describe '.shorthand' do
     context 'when shorthand was previously not set' do
@@ -62,23 +62,23 @@ describe 'an entity' do
 
     it 'fails if unknown attributes are specified' do
        expect {
-        described_class.new_root(attributes: attrs.merge(foo: 'Foo'), id: 123)
+        described_class.new_root(attributes: attrs.merge(foo: 'Foo'), identity: 123)
       }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'allows specifying id' do
-      o = described_class.new_root(id: 123)
-      o.id.should == 123
+      o = described_class.new_root(identity: 123)
+      o.identity.should == 123
     end
 
     it 'allows string id that is convertable to integer' do
-      o = described_class.new_root(id: '123')
-      o.id.should == 123
+      o = described_class.new_root(identity: '123')
+      o.identity.should == 123
     end
 
     it 'refuses non-integer id' do
       expect {
-        described_class.new_root(id: '123a')
+        described_class.new_root(identity: '123a')
       }.to raise_error ORMivore::BadArgumentError
     end
 
@@ -98,14 +98,14 @@ describe 'an entity' do
 
   describe '#validate' do
     it 'fails if not enough attributes are provided' do
-      entity = described_class.new_root(attributes: { attr_1: test_value }, id: 123)
+      entity = described_class.new_root(attributes: { attr_1: test_value }, identity: 123)
       expect {
         entity.validate
       }.to raise_error ORMivore::BadAttributesError
     end
 
     it 'succeeds when all mandatory attributes are specified' do
-      described_class.new_root(attributes: attrs, id: 123).validate
+      described_class.new_root(attributes: attrs, identity: 123).validate
     end
   end
 
@@ -115,7 +115,7 @@ describe 'an entity' do
     end
 
     it 'combines attributes from this and parent properties' do
-      o = described_class.new_root(attributes: attrs, id: 123).apply(attr_1: 'dirty')
+      o = described_class.new_root(attributes: attrs, identity: 123).apply(attr_1: 'dirty')
       o.attributes.should == attrs.merge(attr_1: 'dirty')
     end
   end
@@ -154,7 +154,7 @@ describe 'an entity' do
     end
 
     it 'return dirty value of attribute if available' do
-      o = described_class.new_root(attributes: attrs, id: 123).apply(attr_1: 'dirty')
+      o = described_class.new_root(attributes: attrs, identity: 123).apply(attr_1: 'dirty')
       o.changes.should == { attr_1: 'dirty' }
       o.public_send(:attr_1).should == 'dirty'
     end

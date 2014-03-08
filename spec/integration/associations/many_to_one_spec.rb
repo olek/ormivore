@@ -54,7 +54,7 @@ shared_examples_for 'a many-to-one association' do
       it 'returns assigned account' do
         other_account = account_repo.persist(account)
         other_account.should be_durable
-        subject.apply(account_id: other_account.id)
+        subject.apply(account_id: other_account.identity)
         association.value.should be(other_account)
       end
     end

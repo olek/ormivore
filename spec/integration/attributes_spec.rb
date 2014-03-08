@@ -72,8 +72,8 @@ shared_examples_for 'an integrated repo' do
         entity1 = entities_map[entity_id_1]
         entity2 = entities_map[entity_id_2]
 
-        entity1.id.should == entity_id_1
-        entity2.id.should == entity_id_2
+        entity1.identity.should == entity_id_1
+        entity2.identity.should == entity_id_2
         entity1.public_send(test_attr).should == test_value
         entity2.public_send(test_attr).should == test_value
       end
@@ -100,7 +100,7 @@ shared_examples_for 'an integrated repo' do
           entities_map.should have(1).entity
           entity1 = entities_map[entity_id_1]
           entity1.should_not be_nil
-          entity1.id.should == entity_id_1
+          entity1.identity.should == entity_id_1
         end
       end
     end
@@ -113,9 +113,9 @@ shared_examples_for 'an integrated repo' do
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.attributes.should == attrs
-        saved_entity.id.should be_kind_of(Integer)
+        saved_entity.identity.should be_kind_of(Integer)
 
-        load_test_value(saved_entity.id).should == attrs[test_attr]
+        load_test_value(saved_entity.identity).should == attrs[test_attr]
       end
 
       it 'creates entity with no "changes" recorded on it' do
@@ -132,7 +132,7 @@ shared_examples_for 'an integrated repo' do
       }
 
       it 'updates record in database' do
-        entity = entity_class.new_root(attributes: {}, id: existing_entity_id).apply(attrs)
+        entity = entity_class.new_root(attributes: {}, identity: existing_entity_id).apply(attrs)
         saved_entity = subject.persist(entity)
         saved_entity.should_not be_nil
         saved_entity.attributes.should == attrs
@@ -143,7 +143,7 @@ shared_examples_for 'an integrated repo' do
 
       it 'creates entity with no "changes" recorded on it' do
         changes = { test_attr => other_test_value }
-        entity = entity_class.new_root(attributes: attrs, id: existing_entity_id).apply(changes)
+        entity = entity_class.new_root(attributes: attrs, identity: existing_entity_id).apply(changes)
         entity.changes.should == changes
         saved_entity = subject.persist(entity)
         saved_entity.changes.should be_empty

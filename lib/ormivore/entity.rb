@@ -35,7 +35,7 @@ module ORMivore
       def coerce_id(id)
         Integer(id) if id
       rescue ArgumentError
-        raise ORMivore::BadArgumentError, "Not a valid id: #{@id.inspect}"
+        raise ORMivore::BadArgumentError, "Not a valid identity: #{@identity.inspect}"
       end
 
       def coerce(attrs)
@@ -92,7 +92,7 @@ module ORMivore
       EOS
     end
 
-    attr_reader :id, :identity, :session
+    attr_reader :identity, :session
 
     def dismissed?
       @dismissed[0]
@@ -106,18 +106,15 @@ module ORMivore
     # constructor for root
     def initialize_root(options = {})
       # immutable
-      @id = options[:id]
+      @identity = options[:identity]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
       @session = options[:session] || Session::NULL
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
 
-      raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @id || @local_attributes.empty?
-      @id = self.class.coerce_id(@id)
-
-      @identity = @id
-      @identity ||= @session.generate_identity(self.class)
+      raise BadArgumentError, 'Root entity must have id in order to have attributes' unless @identity || @local_attributes.empty?
+      @identity = self.class.coerce_id(@identity) || session.generate_identity(self.class)
 
       validate_absence_of_unknown_attributes
 
@@ -210,7 +207,7 @@ module ORMivore
     # revised: was persisted in storage, and then modified/revised, will lose
     #     recent changes if discarded
     def ephemeral?
-      !id || id < 0
+      identity < 0
     end
 
     def durable?
@@ -265,7 +262,7 @@ module ORMivore
     end
 
     def hash
-      return id.hash ^
+      return identity.hash ^
         attributes.hash ^
         session.hash
     end
@@ -292,7 +289,7 @@ module ORMivore
 
     # customizing to_yaml output that otherwise is a bit too long
     def encode_with(encoder)
-      encoder['id'] = @id
+      encoder['identity'] = @identity
       encoder['local_attributes'] = @local_attributes
       encoder['changes'] = changes
       encoder['fk_identity_changes?'] = fk_identity_changes
@@ -340,7 +337,6 @@ module ORMivore
       # immutable
       @parent = parent
       raise BadArgumentError, 'Invalid parent' if @parent.class != self.class # is that too much safety?
-      @id = @parent.id
       @identity = @parent.identity
 
       yield # non-shared initialize here

@@ -210,7 +210,7 @@ module ORMivore
           new_entity_options = { repo: self }
           new_entity_options[:session] = session
           new_entity_options[:attributes] = attrs unless attrs.empty?
-          new_entity_options[:id] = entity_id if entity_id
+          new_entity_options[:identity] = entity_id if entity_id
 
           identity_map.set(entity_class.new_root(new_entity_options))
         end
