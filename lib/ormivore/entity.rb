@@ -292,7 +292,7 @@ module ORMivore
       encoder['identity'] = @identity
       encoder['local_attributes'] = @local_attributes
       encoder['changes'] = changes
-      encoder['fk_identity_changes?'] = fk_identity_changes
+      encoder['attributes'] = attributes
       encoder['memoize_cache'] = @memoize_cache
     end
 

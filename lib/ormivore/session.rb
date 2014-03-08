@@ -87,6 +87,20 @@ module ORMivore
       identity_maps[entity.class].set(entity)
     end
 
+    def discard(entity)
+      fail unless entity
+      fail unless entity_classes.include?(entity.class)
+
+      identity_maps[entity.class].unset(entity).try(:dismiss)
+    end
+
+    def delete(entity)
+      fail unless entity
+      fail unless entity_classes.include?(entity.class)
+
+      identity_maps[entity.class].delete(entity)
+    end
+
     def current(entity)
       fail unless entity
       fail unless entity_classes.include?(entity.class)

@@ -8,7 +8,7 @@ module ORMivore
       @repo = repo or fail
       @family = options.fetch(:family)
 
-      %w(create persist).each do |m|
+      %w(create persist delete).each do |m|
         define_proxy(m)
       end
 

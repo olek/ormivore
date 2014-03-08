@@ -50,9 +50,12 @@ module ORMivore
       storage.delete(entity.identity)
     end
 
+    # TODO delete should also delete incidental associations
     def delete(entity)
       fail unless entity
       fail unless entity.class == entity_class
+
+      entity = current(entity)
 
       trash[entity.identity] = entity
       storage.delete(entity.identity)
