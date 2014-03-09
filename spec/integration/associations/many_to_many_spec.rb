@@ -56,6 +56,30 @@ shared_examples_for 'a many-to-many association' do
         }
       end
 
+      # TODO create another set of tests for :essential via entity
+      context 'when tags is un-assigned' do
+        before do
+          association.clear
+        end
+
+        it 'removes tag from values' do
+          association.values.should be_empty
+        end
+
+        it 'removes tagging' do
+          via_association.values.should be_empty
+        end
+      end
+
+      context 'when post is deleted' do
+        it 'deletes taggings as well' do
+          tagging = via_association.values.first
+          expect {
+            session.delete(subject)
+          }.to change { session.lookup(tagging.class, tagging.identity) }.from(tagging).to(nil)
+        end
+      end
+
       context 'after persisting' do
         let(:subject) { post_repo.persist(super()) }
 

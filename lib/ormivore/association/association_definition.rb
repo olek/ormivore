@@ -30,16 +30,16 @@ module ORMivore
         entity_class == to && name == reverse_as
       end
 
-      def create_association(identity, name, session, options={})
+      def create_association(identity, session, options={})
         if options[:reverse]
           if reverse_multiplier == :many
-            ReverseForeignKeyAssociationCollection.new(identity, name, session)
+            ReverseForeignKeyAssociationCollection.new(identity, self, session)
           else
             # TODO implement reverse foreign key association
             fail 'Not Impemented yet'
           end
         else
-          ForeignKeyAssociation.new(identity, name, session)
+          ForeignKeyAssociation.new(identity, self, session)
         end
       end
 

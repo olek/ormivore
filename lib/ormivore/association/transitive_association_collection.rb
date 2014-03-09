@@ -4,7 +4,7 @@ module ORMivore
       def initialize(identity, association_definition, via_association_definition, session)
         @identity = identity
         @via = association_definition.via
-        #@via_multiplier = association_definition.via_multiplier
+        @via_nature = association_definition.via_nature
         @linked_by = association_definition.linked_by
         @identity_map = session.identity_map(association_definition.from)
         @session = session
@@ -16,7 +16,11 @@ module ORMivore
       def values
         via_association.values.map { |o|
           session.association(o, linked_by).value
-        }.flatten
+        }.flatten.compact
+      end
+
+      def clear
+        set
       end
 
       def set(*entities)
@@ -38,7 +42,11 @@ module ORMivore
 
         via_association.values.map { |o|
           if entity_identities.include?(o.attribute(fk(linked_by)))
-            via_identity_map.delete(o)
+            if via_nature == :incidental
+              via_identity_map.delete(o)
+            else
+              o.apply(fk(linked_by) => nil)
+            end
           end
         }.compact
       end
@@ -54,7 +62,7 @@ module ORMivore
       end
 
       attr_reader :identity, :linked_by, :identity_map, :session
-      attr_reader :via, :via_class, :via_backlink, :via_identity_map
+      attr_reader :via, :via_nature, :via_class, :via_backlink, :via_identity_map
     end
   end
 end

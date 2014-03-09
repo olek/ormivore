@@ -35,7 +35,7 @@ module ORMivore
         false
       end
 
-      def create_association(identity, name, session, options = nil)
+      def create_association(identity, session, options = nil)
         TransitiveAssociationCollection.new(identity, self, via_association_definition, session)
       end
 

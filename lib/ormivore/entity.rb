@@ -24,14 +24,6 @@ module ORMivore
         }
       end
 
-      #def new_with_attached_repo(parent, repo)
-      #  allocate.tap { |o|
-      #    o.initialize_with_attached_repo(parent, repo)
-      #    parent.dismiss
-      #    o.session.register(o)
-      #  }
-      #end
-
       def coerce_id(id)
         Integer(id) if id
       rescue ArgumentError
@@ -130,20 +122,6 @@ module ORMivore
 
     end
 
-    # constructor for 'attach repo' nodes
-    #def initialize_with_attached_repo(parent, repo)
-    #  shared_initialize(parent) do
-    #    @local_attributes = {}.freeze
-    #    @repo = repo
-    #    @session = @parent.session # NOTE does that even makes sense?
-
-    #    raise BadArgumentError, 'Can not attach #{parent} to nil repo' unless repo
-    #    raise InvalidStateError,
-    #      'Can not attach #{parent} to #{repo} because it is already attached to #{parent.repo}' if parent.repo
-
-    #  end
-    #end
-
     def attributes
       memoize(:attributes) do
         collect_from_root({}) { |e, acc|
@@ -221,7 +199,7 @@ module ORMivore
     def dismiss
       # 'functional' sin - dismissing ad object is definitely going to
       # change its behavior, but being able to continue using 'past' versions of
-      # object that moved on seems to be even worse
+      # object that moved on with its life seems to be even worse
       @dismissed[0] = true
 
       self
@@ -245,6 +223,7 @@ module ORMivore
       end
     end
 
+    # very loose check, compares class and identity only
     def ==(other)
       return false unless other.class == self.class
 

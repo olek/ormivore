@@ -98,7 +98,22 @@ module ORMivore
       fail unless entity
       fail unless entity_classes.include?(entity.class)
 
+      delete_associated_incidental_entities(entity)
+
       identity_maps[entity.class].delete(entity)
+    end
+
+    def update_all_references_to(entity, new_identity)
+      session.association_definitions.select { |o|
+        o.type == :foreign_key &&
+        o.to == entity.class
+      }.each do |association_definition|
+        session.identity_map(association_definition.from).select { |o|
+          o.attribute(association_definition.foreign_key_name) == entity.identity
+        }.each do |o|
+          o.apply(association_definition.foreign_key_name => new_identity)
+        end
+      end
     end
 
     def current(entity)
@@ -159,5 +174,20 @@ module ORMivore
     private
 
     attr_reader :repo_family, :identity_maps, :current_generated_identities
+
+    def delete_associated_incidental_entities(entity)
+      options = { reverse: true }
+
+      association_definitions.select { |o|
+        o.type == :transient &&
+        o.from == entity.class &&
+        o.via_nature == :incidental
+      }.each do |association_definition|
+        association_definition.via_association_definition.
+          create_association(entity.identity, self, options).values.each do |o|
+            self.delete(o)
+          end
+      end
+    end
   end
 end

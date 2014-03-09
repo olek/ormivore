@@ -114,7 +114,7 @@ module ORMivore
           reverse: ad.matches_in_reverse?(entity.class, name)
         }
 
-        ad.create_association(entity.identity, ad, entity.session, options)
+        ad.create_association(entity.identity, entity.session, options)
       end
 
       private
