@@ -18,12 +18,12 @@ module ORMivore
         unchanged - removals + additions
       end
 
-      def set(entities)
-        remove(values)
-        add(entities)
+      def set(*entities)
+        remove(*(values - entities))
+        add(*entities)
       end
 
-      def add(entities)
+      def add(*entities)
         renew_identity
 
         entities.map { |e|
@@ -31,7 +31,7 @@ module ORMivore
         }
       end
 
-      def remove(entities)
+      def remove(*entities)
         entities.map { |e|
           e.apply(fk_name => nil)
         }

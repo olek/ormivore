@@ -30,7 +30,7 @@ shared_examples_for 'a one-to-many association' do
 
     context 'when post is set to ephemeral post' do
       it 'returns assigned post' do
-        association.set([post])
+        association.set(post)
 
         association.values.tap { |o|
           o.should eq([post.current])
@@ -39,7 +39,7 @@ shared_examples_for 'a one-to-many association' do
       end
 
       it 'remembers assigned post after persisting' do
-        association.set([post])
+        association.set(post)
 
         account_repo.persist(subject)
         post_repo.persist(post.current)
@@ -53,7 +53,7 @@ shared_examples_for 'a one-to-many association' do
 
     context 'when ephemeral post is added as post' do
       it 'returns assigned post' do
-        association.add([post])
+        association.add(post)
 
         association.values.tap { |o|
           o.should eq([post.current])
@@ -62,7 +62,7 @@ shared_examples_for 'a one-to-many association' do
       end
 
       it 'remembers assigned post after persisting' do
-        association.add([post])
+        association.add(post)
 
         account_repo.persist(subject)
         post_repo.persist(post.current)
@@ -75,8 +75,8 @@ shared_examples_for 'a one-to-many association' do
 
       context 'when previously added post is removed' do
         it 'returns no posts' do
-          association.add([post])
-          association.remove([post.current])
+          association.add(post)
+          association.remove(post.current)
           association.values.should be_empty
         end
       end
