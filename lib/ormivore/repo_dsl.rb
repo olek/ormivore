@@ -14,15 +14,15 @@ module ORMivore
       keys = options.fetch(:by, nil)
       keys = [*keys].sort.map(&:to_sym)
 
-      finder_name = options.fetch(:named, "by_#{keys.join('_and_')}")
+      finder_name = options.fetch(:named, keys.empty? ? nil : "by_#{keys.join('_and_')}")
 
       options.delete(:by)
       options.delete(:named)
       options.merge!(limit: 1) if type == :first
 
-      infix = type == :first ? '' : "#{type}_"
+      name = [(type == :first ? nil : type), finder_name].compact.join('_')
 
-      define_method("find_#{infix}#{finder_name}") do |*args|
+      define_method("find_#{name}") do |*args|
         raise BadArgumentError, "Invalid number of arguments" unless args.length == keys.length
         conditions = Hash[keys.zip(args)]
 
