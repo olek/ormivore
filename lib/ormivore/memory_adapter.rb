@@ -25,7 +25,10 @@ module ORMivore
         rtn.slice!(0, Integer(offset)) if offset
         rtn.slice!(Integer(limit)..-1) if limit
       }
+    end
 
+    def count(conditions)
+      select_from_storage(conditions).length
     end
 
     def create(attrs)

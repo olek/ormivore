@@ -60,6 +60,12 @@ module ORMivore
       ).map { |r| entity_attributes(r) }
     end
 
+    def count(conditions)
+      ar_class
+        .where(conditions)
+        .count
+    end
+
     def create(attrs)
       record = ar_class.create!(
         extend_with_defaults(

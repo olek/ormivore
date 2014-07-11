@@ -19,6 +19,42 @@ shared_examples_for 'an expanded adapter' do
     subject.should respond_to(:find)
   end
 
+  describe '#count' do
+    context 'when conditions are empty' do
+      it 'returns count of all available records' do
+        subject.count({}).should be_zero
+        create_entity
+        subject.count({}).should eq(1)
+        create_entity
+        subject.count({}).should eq(2)
+      end
+    end
+
+    context 'when conditions points to non-existing entity' do
+      it 'returns zero' do
+        subject.count({id: 123456789}).should be_zero
+      end
+    end
+
+    context 'when conditions point to existing entity' do
+      it 'returns one' do
+        entity = create_entity
+        subject.count({id: entity[:id]}).should eq(1)
+      end
+    end
+
+    context 'when conditions point to multiple entities' do
+      before do
+        create_entity(test_attr => 'v1')
+        create_entity(test_attr => 'v2')
+      end
+
+      it 'returns number of entities' do
+        subject.count({}).should eq(2)
+      end
+    end
+  end
+
   describe '#find' do
     context 'when conditions are empty' do
       it 'returns all available records' do

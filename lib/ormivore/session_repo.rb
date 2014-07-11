@@ -14,7 +14,7 @@ module ORMivore
 
       (%w(find_by_id find_all_by_id find_all_by_id_as_hash find_all_by_attribute) +
         repo.public_methods(false).select { |m| m =~ /^find_/ } +
-        repo.public_methods(false).select { |m| m =~ /^page_/ }
+        repo.public_methods(false).select { |m| m =~ /^paginate_/ }
       ).each do |m|
         define_finder_proxy(m)
       end

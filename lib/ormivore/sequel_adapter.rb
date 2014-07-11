@@ -43,6 +43,17 @@ module ORMivore
       query.map { |r| entity_attributes(r) }
     end
 
+    def count(conditions)
+      query = sequel
+        .from(table_name)
+        .where(conditions)
+        .count
+
+      # puts "DDDDD: query = #{query.sql}"
+
+      query
+    end
+
     def create(attrs)
       id = sequel.
         from(table_name).

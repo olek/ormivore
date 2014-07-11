@@ -102,6 +102,13 @@ describe 'an expanded port' do
     end
   end
 
+  describe '#count' do
+    it 'delegates to adapter' do
+      adapter.should_receive(:count).with(:foo).and_return(:bar)
+      subject.count(:foo).should == :bar
+    end
+  end
+
   describe '#update_all' do
     it 'delegates to adapter' do
       adapter.should_receive(:update_all).with(:foo, a: 'b').and_return(:bar)

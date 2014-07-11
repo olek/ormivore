@@ -36,6 +36,10 @@ module ORMivore
       adapter.find(conditions, attributes_to_load, options)
     end
 
+    def count(conditions)
+      adapter.count(conditions)
+    end
+
     def create(attrs)
       begin
         adapter.create(attrs)

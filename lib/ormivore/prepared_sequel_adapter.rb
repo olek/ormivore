@@ -71,6 +71,18 @@ module ORMivore
       query.map { |r| entity_attributes(r) }
     end
 
+    def count(conditions)
+      query = template_helper.first(
+        key_for(:count), conditions) {
+          sequel
+            .from(table_name)
+            .select { [count(:id).as(:count)] }
+            .where(conditions)
+        }
+
+      query[:count]
+    end
+
     private
 
     attr_reader :template_helper

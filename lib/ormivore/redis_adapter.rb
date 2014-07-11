@@ -44,6 +44,10 @@ module ORMivore
       raise NotImplementedError, "Generic find interface not available for this adapter, please implement specific finders."
     end
 
+    def count(conditions)
+      raise NotImplementedError, "Generic find/count interface not available for this adapter, please implement specific finders."
+    end
+
     def create(attrs)
       id = attrs[:id]
       if id
