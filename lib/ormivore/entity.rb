@@ -5,6 +5,8 @@ module ORMivore
     }.freeze
 
     module ClassMethods
+      # Not to be used by app directly.
+      # Please use repo.create or repo.find instead.
       def new_root(options = {})
         allocate.tap { |o|
           o.initialize_root(options)
@@ -12,6 +14,8 @@ module ORMivore
         }
       end
 
+      # Not to be used by app directly.
+      # Please use repo.create or repo.find instead.
       def new_with_change_processor(parent, change_processor)
         allocate.tap { |o|
           o.initialize_with_change_processor(parent, change_processor)

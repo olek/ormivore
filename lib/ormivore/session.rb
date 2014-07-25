@@ -87,12 +87,15 @@ module ORMivore
       identity_maps[entity.class].set(entity)
     end
 
-    def discard(entity)
-      fail unless entity
-      fail unless entity_classes.include?(entity.class)
+    # NOTE it worked well for ephemeral entities, not so much for
+    # persisted entities
+    #
+    #def discard(entity)
+    #  fail unless entity
+    #  fail unless entity_classes.include?(entity.class)
 
-      identity_maps[entity.class].unset(entity).try(:dismiss)
-    end
+    #  identity_maps[entity.class].unset(entity).try(:dismiss)
+    #end
 
     def delete(entity)
       fail unless entity
