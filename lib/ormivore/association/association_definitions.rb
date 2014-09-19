@@ -103,7 +103,7 @@ module ORMivore
         fail unless entity
         fail unless name
 
-        fail if entity.dismissed?
+        raise StorageError, "Entity #{entity} dismissed." if entity.dismissed?
 
         name = name.to_sym
 

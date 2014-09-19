@@ -36,6 +36,12 @@ module ORMivore
       storage[identity] || storage[old_to_new_identity_aliases[identity]]
     end
 
+    def has_changes?
+      !!storage.values.detect { |entity|
+        entity.ephemeral? || entity.revised?
+      } || !deleted.empty?
+    end
+
     def set(entity)
       fail unless entity
       fail unless entity.class == entity_class

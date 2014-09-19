@@ -162,9 +162,39 @@ module ORMivore
         repo.clear_memoizations
       end
 
-      @identity_maps.values.each do |o|
-        o.each do |oo|
-          o.unset(oo)
+      @identity_maps.values.each do |identity_map|
+        identity_map.each do |entity|
+          identity_map.unset(entity)
+        end
+      end
+    end
+
+    def reject_and_reset
+      @repo_family.keys.each do |entity_class|
+        repo = @repo_family[entity_class]
+        repo.clear_memoizations
+      end
+
+      @identity_maps.values.each do |identity_map|
+        identity_map.each do |entity|
+          identity_map.unset(entity)
+        end
+      end
+    end
+
+    def reset
+      @identity_maps.values.each do |identity_map|
+        raise ORMivore::StorageError, "Can not reset session with changes" if identity_map.has_changes?
+      end
+
+      @repo_family.keys.each do |entity_class|
+        repo = @repo_family[entity_class]
+        repo.clear_memoizations
+      end
+
+      @identity_maps.values.each do |identity_map|
+        identity_map.each do |entity|
+          identity_map.unset(entity)
         end
       end
     end
