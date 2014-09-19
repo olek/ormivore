@@ -85,6 +85,10 @@ module ORMivore
       old_to_new_identity_aliases[old_identity] = new_identity
     end
 
+    def current_identity(entity)
+      old_to_new_identity_aliases[entity.identity] || entity.identity
+    end
+
     def deleted
       trash.values
     end

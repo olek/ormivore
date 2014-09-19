@@ -16,6 +16,9 @@ module ORMivore
       end
 
       def set(entity)
+        fail unless entity
+        fail if entity.dismissed?
+
         from_identity_map[identity].apply(fk_name => entity.identity)
       end
 

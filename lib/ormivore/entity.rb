@@ -68,6 +68,7 @@ module ORMivore
         class Builder
           def initialize
             @attributes = {}
+            @associations = {}
           end
 
           def id
@@ -78,12 +79,20 @@ module ORMivore
             @adapter = value
           end
 
+          def repo=(value)
+            @repo = value
+          end
+
+          def session=(value)
+            @repo = value
+          end
+
           # FactoryGirl integration point
           def save!
             @attributes = @adapter.create(attributes)
           end
 
-          attr_reader :attributes
+          attr_reader :attributes, :session, :repo, :adapter
         end
       EOS
     end

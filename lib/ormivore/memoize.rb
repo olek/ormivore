@@ -46,6 +46,10 @@ module ORMivore
       !!@memoize_cache[name]
     end
 
+    def clear_memoizations
+      @memoize_cache.clear
+    end
+
     def freeze
       @memoize_cache ||= {}
       super

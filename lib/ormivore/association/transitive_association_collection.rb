@@ -16,7 +16,7 @@ module ORMivore
       def values
         via_association.values.map { |o|
           session.association(o, linked_by).value
-        }.flatten.compact
+        }.flatten.compact.sort_by(&:identity)
       end
 
       def clear

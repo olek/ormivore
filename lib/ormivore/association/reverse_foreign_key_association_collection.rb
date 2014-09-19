@@ -15,7 +15,7 @@ module ORMivore
 
         removals, additions = fk_identity_changes
 
-        unchanged - removals + additions
+        (unchanged - removals + additions).sort_by(&:identity)
       end
 
       def set(*entities)

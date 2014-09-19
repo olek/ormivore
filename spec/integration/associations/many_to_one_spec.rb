@@ -12,7 +12,7 @@ shared_examples_for 'a many-to-one association' do
   let(:session) { ORMivore::Session.new(family, associations) }
 
   let(:association) {
-    session.association(subject, :account)
+    session.association(subject.current, :account)
   }
 
   before do

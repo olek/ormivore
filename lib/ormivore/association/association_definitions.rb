@@ -103,6 +103,8 @@ module ORMivore
         fail unless entity
         fail unless name
 
+        fail if entity.dismissed?
+
         name = name.to_sym
 
         ad = detect { |o| o.matches?(entity.class, name) || o.matches_in_reverse?(entity.class, name) }

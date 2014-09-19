@@ -123,7 +123,8 @@ module ORMivore
       fail unless entity
       fail unless entity_classes.include?(entity.class)
 
-      identity_maps[entity.class].current(entity)
+      im = identity_maps[entity.class]
+      im.current(entity) || repo(entity.class).find_by_id(im.current_identity(entity))
     end
 
     def lookup(entity_class, identity)
@@ -151,6 +152,21 @@ module ORMivore
 
     def commit
       SillySessionPersistenceStrategy.new(self).call
+    end
+
+    def commit_and_reset
+      commit
+
+      @repo_family.keys.each do |entity_class|
+        repo = @repo_family[entity_class]
+        repo.clear_memoizations
+      end
+
+      @identity_maps.values.each do |o|
+        o.each do |oo|
+          o.unset(oo)
+        end
+      end
     end
 
     def inspect(options = {})

@@ -8,15 +8,18 @@ module ORMivore
       @repo = repo or fail
       @family = options.fetch(:family)
 
-      %w(create persist delete).each do |m|
+      %w(create persist delete entity_class).each do |m|
         define_proxy(m)
       end
 
+      # TODO need better strategy for proxying methods in SomeRepo by SessionRepo
+      # matching methods by 'count_' prefix is not reliable
       (%w(find_by_id find_all_by_id find_all_by_id_as_hash find_all_by_attribute) +
         repo.public_methods(false).select { |m| m =~ /^find_/ } +
+        repo.public_methods(false).select { |m| m =~ /^count_/ } +
         repo.public_methods(false).select { |m| m =~ /^paginate_/ }
       ).each do |m|
-        define_finder_proxy(m)
+        define_memoized_proxy(m)
       end
 
       @family.add(self, repo.entity_class)
@@ -61,17 +64,15 @@ module ORMivore
       end
     end
 
-    def define_finder_proxy(name)
+    def define_memoized_proxy(name)
       singleton.class_eval do
         define_method name do |*args|
-          make_current = true
           mkey = "#{name}(#{args.inspect})"
           results = memoize(mkey) do
-            make_current = false
             repo.send(name, *args)
           end
 
-          make_current ? make_current(results) : results
+          make_current(results)
         end
       end
     end
@@ -80,10 +81,16 @@ module ORMivore
       if e
         if e.is_a?(Array)
           e.map { |o|
-            o.current
+            o.is_a?(ORMivore::Entity) ? o.current : o
           }.compact
+        elsif e.is_a?(Hash)
+          e.each_with_object({}) { |(k, v), acc|
+            k = k.current if k.is_a?(ORMivore::Entity)
+            v = v.current if v.is_a?(ORMivore::Entity)
+            acc[k] = v
+          }
         else
-          e.current
+          e.is_a?(ORMivore::Entity) ? e.current : e
         end
       else
         nil
