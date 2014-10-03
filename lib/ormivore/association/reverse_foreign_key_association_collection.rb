@@ -57,7 +57,7 @@ module ORMivore
         additions =
           obverse_identity_map.select { |o|
             o.changes[fk_name] == identity
-          }
+          }.map(&:pointer)
 
         if identity > 0
           removal =
@@ -66,7 +66,7 @@ module ORMivore
                 changes.has_key?(fk_name) &&
                   changes[fk_name] != identity &&
                   o.durable_ancestor.attribute(fk_name) == identity
-              }
+              }.map(&:pointer)
         end
 
         [removal, additions]

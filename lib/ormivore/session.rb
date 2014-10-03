@@ -11,6 +11,8 @@ module ORMivore
       def o.association_definitions; Association::AssociationDefinitions::NULL end
     end
 
+    # 'public' API starts here
+
     def initialize(repo_family, association_definitions)
       fail unless repo_family
       fail unless association_definitions
@@ -62,29 +64,20 @@ module ORMivore
       freeze
     end
 
-    def entity_classes
-      identity_maps.keys
-    end
-
     def repo(o = nil)
       if o
         if o.is_a?(Symbol)
           @repos.public_send(o)
         elsif o.include?(ORMivore::Entity)
           repo_family[o]
+        elsif o.include?(ORMivore::Pointer)
+          repo_family[o.dereference]
         else
           raise BadArgumentError, "Unexpected argument #{o.inspect}"
         end
       else
         @repos
       end
-    end
-
-    def register(entity)
-      fail unless entity
-      fail unless entity_classes.include?(entity.class)
-
-      identity_maps[entity.class].set(entity)
     end
 
     # NOTE it worked well for ephemeral entities, not so much for
@@ -97,56 +90,28 @@ module ORMivore
     #  identity_maps[entity.class].unset(entity).try(:dismiss)
     #end
 
-    def delete(entity)
-      fail unless entity
+    def delete(pointer)
+      fail unless pointer
+
+      entity = pointer.dereference
+
       fail unless entity_classes.include?(entity.class)
 
       delete_associated_incidental_entities(entity)
 
       identity_maps[entity.class].delete(entity)
+
+      pointer
     end
 
-    def update_all_references_to(entity, new_identity)
-      session.association_definitions.select { |o|
-        o.type == :foreign_key &&
-        o.to == entity.class
-      }.each do |association_definition|
-        session.identity_map(association_definition.from).select { |o|
-          o.attribute(association_definition.foreign_key_name) == entity.identity
-        }.each do |o|
-          o.apply(association_definition.foreign_key_name => new_identity)
-        end
-      end
-    end
+    def association(pointer, name)
+      fail unless pointer
+      fail unless name
 
-    def current(entity)
-      fail unless entity
+      entity = pointer.dereference
+
       fail unless entity_classes.include?(entity.class)
 
-      im = identity_maps[entity.class]
-      im.current(entity) || repo(entity.class).find_by_id(im.current_identity(entity))
-    end
-
-    def lookup(entity_class, identity)
-      fail unless entity_class
-      fail unless identity
-      fail unless entity_classes.include?(entity_class)
-
-      identity_maps[entity_class][identity]
-    end
-
-    def identity_map(entity_class)
-      identity_maps[entity_class]
-    end
-
-    def generate_identity(entity_class)
-      fail unless entity_class
-      fail unless entity_classes.include?(entity_class)
-
-      current_generated_identities[entity_class] -= 1
-    end
-
-    def association(entity, name)
       association_definitions.create_association(entity, name)
     end
 
@@ -199,6 +164,8 @@ module ORMivore
       end
     end
 
+    # 'public' API ends here
+
     def inspect(options = {})
       verbose = options.fetch(:verbose, false)
 
@@ -218,7 +185,75 @@ module ORMivore
       encoder['identity_maps'] = identity_maps
     end
 
+    # 'private' API begins here
+
+    # 'private'
+    def register(entity)
+      fail unless entity
+
+      fail unless entity_classes.include?(entity.class)
+
+      identity_maps[entity.class].set(entity)
+    end
+
+    # 'private'
+    def entity_classes
+      identity_maps.keys
+    end
+
+    # 'private'
+    def update_all_references_to(entity, new_identity)
+      fail unless entity
+      fail unless new_identity
+
+      fail unless entity_classes.include?(entity.class)
+
+      session.association_definitions.select { |o|
+        o.type == :foreign_key &&
+        o.to == entity.class
+      }.each do |association_definition|
+        session.identity_map(association_definition.from).select { |o|
+          o.attribute(association_definition.foreign_key_name) == entity.identity
+        }.each do |o|
+          o.apply(association_definition.foreign_key_name => new_identity)
+        end
+      end
+    end
+
+    # 'private'
+    def current(entity)
+      fail unless entity
+      fail unless entity_classes.include?(entity.class)
+
+      im = identity_maps[entity.class]
+      im.current(entity) || repo(entity.class).find_by_id(im.current_identity(entity)).dereference
+    end
+
+    # 'private'
+    def lookup(entity_class, identity)
+      fail unless entity_class
+      fail unless identity
+      fail unless entity_classes.include?(entity_class)
+
+      identity_maps[entity_class][identity]
+    end
+
+    # 'private'
+    def identity_map(entity_class)
+      identity_maps[entity_class]
+    end
+
+    # 'private'
+    def generate_identity(entity_class)
+      fail unless entity_class
+      fail unless entity_classes.include?(entity_class)
+
+      current_generated_identities[entity_class] -= 1
+    end
+
     attr_reader :association_definitions, :entity_classes
+
+    # 'private' API ends here
 
     private
 

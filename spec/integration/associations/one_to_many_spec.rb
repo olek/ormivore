@@ -33,20 +33,19 @@ shared_examples_for 'a one-to-many association' do
         association.set(post)
 
         association.values.tap { |o|
-          o.should eq([post.current])
-          o.first.should be(post.current)
+          o.should eq([post])
+          o.first.should be(post)
         }
       end
 
       it 'remembers assigned post after persisting' do
         association.set(post)
 
-        account_repo.persist(subject)
-        post_repo.persist(post.current)
+        session.commit
 
         association.values.tap { |o|
-          o.should eq([post.current])
-          o.first.should be(post.current)
+          o.should eq([post])
+          o.first.should be(post)
         }
       end
     end
@@ -56,27 +55,26 @@ shared_examples_for 'a one-to-many association' do
         association.add(post)
 
         association.values.tap { |o|
-          o.should eq([post.current])
-          o.first.should be(post.current)
+          o.should eq([post])
+          o.first.should be(post)
         }
       end
 
       it 'remembers assigned post after persisting' do
         association.add(post)
 
-        account_repo.persist(subject)
-        post_repo.persist(post.current)
+        session.commit
 
         association.values.tap { |o|
-          o.should eq([post.current])
-          o.first.should be(post.current)
+          o.should eq([post])
+          o.first.should be(post)
         }
       end
 
       context 'when previously added post is removed' do
         it 'returns no posts' do
           association.add(post)
-          association.remove(post.current)
+          association.remove(post)
           association.values.should be_empty
         end
       end

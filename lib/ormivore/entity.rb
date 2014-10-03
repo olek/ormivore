@@ -97,7 +97,7 @@ module ORMivore
       EOS
     end
 
-    attr_reader :identity, :session
+    attr_reader :identity, :session, :pointer
 
     def dismissed?
       @dismissed[0]
@@ -114,6 +114,7 @@ module ORMivore
       @identity = options[:identity]
       @local_attributes = self.class.coerce(options.fetch(:attributes, {}).symbolize_keys).freeze
       @session = options[:session] || Session::NULL
+      @pointer = Pointer.new(self)
 
       # mutable by necessity, ugly workaround to avoid freezing references
       @dismissed = [false]
@@ -131,8 +132,8 @@ module ORMivore
       shared_initialize(parent) do
         @local_attributes = change_processor.attributes.freeze
         @session = @parent.session
+        @pointer = @parent.pointer
       end
-
     end
 
     def attributes
@@ -225,6 +226,10 @@ module ORMivore
 
     def current
       session.current(self)
+    end
+
+    def dereference
+      fail "Entity is not a Pointer and can not be dereferenced"
     end
 
     def validate

@@ -27,11 +27,9 @@ module ORMivore
     def create(attrs = nil)
       entity = entity_class.new_root(attributes: {}, repo: self, session: session)
 
-      if attrs
-        entity.apply(attrs)
-      else
-        entity
-      end
+      entity.apply(attrs) if attrs
+
+      entity.pointer
     end
 
     def find_by_id(id, options = {})
@@ -47,7 +45,7 @@ module ORMivore
           id,
           all_known_columns
         )
-      )
+      ).pointer
     rescue RecordNotFound => e
       if quiet
         return nil
@@ -76,7 +74,7 @@ module ORMivore
         # entity_attrs = entities_attrs.find { |e| e[:id] && entity_class.coerce_id(e[:id]) == id }
         entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
-          entities_map[id] = load_entity(entity_attrs)
+          entities_map[id] = load_entity(entity_attrs).pointer
         elsif !quiet
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
@@ -87,6 +85,7 @@ module ORMivore
       find_all_by_id_as_hash(objects, options).values
     end
 
+    # 'private'
     def persist(entity)
       validate_entity_argument(entity)
 
@@ -96,6 +95,7 @@ module ORMivore
       rtn
     end
 
+    # 'private'
     def delete(entity)
       validate_entity_argument(entity)
 
@@ -148,7 +148,7 @@ module ORMivore
         { name => value },
         all_known_columns
       )
-      entities_attrs.map { |ea| load_entity(ea) }
+      entities_attrs.map { |ea| load_entity(ea).pointer }
     end
 
     def validate_entity_argument(entity)
@@ -221,7 +221,7 @@ module ORMivore
 
     def burn_phoenix(entity)
       identity_map.unset(entity)
-      load_entity(entity_to_hash(entity))
+      load_entity(entity_to_hash(entity), entity.pointer)
     end
 
     def entity_to_hash(entity)

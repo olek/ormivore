@@ -72,7 +72,7 @@ module ORMivore
             repo.send(name, *args)
           end
 
-          make_current(results)
+          # make_current(results)
         end
       end
     end
