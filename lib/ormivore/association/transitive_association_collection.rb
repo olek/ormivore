@@ -43,7 +43,7 @@ module ORMivore
         via_association.values.map { |o|
           if entity_identities.include?(o.attribute(fk(linked_by)))
             if via_nature == :incidental
-              via_identity_map.delete(o)
+              via_identity_map.delete(o.dereference)
             else
               o.apply(fk(linked_by) => nil)
             end
@@ -58,7 +58,7 @@ module ORMivore
       end
 
       def via_association
-        session.association(identity_map[identity], via)
+        session.association(identity_map[identity].pointer, via)
       end
 
       attr_reader :identity, :linked_by, :identity_map, :session

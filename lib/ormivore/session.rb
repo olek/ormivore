@@ -233,7 +233,10 @@ module ORMivore
     def lookup(entity_class, identity)
       fail unless entity_class
       fail unless identity
-      fail unless entity_classes.include?(entity_class)
+
+      unless entity_classes.include?(entity_class)
+        fail "Expected entity class to be one of #{entity_classes}, got #{entity_class}"
+      end
 
       identity_maps[entity_class][identity]
     end

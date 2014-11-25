@@ -58,7 +58,7 @@ module ORMivore
 
     def delete(entity)
       fail unless entity
-      fail unless entity.class == entity_class
+      fail "Expected entity of class #{entity_class}, got #{entity.class}" unless entity.class == entity_class
 
       entity = current(entity)
 

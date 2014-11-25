@@ -12,7 +12,7 @@ shared_examples_for 'a many-to-one association' do
   let(:session) { ORMivore::Session.new(family, associations) }
 
   let(:association) {
-    session.association(subject.current, :account)
+    session.association(subject, :account)
   }
 
   before do
@@ -36,7 +36,7 @@ shared_examples_for 'a many-to-one association' do
 
       it 'remembers assigned account after persisting' do
         association.set(account)
-        post_repo.persist(subject.current)
+        post_repo.persist(subject)
         association.value.should be(account)
       end
     end

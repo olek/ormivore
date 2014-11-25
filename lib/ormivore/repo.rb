@@ -168,17 +168,18 @@ module ORMivore
         entity
       else
         if entity.ephemeral?
-          identity_map.unset(entity)
+          old_entity = entity.dereference
+          identity_map.unset(old_entity)
           load_entity(port.create(changes)).tap { |o|
-            identity_map.alias_identity(o.identity, entity.identity)
-            update_all_references_to(entity, o.identity)
-          }
+            identity_map.alias_identity(o.identity, old_entity.identity)
+            update_all_references_to(old_entity, o.identity)
+          }.pointer
         else
           count = port.update_one(entity.identity, changes)
           raise ORMivore::StorageError, 'No records updated' if count.zero?
           raise ORMivore::StorageError, 'WTF' if count > 1
 
-          burn_phoenix(entity)
+          burn_phoenix(old_entity).pointer
         end
       end
     end

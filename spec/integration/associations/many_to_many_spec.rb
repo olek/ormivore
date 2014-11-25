@@ -51,8 +51,8 @@ shared_examples_for 'a many-to-many association' do
       it 'creates new tagging for assigned tag' do
         via_association.values.tap { |o|
           o.should have(1).taggings
-          o.first.post_id.should eq(subject.identity)
-          o.first.tag_id.should eq(tag.identity)
+          o.first.attribute(:post_id).should eq(subject.identity)
+          o.first.attribute(:tag_id).should eq(tag.identity)
         }
       end
 
@@ -74,9 +74,10 @@ shared_examples_for 'a many-to-many association' do
       context 'when post is deleted' do
         it 'deletes taggings as well' do
           tagging = via_association.values.first
+          tagging_entity = tagging.dereference
           expect {
             session.delete(subject)
-          }.to change { session.lookup(tagging.class, tagging.identity) }.from(tagging).to(nil)
+          }.to change { session.lookup(Spec::EarTagging::Entity, tagging_entity.identity) }.from(tagging_entity).to(nil)
         end
       end
 

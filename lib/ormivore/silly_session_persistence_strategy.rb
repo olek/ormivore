@@ -14,7 +14,7 @@ module ORMivore
         end
 
         identity_map.select { |o| o.ephemeral? }.each do |entity_to_insert|
-          repo.persist(entity_to_insert)
+          repo.persist(entity_to_insert.pointer)
         end
       end
 
