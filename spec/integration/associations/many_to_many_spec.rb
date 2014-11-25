@@ -51,8 +51,8 @@ shared_examples_for 'a many-to-many association' do
       it 'creates new tagging for assigned tag' do
         via_association.values.tap { |o|
           o.should have(1).taggings
-          o.first.attribute(:post_id).should eq(subject.identity)
-          o.first.attribute(:tag_id).should eq(tag.identity)
+          o.first.post_id.should eq(subject.identity)
+          o.first.tag_id.should eq(tag.identity)
         }
       end
 

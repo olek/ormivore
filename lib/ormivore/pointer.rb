@@ -50,5 +50,25 @@ module ORMivore
     private
 
     attr_reader :origin
+
+    def method_missing(method_id, *arguments, &block)
+      if should_delegate?(method_id, *arguments, &block)
+        dereference.send(method_id)
+      else
+        super
+      end
+    end
+
+    def respond_to?(method_id, include_private = false)
+      if should_delegate?(method_id)
+        true
+      else
+        super
+      end
+    end
+
+    def should_delegate?(method_id, *arguments, &block)
+      origin.class.attributes_list.include?(method_id) && arguments.empty? && block.nil?
+    end
   end
 end
