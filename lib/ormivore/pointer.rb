@@ -47,6 +47,14 @@ module ORMivore
     def_delegator :dereference, :inspect
     def_delegator :dereference, :encode_with
 
+    def respond_to?(method_id, include_private = false)
+      if should_delegate?(method_id)
+        true
+      else
+        super
+      end
+    end
+
     private
 
     attr_reader :origin
@@ -59,16 +67,11 @@ module ORMivore
       end
     end
 
-    def respond_to?(method_id, include_private = false)
-      if should_delegate?(method_id)
-        true
-      else
-        super
-      end
-    end
-
     def should_delegate?(method_id, *arguments, &block)
-      origin.class.attributes_list.include?(method_id) && arguments.empty? && block.nil?
+      (
+        origin.class.attributes_list.include?(method_id) ||
+        origin.class.responsibilities.include?(method_id)
+      ) && arguments.empty? && block.nil?
     end
   end
 end

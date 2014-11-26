@@ -83,19 +83,19 @@ module ORMivore
       if e
         if e.is_a?(Array)
           e.map { |o|
-            o.is_a?(ORMivore::Entity) ? o.pointer : o
+            pointerize(o)
           }.compact
         elsif e.is_a?(Hash)
           e.each_with_object({}) { |(k, v), acc|
-            k = k.pointer if k.is_a?(ORMivore::Entity)
-            v = v.pointer if v.is_a?(ORMivore::Entity)
+            k = pointerize(k)
+            v = pointerize(v)
             acc[k] = v
           }
         else
           e.is_a?(ORMivore::Entity) ? e.pointer : e
         end
       else
-        nil
+        e
       end
     end
 
@@ -103,19 +103,19 @@ module ORMivore
       if e
         if e.is_a?(Array)
           e.map { |o|
-            o.is_a?(ORMivore::Pointer) ? o.dereference : o
+            depointerize(o)
           }.compact
         elsif e.is_a?(Hash)
           e.each_with_object({}) { |(k, v), acc|
-            k = k.dereference if k.is_a?(ORMivore::Pointer)
-            v = v.dereference if v.is_a?(ORMivore::Pointer)
+            k = depointerize(k)
+            v = depointerize(v)
             acc[k] = v
           }
         else
           e.is_a?(ORMivore::Pointer) ? e.dereference : e
         end
       else
-        nil
+        e
       end
     end
   end

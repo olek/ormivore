@@ -1,6 +1,9 @@
 module ORMivore
   module Entity
     module OtherDSL
+      def responsibilities
+        @responsibilities ||= [].freeze
+      end
 
       private
 
@@ -17,6 +20,8 @@ module ORMivore
         end
 
         memoize_method(name)
+
+        @responsibilities = (responsibilities + [name]).freeze
       end
 
       alias_method :role, :responsibility
