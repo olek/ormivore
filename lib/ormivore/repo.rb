@@ -27,9 +27,11 @@ module ORMivore
     def create(attrs = nil)
       entity = entity_class.new_root(attributes: {}, repo: self, session: session)
 
-      entity.apply(attrs) if attrs
-
-      entity.pointer
+      if attrs
+        entity.apply(attrs)
+      else
+        entity
+      end
     end
 
     def find_by_id(id, options = {})
@@ -45,7 +47,7 @@ module ORMivore
           id,
           all_known_columns
         )
-      ).pointer
+      )
     rescue RecordNotFound => e
       if quiet
         return nil
@@ -74,7 +76,7 @@ module ORMivore
         # entity_attrs = entities_attrs.find { |e| e[:id] && entity_class.coerce_id(e[:id]) == id }
         entity_attrs = entities_attrs.find { |e| e[:id] && Integer(e[:id]) == id }
         if entity_attrs
-          entities_map[id] = load_entity(entity_attrs).pointer
+          entities_map[id] = load_entity(entity_attrs)
         elsif !quiet
           raise ORMivore::RecordNotFound, "#{entity_class.name} with id #{id} was not found"
         end
@@ -85,7 +87,6 @@ module ORMivore
       find_all_by_id_as_hash(objects, options).values
     end
 
-    # 'private'
     def persist(entity)
       validate_entity_argument(entity)
 
@@ -95,7 +96,7 @@ module ORMivore
       rtn
     end
 
-    # 'private'
+    # private
     def delete(entity)
       validate_entity_argument(entity)
 
@@ -148,7 +149,7 @@ module ORMivore
         { name => value },
         all_known_columns
       )
-      entities_attrs.map { |ea| load_entity(ea).pointer }
+      entities_attrs.map { |ea| load_entity(ea) }
     end
 
     def validate_entity_argument(entity)
@@ -168,18 +169,17 @@ module ORMivore
         entity
       else
         if entity.ephemeral?
-          old_entity = entity.dereference
-          identity_map.unset(old_entity)
+          identity_map.unset(entity)
           load_entity(port.create(changes)).tap { |o|
-            identity_map.alias_identity(o.identity, old_entity.identity)
-            update_all_references_to(old_entity, o.identity)
-          }.pointer
+            identity_map.alias_identity(o.identity, entity.identity)
+            update_all_references_to(entity, o.identity)
+          }
         else
           count = port.update_one(entity.identity, changes)
           raise ORMivore::StorageError, 'No records updated' if count.zero?
           raise ORMivore::StorageError, 'WTF' if count > 1
 
-          burn_phoenix(old_entity).pointer
+          burn_phoenix(entity)
         end
       end
     end
@@ -222,7 +222,7 @@ module ORMivore
 
     def burn_phoenix(entity)
       identity_map.unset(entity)
-      load_entity(entity_to_hash(entity), entity.pointer)
+      load_entity(entity_to_hash(entity))
     end
 
     def entity_to_hash(entity)

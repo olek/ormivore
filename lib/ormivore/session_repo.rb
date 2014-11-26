@@ -59,7 +59,9 @@ module ORMivore
     def define_proxy(name)
       singleton.class_eval do
         define_method name do |*args|
-          repo.send(name, *args)
+          pointerize(
+            repo.send(name, *depointerize(args))
+          )
         end
       end
     end
@@ -68,29 +70,49 @@ module ORMivore
       singleton.class_eval do
         define_method name do |*args|
           mkey = "#{name}(#{args.inspect})"
-          results = memoize(mkey) do
-            repo.send(name, *args)
+          memoize(mkey) do
+            pointerize(
+              repo.send(name, *depointerize(args))
+            )
           end
-
-          # make_current(results)
         end
       end
     end
 
-    def make_current(e)
+    def pointerize(e)
       if e
         if e.is_a?(Array)
           e.map { |o|
-            o.is_a?(ORMivore::Entity) ? o.current : o
+            o.is_a?(ORMivore::Entity) ? o.pointer : o
           }.compact
         elsif e.is_a?(Hash)
           e.each_with_object({}) { |(k, v), acc|
-            k = k.current if k.is_a?(ORMivore::Entity)
-            v = v.current if v.is_a?(ORMivore::Entity)
+            k = k.pointer if k.is_a?(ORMivore::Entity)
+            v = v.pointer if v.is_a?(ORMivore::Entity)
             acc[k] = v
           }
         else
-          e.is_a?(ORMivore::Entity) ? e.current : e
+          e.is_a?(ORMivore::Entity) ? e.pointer : e
+        end
+      else
+        nil
+      end
+    end
+
+    def depointerize(e)
+      if e
+        if e.is_a?(Array)
+          e.map { |o|
+            o.is_a?(ORMivore::Pointer) ? o.dereference : o
+          }.compact
+        elsif e.is_a?(Hash)
+          e.each_with_object({}) { |(k, v), acc|
+            k = k.dereference if k.is_a?(ORMivore::Pointer)
+            v = v.dereference if v.is_a?(ORMivore::Pointer)
+            acc[k] = v
+          }
+        else
+          e.is_a?(ORMivore::Pointer) ? e.dereference : e
         end
       else
         nil
