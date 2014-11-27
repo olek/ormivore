@@ -9,7 +9,7 @@ group :development do
   gem 'activerecord', '~>3.2'
   gem 'sqlite3'
   gem 'redis'
-  gem 'rspec'
+  gem 'rspec', '~>2.14.1'
   gem 'factory_girl'
   gem 'database_cleaner'
   gem 'guard-rspec'
