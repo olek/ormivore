@@ -119,6 +119,7 @@ module ORMivore
       SillySessionPersistenceStrategy.new(self).call
     end
 
+    # TODO take care of duplication
     def commit_and_reset
       commit
 
