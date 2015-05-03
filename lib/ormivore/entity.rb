@@ -58,7 +58,6 @@ module ORMivore
       # not so naughty, but still...
       base.extend(ClassMethods)
       base.extend(AttributesDSL)
-      base.extend(OtherDSL)
 
       define_builder_class(base)
     end

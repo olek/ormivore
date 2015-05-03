@@ -4,9 +4,6 @@ module ORMivore
 
     def initialize(entity)
       @origin = entity || fail
-      #@session = entity.session
-      #@entity_class = entity.class
-      #@identity = entity.identity
     end
 
     def dereference
@@ -69,8 +66,7 @@ module ORMivore
 
     def should_delegate?(method_id, *arguments, &block)
       (
-        origin.class.attributes_list.include?(method_id) ||
-        origin.class.responsibilities.include?(method_id)
+        origin.class.attributes_list.include?(method_id)
       ) && arguments.empty? && block.nil?
     end
   end
